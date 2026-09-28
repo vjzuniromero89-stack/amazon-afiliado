@@ -135,6 +135,35 @@ export async function POST(req: Request) {
           );
         break;
       }
+      case "deleteCreative": {
+        const id = uuid.parse(body.id);
+        const c = (await owned("creatives", id, uid)) as { status: string };
+        if (!["draft", "approved", "rejected"].includes(c.status))
+          throw new AppError(
+            "No se puede eliminar un Pin programado o publicado. Cancélalo primero.",
+          );
+        check(
+          await sb
+            .from("publication_queue")
+            .delete()
+            .eq("creative_id", id)
+            .eq("user_id", uid)
+            .in("status", ["cancelled", "failed"])
+            .select("id"),
+        );
+        const rows = check(
+          await sb
+            .from("creatives")
+            .delete()
+            .eq("id", id)
+            .eq("user_id", uid)
+            .in("status", ["draft", "approved", "rejected"])
+            .select("id"),
+        );
+        if (!rows.length)
+          throw new AppError("El Pin cambió. Actualiza y vuelve a intentarlo.", 409);
+        break;
+      }
       case "schedule":
         result = await enqueue(
           uid,
