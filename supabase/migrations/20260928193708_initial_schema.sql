@@ -21,7 +21,7 @@ create table public.affiliate_configuration (
  daily_limit integer not null default 5 check(daily_limit between 1 and 25),
  min_interval_minutes integer not null default 60 check(min_interval_minutes between 60 and 1440),
  tracking_id text not null default '', marketplace text not null default 'www.amazon.com', storefront_url text not null default '',
- disclosure text not null default 'Como afiliado de Amazon, gano por las compras que cumplan los requisitos. #ad' check(length(disclosure) between 15 and 180),
+ disclosure text not null default 'As an Amazon Associate I earn from qualifying purchases. #ad' check(length(disclosure) between 15 and 180),
  default_board_id uuid, timezone text not null default 'America/New_York',
  created_at timestamptz not null default now(),
  foreign key(default_board_id,user_id) references public.boards(id,user_id)

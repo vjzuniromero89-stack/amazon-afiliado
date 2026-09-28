@@ -160,6 +160,27 @@ function groupFor(p: Product) {
   );
 }
 
+// Picks the board whose name best matches the product's topic,
+// then falls back to the default board, then to the only board available.
+export function pickBoard(p: Product, boards: Board[], s: Settings) {
+  if (!boards.length) return null;
+  const g = groupFor(p);
+  const terms = [...g.match, g.noun, ...strip(p.category || "").split(/\W+/)]
+    .filter((t) => t.length >= 3 && !["gadget", "must", "haves", "finds", "ideas", "amazon"].includes(t));
+  let best: Board | null = null,
+    bestScore = 0;
+  for (const b of boards) {
+    const name = strip(b.name);
+    const score = terms.filter((t) => name.includes(t)).length;
+    if (score > bestScore) (best = b), (bestScore = score);
+  }
+  return (
+    best ||
+    boards.find((b) => b.id === s.default_board_id) ||
+    (boards.length === 1 ? boards[0] : null)
+  );
+}
+
 function fitTitle(build: (name: string) => string, parsed: Parsed) {
   let name = parsed.short;
   let t = build(name);
@@ -207,11 +228,7 @@ const CTAS = ["See it on Amazon", "Check the price on Amazon", "Shop it on Amazo
 
 export class TemplateConceptProvider implements ConceptProvider {
   async generate(p: Product, boards: Board[], s: Settings) {
-    const board =
-      boards.find((b) => b.id === s.default_board_id) ||
-      boards.find((b) =>
-        b.name.toLowerCase().includes(p.category.toLowerCase()),
-      );
+    const board = pickBoard(p, boards, s);
     const parsed = parseTitle(p.title);
     const g = groupFor(p);
     const sizeTxt = parsed.size ? ` (${parsed.size})` : "";
@@ -292,9 +309,10 @@ export class OpenAIConceptProvider implements ConceptProvider {
     const result = z
       .object({ concepts: z.array(creativeInput).length(3) })
       .parse(JSON.parse(json.choices[0].message.content));
+    const fallback = pickBoard(p, boards, s)?.id || null;
     return result.concepts.map((c) => ({
       ...c,
-      board_id: boards.some((b) => b.id === c.board_id) ? c.board_id : null,
+      board_id: boards.some((b) => b.id === c.board_id) ? c.board_id : fallback,
     }));
   }
 }

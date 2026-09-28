@@ -1,7 +1,7 @@
 import "server-only";
 import { admin, AppError, check, owned } from "./db";
 import { getSettings } from "./data";
-import { conceptProvider } from "./generation";
+import { conceptProvider, pickBoard } from "./generation";
 import {
   affiliateUrl,
   creativeInput,
@@ -50,9 +50,31 @@ export async function generate(
 }
 
 export async function approve(uid: string, id: string) {
-  const c = await owned("creatives", id, uid);
+  let c = await owned("creatives", id, uid);
   creativeInput.parse(c);
-  if (!c.board_id) throw new AppError("Selecciona un board antes de aprobar.");
+  if (!c.board_id) {
+    // Pins generated before boards were synced: pick the best board now.
+    const [prod, boards, st] = await Promise.all([
+      owned("products", c.product_id, uid),
+      admin().from("boards").select("*").eq("user_id", uid),
+      getSettings(uid),
+    ]);
+    const board = pickBoard(prod as Product, (check(boards) as Board[]) || [], st);
+    if (!board)
+      throw new AppError(
+        "No hay boards. Conecta Pinterest y pulsa Sincronizar boards en Settings.",
+      );
+    check(
+      await admin()
+        .from("creatives")
+        .update({ board_id: board.id })
+        .eq("id", id)
+        .eq("user_id", uid)
+        .in("status", ["draft", "rejected"])
+        .select("id"),
+    );
+    c = await owned("creatives", id, uid);
+  }
   await owned("boards", c.board_id, uid);
   const s = await getSettings(uid);
   const p = await owned("products", c.product_id, uid);
@@ -88,6 +110,45 @@ export async function enqueue(uid: string, id: string, when: string) {
       p_when: when,
     }),
   );
+}
+
+// The daily cron publishes one Pin per run (12:00 UTC = 8 am New York).
+// Schedule each approved Pin on the next free day at that time.
+export async function nextSlot(uid: string) {
+  const since = new Date(Date.now() - 86400000).toISOString();
+  const taken = check(
+    await admin()
+      .from("publication_queue")
+      .select("scheduled_at")
+      .eq("user_id", uid)
+      .in("status", ["pending", "processing", "published", "uncertain"])
+      .gte("scheduled_at", since),
+  ) as { scheduled_at: string }[];
+  const days = new Set(taken.map((t) => t.scheduled_at.slice(0, 10)));
+  const d = new Date();
+  d.setUTCHours(12, 0, 0, 0);
+  if (d.getTime() < Date.now() + 5 * 60000) d.setUTCDate(d.getUTCDate() + 1);
+  for (let i = 0; i < 89; i++) {
+    if (!days.has(d.toISOString().slice(0, 10))) return d.toISOString();
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  throw new AppError("La cola está llena para los próximos 90 días.");
+}
+
+export async function approveAndSchedule(uid: string, id: string) {
+  await approve(uid, id);
+  try {
+    const when = await nextSlot(uid);
+    await enqueue(uid, id, when);
+    return { scheduled_at: when };
+  } catch (e) {
+    return {
+      warning:
+        e instanceof Error
+          ? e.message
+          : "No se pudo programar automáticamente.",
+    };
+  }
 }
 
 export async function publishNext(uid: string) {
@@ -254,23 +315,7 @@ export async function autopilot(uid: string) {
   const c = generated.find((x) => x.board_id);
   if (!c) return;
   await approve(uid, c.id);
-  const latest = check(
-    await sb
-      .from("publication_queue")
-      .select("scheduled_at")
-      .eq("user_id", uid)
-      .in("status", ["pending", "processing"])
-      .order("scheduled_at", { ascending: false })
-      .limit(1),
-  );
-  const when = new Date(
-    Math.max(
-      Date.now() + 300000,
-      Date.parse(latest[0]?.scheduled_at || new Date().toISOString()) +
-        s.min_interval_minutes * 60000,
-    ),
-  );
-  await enqueue(uid, c.id, when.toISOString());
+  await enqueue(uid, c.id, await nextSlot(uid));
 }
 
 export async function reconcile(uid: string, jobId: string, pinId: string) {

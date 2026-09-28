@@ -296,6 +296,21 @@ export function Workspace({
             : json.result?.status === "idle"
               ? "No hay Pins listos para publicar. Revisa la fecha y los límites."
               : "El trabajo requiere atención. Consulta Scheduler.";
+      if (body.action === "approve") {
+        if (json.result?.scheduled_at)
+          text = `Pin aprobado y programado para ${new Date(
+            json.result.scheduled_at,
+          ).toLocaleString("es", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone: data.settings.timezone || "America/New_York",
+          })}.`;
+        else if (json.result?.warning)
+          text = `Pin aprobado, pero no se programó solo: ${json.result.warning}`;
+      }
       setNotice({ text, error: false });
       router.refresh();
       return true;
@@ -383,7 +398,7 @@ export function Workspace({
               <p className="board-line">
                 Board:{" "}
                 {data.boards.find((b) => b.id === c.board_id)?.name ||
-                  "Por seleccionar"}
+                  "Se elige solo al aprobar"}
               </p>
               <div className="card-actions">
                 {!["queued", "published"].includes(c.status) && (
@@ -397,7 +412,7 @@ export function Workspace({
                     onClick={() =>
                       run(
                         { action: "approve", id: c.id },
-                        "Pin aprobado. Ya puedes programarlo.",
+                        "Pin aprobado.",
                       )
                     }
                   >
