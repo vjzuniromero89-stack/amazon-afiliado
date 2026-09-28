@@ -1094,7 +1094,7 @@ export function Workspace({
                 <section className="panel">
                   <div className="panel-heading">
                     <h2>Cola de publicación</h2>
-                    <span className="subtle-pill">CRON · CADA 15 MIN</span>
+                    <span className="subtle-pill">CRON · DIARIO · 12 UTC</span>
                   </div>
                   {data.queue.length ? (
                     <div className="queue-list">

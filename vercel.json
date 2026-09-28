@@ -1,5 +1,5 @@
 {
   "framework": "nextjs",
-  "crons": [{ "path": "/api/cron", "schedule": "*/15 * * * *" }],
+  "crons": [{ "path": "/api/cron", "schedule": "0 12 * * *" }],
   "functions": { "src/app/api/cron/route.ts": { "maxDuration": 300 } }
 }
