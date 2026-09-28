@@ -116,7 +116,7 @@ export const defaults: Settings = {
   marketplace: "www.amazon.com",
   storefront_url: "",
   disclosure:
-    "Como afiliado de Amazon, gano por las compras que cumplan los requisitos. #ad",
+    "As an Amazon Associate I earn from qualifying purchases. #ad",
   default_board_id: null,
   timezone: "America/New_York",
   autopilot_enabled: false,
