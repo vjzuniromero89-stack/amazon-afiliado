@@ -1010,6 +1010,24 @@ export function Workspace({
                                     }}
                                   />
                                 </label>
+                                <button
+                                  className="text-button danger"
+                                  disabled={pending}
+                                  title="Eliminar producto"
+                                  onClick={() => {
+                                    const n = data.creatives.filter((c) => c.product_id === p.id).length;
+                                    if (
+                                      window.confirm(
+                                        `¿Eliminar "${p.title}"?` +
+                                          (n ? ` También se borrarán sus ${n} Pins de la app (los que ya están en Pinterest se quedan allá).` : "") +
+                                          " No se puede deshacer.",
+                                      )
+                                    )
+                                      run({ action: "deleteProduct", product_id: p.id }, "Producto eliminado");
+                                  }}
+                                >
+                                  <Trash2 size={14} /> Eliminar
+                                </button>
                                 {!!p.images?.length && (
                                   <button
                                     className="text-button danger"

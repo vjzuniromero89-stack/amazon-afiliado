@@ -87,3 +87,41 @@ export async function photoFor(c: Pick<Creative, "user_id" | "product_id" | "tem
     return undefined;
   }
 }
+
+// Removes a product with its Pins, queue history and photos.
+// Pins already live on Pinterest stay there; only the app's records go.
+export async function deleteProduct(uid: string, productId: string) {
+  const p = (await owned("products", productId, uid)) as Product;
+  const sb = admin();
+  const creatives = check(
+    await sb.from("creatives").select("id").eq("user_id", uid).eq("product_id", productId),
+  ) as { id: string }[];
+  const cIds = creatives.map((c) => c.id);
+  if (cIds.length) {
+    const active = check(
+      await sb
+        .from("publication_queue")
+        .select("id")
+        .eq("user_id", uid)
+        .in("creative_id", cIds)
+        .in("status", ["pending", "processing", "uncertain"]),
+    ) as { id: string }[];
+    if (active.length)
+      throw new AppError(
+        "Este producto tiene Pins en cola. Cancélalos en Scheduler antes de eliminarlo.",
+      );
+  }
+  const pubs = check(
+    await sb.from("publications").select("id").eq("user_id", uid).eq("product_id", productId),
+  ) as { id: string }[];
+  if (pubs.length) {
+    check(await sb.from("analytics_metrics").delete().eq("user_id", uid).in("publication_id", pubs.map((x) => x.id)).select("id"));
+    check(await sb.from("publications").delete().eq("user_id", uid).eq("product_id", productId).select("id"));
+  }
+  if (cIds.length) {
+    check(await sb.from("publication_queue").delete().eq("user_id", uid).in("creative_id", cIds).select("id"));
+    check(await sb.from("creatives").delete().eq("user_id", uid).eq("product_id", productId).select("id"));
+  }
+  if (p.images?.length) await sb.storage.from(BUCKET).remove(p.images);
+  check(await sb.from("products").delete().eq("id", productId).eq("user_id", uid).select("id"));
+}

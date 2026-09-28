@@ -18,7 +18,11 @@ import {
   syncAnalytics,
 } from "@/lib/server/operations";
 import { pinterest, syncBoards } from "@/lib/server/pinterest";
-import { addProductImages, clearProductImages } from "@/lib/server/images";
+import {
+  addProductImages,
+  clearProductImages,
+  deleteProduct,
+} from "@/lib/server/images";
 const photos = z.array(z.string().max(6_000_000)).max(5);
 export const maxDuration = 60;
 const uuid = z.string().uuid();
@@ -75,6 +79,10 @@ export async function POST(req: Request) {
           uuid.parse(body.product_id),
           photos.min(1).parse(body.images),
         );
+        break;
+      }
+      case "deleteProduct": {
+        await deleteProduct(uid, uuid.parse(body.product_id));
         break;
       }
       case "clearProductImages": {
