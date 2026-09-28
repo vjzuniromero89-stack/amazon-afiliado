@@ -1,6 +1,7 @@
 import { owned, userId, errorResponse } from "@/lib/server/db";
 import { getSettings } from "@/lib/server/data";
 import { imageProvider } from "@/lib/server/artwork";
+import { photoFor } from "@/lib/server/images";
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -10,7 +11,9 @@ export async function GET(
       { id } = await params;
     const c = await owned("creatives", id, uid);
     return new Response(
-      Buffer.from(await imageProvider.render(c, await getSettings(uid))),
+      Buffer.from(
+        await imageProvider.render(c, await getSettings(uid), await photoFor(c)),
+      ),
       {
         headers: {
           "Content-Type": "image/png",

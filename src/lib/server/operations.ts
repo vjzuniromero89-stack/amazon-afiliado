@@ -8,6 +8,7 @@ import {
   descriptionWithDisclosure,
 } from "../domain";
 import { imageProvider } from "./artwork";
+import { photoFor } from "./images";
 import {
   pinterest,
   pinterestWithToken,
@@ -112,43 +113,67 @@ export async function enqueue(uid: string, id: string, when: string) {
   );
 }
 
-// The daily cron publishes one Pin per run (12:00 UTC = 8 am New York).
-// Schedule each approved Pin on the next free day at that time.
-export async function nextSlot(uid: string) {
-  const since = new Date(Date.now() - 86400000).toISOString();
-  const taken = check(
+// Earliest moment this Pin may go out: now, unless Pinterest spacing
+// (minimum interval) or the daily limit require waiting.
+export async function earliestSlot(uid: string) {
+  const s = await getSettings(uid);
+  const rows = check(
     await admin()
       .from("publication_queue")
-      .select("scheduled_at")
+      .select("scheduled_at, started_at")
       .eq("user_id", uid)
       .in("status", ["pending", "processing", "published", "uncertain"])
-      .gte("scheduled_at", since),
-  ) as { scheduled_at: string }[];
-  const days = new Set(taken.map((t) => t.scheduled_at.slice(0, 10)));
-  const d = new Date();
-  d.setUTCHours(12, 0, 0, 0);
-  if (d.getTime() < Date.now() + 5 * 60000) d.setUTCDate(d.getUTCDate() + 1);
-  for (let i = 0; i < 89; i++) {
-    if (!days.has(d.toISOString().slice(0, 10))) return d.toISOString();
-    d.setUTCDate(d.getUTCDate() + 1);
+      .gte("scheduled_at", new Date(Date.now() - 2 * 86400000).toISOString()),
+  ) as { scheduled_at: string; started_at: string | null }[];
+  const gap = s.min_interval_minutes * 60000;
+  const times = rows.map((r) => Date.parse(r.started_at || r.scheduled_at));
+  let t = Date.now() + 2000;
+  for (let i = 0; i < 2000; i++) {
+    const clash = times.find((x) => Math.abs(x - t) < gap);
+    if (clash !== undefined) {
+      t = clash + gap + 60000;
+      continue;
+    }
+    const day = new Date(t).toISOString().slice(0, 10);
+    if (
+      rows.filter((r) => r.scheduled_at.slice(0, 10) === day).length >=
+      s.daily_limit
+    ) {
+      const d = new Date(t);
+      d.setUTCDate(d.getUTCDate() + 1);
+      d.setUTCHours(0, 5, 0, 0);
+      t = d.getTime();
+      continue;
+    }
+    return new Date(t).toISOString();
   }
-  throw new AppError("La cola está llena para los próximos 90 días.");
+  throw new AppError("La cola está llena. Revisa Scheduler.");
 }
 
-export async function approveAndSchedule(uid: string, id: string) {
+// Approve, then publish right away when allowed; otherwise it waits in the
+// queue for the earliest allowed moment and goes out automatically.
+export async function approveAndPublish(uid: string, id: string) {
   await approve(uid, id);
+  let when: string;
   try {
-    const when = await nextSlot(uid);
+    when = await earliestSlot(uid);
     await enqueue(uid, id, when);
-    return { scheduled_at: when };
   } catch (e) {
     return {
       warning:
-        e instanceof Error
-          ? e.message
-          : "No se pudo programar automáticamente.",
+        e instanceof Error ? e.message : "No se pudo enviar a Pinterest.",
     };
   }
+  const wait = Date.parse(when) - Date.now();
+  if (wait > 5000) return { scheduled_at: when };
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait + 500));
+  const r = await publishNext(uid);
+  if (r.status === "published") return { published: true };
+  if (r.status === "idle") return { scheduled_at: when };
+  return {
+    warning:
+      "Pinterest no confirmó la publicación. Revisa el estado en Scheduler.",
+  };
 }
 
 export async function publishNext(uid: string) {
@@ -166,7 +191,7 @@ export async function publishNext(uid: string) {
       token(uid),
     ]);
     const link = affiliateUrl(p.url, s.tracking_id);
-    const png = await imageProvider.render(c, s);
+    const png = await imageProvider.render(c, s, await photoFor(c));
     attempted = true;
     const pin = await pinterestWithToken<{ id: string }>(access, "/pins", {
       method: "POST",
@@ -315,7 +340,7 @@ export async function autopilot(uid: string) {
   const c = generated.find((x) => x.board_id);
   if (!c) return;
   await approve(uid, c.id);
-  await enqueue(uid, c.id, await nextSlot(uid));
+  await enqueue(uid, c.id, await earliestSlot(uid));
 }
 
 export async function reconcile(uid: string, jobId: string, pinId: string) {

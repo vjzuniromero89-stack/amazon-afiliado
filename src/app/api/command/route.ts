@@ -10,7 +10,7 @@ import {
 } from "@/lib/server/db";
 import { creativeInput, parseAmazon, settingsInput } from "@/lib/domain";
 import {
-  approveAndSchedule,
+  approveAndPublish,
   enqueue,
   generate,
   publishNext,
@@ -18,6 +18,9 @@ import {
   syncAnalytics,
 } from "@/lib/server/operations";
 import { pinterest, syncBoards } from "@/lib/server/pinterest";
+import { addProductImages, clearProductImages } from "@/lib/server/images";
+const photos = z.array(z.string().max(6_000_000)).max(5);
+export const maxDuration = 60;
 const uuid = z.string().uuid();
 export async function POST(req: Request) {
   try {
@@ -36,21 +39,46 @@ export async function POST(req: Request) {
             category: z.string().trim().max(80),
             notes: z.string().trim().max(1000),
             marketplace: z.string(),
+            images: photos.optional(),
           })
           .parse(body);
-        result = check(
+        const { images, ...fields } = data;
+        let amazon: ReturnType<typeof parseAmazon>;
+        try {
+          amazon = parseAmazon(fields.input, fields.marketplace);
+        } catch (e) {
+          throw new AppError(
+            e instanceof Error ? e.message : "URL o ASIN no válido.",
+          );
+        }
+        const product = check(
           await sb
             .from("products")
             .insert({
-              ...parseAmazon(data.input, data.marketplace),
+              ...amazon,
               user_id: uid,
-              title: data.title,
-              category: data.category,
-              notes: data.notes,
+              title: fields.title,
+              category: fields.category,
+              notes: fields.notes,
             })
             .select("*")
             .single(),
         );
+        if (images?.length)
+          await addProductImages(uid, product.id, images);
+        result = product;
+        break;
+      }
+      case "addProductImages": {
+        result = await addProductImages(
+          uid,
+          uuid.parse(body.product_id),
+          photos.min(1).parse(body.images),
+        );
+        break;
+      }
+      case "clearProductImages": {
+        await clearProductImages(uid, uuid.parse(body.product_id));
         break;
       }
       case "createCampaign": {
@@ -113,7 +141,7 @@ export async function POST(req: Request) {
         break;
       }
       case "approve":
-        result = await approveAndSchedule(uid, uuid.parse(body.id));
+        result = await approveAndPublish(uid, uuid.parse(body.id));
         break;
       case "reject": {
         const rows = check(

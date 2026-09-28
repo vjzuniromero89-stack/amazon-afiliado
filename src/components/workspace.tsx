@@ -17,6 +17,7 @@ import {
   ArrowUpRight,
   BarChart3,
   CalendarDays,
+  Camera,
   Check,
   CheckCheck,
   ChevronRight,
@@ -297,8 +298,9 @@ export function Workspace({
               ? "No hay Pins listos para publicar. Revisa la fecha y los límites."
               : "El trabajo requiere atención. Consulta Scheduler.";
       if (body.action === "approve") {
-        if (json.result?.scheduled_at)
-          text = `Pin aprobado y programado para ${new Date(
+        if (json.result?.published) text = "¡Listo! El Pin ya está publicado en tu Pinterest.";
+        else if (json.result?.scheduled_at)
+          text = `Pin aprobado. Para no parecer spam, Pinterest necesita un espacio de ${data.settings.min_interval_minutes} min entre Pins: saldrá solo el ${new Date(
             json.result.scheduled_at,
           ).toLocaleString("es", {
             weekday: "long",
@@ -309,7 +311,7 @@ export function Workspace({
             timeZone: data.settings.timezone || "America/New_York",
           })}.`;
         else if (json.result?.warning)
-          text = `Pin aprobado, pero no se programó solo: ${json.result.warning}`;
+          text = `Pin aprobado, pero no se publicó: ${json.result.warning}`;
       }
       setNotice({ text, error: false });
       router.refresh();
@@ -375,7 +377,7 @@ export function Workspace({
             <div className="creative-image">
               <Image
                 unoptimized
-                src={`/api/artwork/${c.id}?v=${c.revision}`}
+                src={`/api/artwork/${c.id}?v=${c.revision}-${data.products.find((p) => p.id === c.product_id)?.images?.length || 0}`}
                 width={1000}
                 height={1500}
                 alt={c.alt_text}
@@ -416,7 +418,7 @@ export function Workspace({
                       )
                     }
                   >
-                    <Check size={15} /> Aprobar
+                    <Check size={15} /> Aprobar y publicar
                   </button>
                 )}
                 {c.status === "approved" && (
@@ -945,9 +947,18 @@ export function Workspace({
                             <tr key={p.id}>
                               <td>
                                 <div className="table-product">
-                                  <span className="product-icon">
-                                    <Package size={21} />
-                                  </span>
+                                  {p.images?.length ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={`/api/product-image?path=${encodeURIComponent(p.images[0])}`}
+                                      alt=""
+                                      style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 10 }}
+                                    />
+                                  ) : (
+                                    <span className="product-icon">
+                                      <Package size={21} />
+                                    </span>
+                                  )}
                                   <div>
                                     <b>{p.title}</b>
                                     <small>{p.asin}</small>
@@ -973,6 +984,47 @@ export function Workspace({
                                 >
                                   <ExternalLink size={16} />
                                 </a>
+                                <label
+                                  className="secondary"
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "8px 12px", borderRadius: 10, border: "1px solid #d8dccf", marginRight: 6 }}
+                                  title="Agregar fotos del producto"
+                                >
+                                  <Camera size={14} /> Fotos ({p.images?.length || 0})
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    multiple
+                                    hidden
+                                    disabled={pending}
+                                    onChange={async (e) => {
+                                      const images = await readPhotos(
+                                        e.target.files,
+                                        5 - (p.images?.length || 0),
+                                      );
+                                      e.target.value = "";
+                                      if (images.length)
+                                        run(
+                                          { action: "addProductImages", product_id: p.id, images },
+                                          "Fotos agregadas. Los Pins de este producto ya las usan.",
+                                        );
+                                    }}
+                                  />
+                                </label>
+                                {!!p.images?.length && (
+                                  <button
+                                    className="text-button danger"
+                                    disabled={pending}
+                                    onClick={() => {
+                                      if (window.confirm("¿Quitar todas las fotos de este producto?"))
+                                        run(
+                                          { action: "clearProductImages", product_id: p.id },
+                                          "Fotos eliminadas",
+                                        );
+                                    }}
+                                  >
+                                    Quitar fotos
+                                  </button>
+                                )}
                                 <button
                                   className="secondary"
                                   disabled={pending}
@@ -1534,6 +1586,35 @@ function Stat({
     </article>
   );
 }
+// Shrinks photos in the browser before upload (max 1400 px, JPEG).
+async function resizePhoto(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((ok, fail) => {
+      const i = new window.Image();
+      i.onload = () => ok(i);
+      i.onerror = () => fail(new Error("No se pudo leer la foto."));
+      i.src = url;
+    });
+    const scale = Math.min(1, 1400 / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.86);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+async function readPhotos(files: FileList | null, max: number) {
+  const list = Array.from(files || [])
+    .filter((f) => f.type.startsWith("image/"))
+    .slice(0, max);
+  return Promise.all(list.map(resizePhoto));
+}
 function ProductForm({
   settings,
   pending,
@@ -1543,17 +1624,20 @@ function ProductForm({
   pending: boolean;
   submit: (data: Record<string, unknown>) => void;
 }) {
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [reading, setReading] = useState(false);
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
-        submit({ action: "addProduct", ...Object.fromEntries(f) });
+        f.delete("photos");
+        submit({ action: "addProduct", ...Object.fromEntries(f), images: photos });
       }}
     >
       <p className="body-copy">
-        Introduce información verificada por ti. La aplicación no extrae fotos,
-        precios ni reseñas de Amazon.
+        Introduce información verificada por ti y sube fotos del producto. Las
+        fotos se usan en el diseño del Pin.
       </p>
       <Field label="URL de Amazon o ASIN">
         <input
@@ -1596,8 +1680,37 @@ function ProductForm({
           placeholder="Material, uso, características confirmadas…"
         />
       </Field>
-      <button className="full" disabled={pending}>
-        <Plus size={16} /> Guardar producto
+      <Field label="Fotos del producto (hasta 5)">
+        <input
+          name="photos"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={async (e) => {
+            setReading(true);
+            try {
+              setPhotos(await readPhotos(e.target.files, 5));
+            } finally {
+              setReading(false);
+            }
+          }}
+        />
+      </Field>
+      {photos.length > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+          {photos.map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={i}
+              src={src}
+              alt={`Foto ${i + 1}`}
+              style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 10 }}
+            />
+          ))}
+        </div>
+      )}
+      <button className="full" disabled={pending || reading}>
+        <Plus size={16} /> {reading ? "Preparando fotos…" : "Guardar producto"}
       </button>
     </form>
   );

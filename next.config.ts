@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   poweredByHeader: false,
+  // Pin artwork fonts are read from disk at render time.
+  outputFileTracingIncludes: {
+    "/api/**": ["./src/lib/server/fonts/**"],
+  },
   async headers() {
     return [
       {

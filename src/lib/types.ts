@@ -8,6 +8,7 @@ export type Product = {
   title: string;
   category: string;
   notes: string;
+  images?: string[];
   created_at: string;
 };
 export type Board = {
