@@ -41,17 +41,16 @@ export class VerticalTemplateProvider implements ImageProvider {
             <div
               style={{
                 display: "flex",
-                fontSize: 88,
-                lineHeight: 1.04,
+                fontSize:
+                  c.title.length > 55 ? 64 : c.title.length > 35 ? 76 : 88,
+                lineHeight: 1.06,
                 letterSpacing: -4,
               }}
             >
               {c.title}
             </div>
             <div style={{ display: "flex", fontSize: 30, opacity: 0.7 }}>
-              Pequeños descubrimientos.
-              <br />
-              Nuevas posibilidades.
+              Everyday finds worth saving.
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 45 }}>
