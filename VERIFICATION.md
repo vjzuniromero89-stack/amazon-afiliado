@@ -2,6 +2,8 @@
 
 Fecha: 28 de septiembre de 2026.
 
+Compatibilidad posterior: se añadió reconocimiento de las variables `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` y `SUPABASE_SECRET_KEY` generadas por Marketplace. Las variables anteriores siguen siendo compatibles. Esto no confirma la validez de las credenciales de un despliegue remoto.
+
 Corrección posterior: el cron predeterminado cambió de cada 15 minutos a una ejecución diaria (`0 12 * * *`) para resolver el rechazo de despliegue en Hobby. Se actualizaron la etiqueta de Scheduler y el README. Esta corrección local no implica que se haya actualizado el repositorio GitHub o completado un despliegue remoto.
 
 | Comprobación | Resultado |

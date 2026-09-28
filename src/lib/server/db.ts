@@ -2,15 +2,24 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+// The Marketplace supplies unprefixed variables. Keep existing installs working.
+function envValue(name: string) {
+  const aliases: Record<string, string> = {
+    NEXT_PUBLIC_SUPABASE_URL: "SUPABASE_URL",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "SUPABASE_PUBLISHABLE_KEY",
+    SUPABASE_SERVICE_ROLE_KEY: "SUPABASE_SECRET_KEY",
+  };
+  return process.env[name] || (aliases[name] ? process.env[aliases[name]] : undefined);
+}
 export function configured() {
   return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY &&
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    envValue("NEXT_PUBLIC_SUPABASE_URL") &&
+      envValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") &&
+      envValue("SUPABASE_SERVICE_ROLE_KEY"),
   );
 }
 export function env(name: string) {
-  const value = process.env[name];
+  const value = envValue(name);
   if (!value)
     throw new AppError(`Falta configurar ${name} en el servidor.`, 503);
   return value;

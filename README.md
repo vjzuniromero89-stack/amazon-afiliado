@@ -33,6 +33,8 @@ npm start
 
 ## 2. Crear y configurar Supabase
 
+**Si ya conectaste Supabase desde Vercel Marketplace:** la aplicación también reconoce `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` y `SUPABASE_SECRET_KEY` automáticamente, tanto para iniciar sesión como para acceder a la base de datos desde el servidor. No necesitas duplicarlas con otros nombres. Sigue siendo necesario configurar `APP_URL`, aplicar la migración y crear el usuario. Después de actualizar el código o las variables, vuelve a desplegar. Si existen ambos juegos de nombres, tienen prioridad `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` y `SUPABASE_SERVICE_ROLE_KEY`.
+
 1. Crea un proyecto dedicado en [Supabase](https://supabase.com/dashboard).
 2. Abre **SQL Editor** y ejecuta, una sola vez, el archivo completo `supabase/migrations/20260928193708_initial_schema.sql`. La migración crea las tablas, permisos, políticas y funciones. No la apliques encima de una base con tablas del mismo nombre.
 3. En **Authentication → Users → Add user**, crea tu usuario con email, contraseña de al menos 8 caracteres y email confirmado. La V1 no abre el registro público. Desactiva nuevos registros públicos en la configuración de Auth si el proyecto es privado.
