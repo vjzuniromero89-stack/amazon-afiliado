@@ -35,6 +35,7 @@ import {
   Settings2,
   ShieldCheck,
   Sparkles,
+  Trash2,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -417,6 +418,18 @@ export function Workspace({
                     }
                   >
                     Rechazar
+                  </button>
+                )}
+                {["draft", "approved", "rejected"].includes(c.status) && (
+                  <button
+                    className="text-button danger"
+                    disabled={pending}
+                    onClick={() => {
+                      if (window.confirm("¿Eliminar este Pin? No se puede deshacer."))
+                        run({ action: "deleteCreative", id: c.id }, "Pin eliminado");
+                    }}
+                  >
+                    <Trash2 size={15} /> Eliminar
                   </button>
                 )}
                 <a
