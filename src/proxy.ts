@@ -2,8 +2,17 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
-    key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+  // Same rule as db.ts: the original database only as a complete set.
+  const original =
+    process.env.AFILIADO_SUPABASE_URL &&
+    process.env.AFILIADO_SUPABASE_PUBLISHABLE_KEY &&
+    process.env.AFILIADO_SUPABASE_SECRET_KEY;
+  const url = original
+      ? process.env.AFILIADO_SUPABASE_URL
+      : process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+    key = original
+      ? process.env.AFILIADO_SUPABASE_PUBLISHABLE_KEY
+      : process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return response;
   const sb = createServerClient(url, key, {
     cookies: {

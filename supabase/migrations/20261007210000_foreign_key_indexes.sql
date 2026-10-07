@@ -1,0 +1,11 @@
+create index if not exists affiliate_configuration_default_board_idx on public.affiliate_configuration (default_board_id, user_id);
+create index if not exists analytics_metrics_publication_idx on public.analytics_metrics (publication_id, user_id);
+create index if not exists creatives_board_idx on public.creatives (board_id, user_id);
+create index if not exists creatives_campaign_idx on public.creatives (campaign_id, user_id);
+create index if not exists creatives_product_idx on public.creatives (product_id, user_id);
+create index if not exists oauth_states_user_idx on public.oauth_states (user_id);
+create index if not exists publication_queue_creative_idx on public.publication_queue (creative_id, user_id);
+create index if not exists publications_board_idx on public.publications (board_id, user_id);
+create index if not exists publications_creative_idx on public.publications (creative_id, user_id);
+create index if not exists publications_product_idx on public.publications (product_id, user_id);
+create index if not exists publications_queue_idx on public.publications (queue_id, user_id);

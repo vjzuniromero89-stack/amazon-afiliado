@@ -9,7 +9,17 @@ function envValue(name: string) {
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "SUPABASE_PUBLISHABLE_KEY",
     SUPABASE_SERVICE_ROLE_KEY: "SUPABASE_SECRET_KEY",
   };
+  if (original[name] && useOriginal()) return process.env[original[name]];
   return process.env[name] || (aliases[name] ? process.env[aliases[name]] : undefined);
+}
+// The original database wins over the Marketplace one, but only as a complete set.
+const original: Record<string, string> = {
+  NEXT_PUBLIC_SUPABASE_URL: "AFILIADO_SUPABASE_URL",
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "AFILIADO_SUPABASE_PUBLISHABLE_KEY",
+  SUPABASE_SERVICE_ROLE_KEY: "AFILIADO_SUPABASE_SECRET_KEY",
+};
+function useOriginal() {
+  return Object.values(original).every((key) => process.env[key]);
 }
 export function configured() {
   return Boolean(
