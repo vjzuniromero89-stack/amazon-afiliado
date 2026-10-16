@@ -1056,12 +1056,12 @@ th {
   font-weight: 800;
   letter-spacing: 0.02em;
   color: var(--ink-2);
-  padding: 12px 22px;
+  padding: 12px 16px;
   background: #e6ebf3;
   border-bottom: 1px solid var(--line);
 }
 td {
-  padding: 14px 22px;
+  padding: 14px 16px;
   border-bottom: 1px solid #dde3ec;
   white-space: nowrap;
 }
@@ -1296,9 +1296,8 @@ td button {
 }
 .card-actions {
   display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 10px;
   margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid var(--line);
@@ -1306,14 +1305,31 @@ td button {
 .creative-info > :nth-last-child(2) {
   margin-bottom: 14px;
 }
-.card-actions button {
-  font-size: 15px;
-  padding: 8px 14px;
-  min-height: 40px;
+button.card-main {
+  width: 100%;
 }
-.card-actions .icon-button {
+.card-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.card-tools > button,
+.card-tools-end > button,
+.card-tools-end > .button {
+  min-height: 42px;
+  padding: 8px 12px;
+  font-size: 15px;
+  gap: 7px;
+}
+.card-tools-end {
+  display: flex;
+  gap: 8px;
   margin-left: auto;
-  padding: 6px;
+}
+.card-tools-end > .icon-only {
+  width: 42px;
+  padding: 0;
 }
 .badge {
   display: inline-flex;
@@ -2013,9 +2029,6 @@ dialog::backdrop {
     grid-template-columns: 1fr;
     gap: 14px;
   }
-  .card-actions .icon-button {
-    margin-left: 0;
-  }
   .section-heading .muted {
     display: none;
   }
@@ -2351,4 +2364,126 @@ button.combo-arrow:hover {
 }
 button.combo-arrow:active {
   transform: translateY(-50%);
+}
+
+/* Table rows: one aligned action bar per row */
+td.wrap {
+  white-space: normal;
+  min-width: 160px;
+}
+td.wrap .table-product > div {
+  max-width: 340px;
+  min-width: 180px;
+}
+th.num,
+td.num {
+  text-align: center;
+}
+th.actions-head {
+  text-align: right;
+}
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.row-actions > button,
+.row-actions > .button {
+  min-height: 42px;
+  padding: 8px 14px;
+  font-size: 15px;
+  gap: 7px;
+}
+.row-actions > label.button {
+  cursor: pointer;
+}
+.button.icon-only,
+button.icon-only,
+.row-actions > .button.icon-only,
+.row-actions > button.icon-only {
+  width: 42px;
+  padding: 0;
+}
+.table-thumb {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.table-product b {
+  display: block;
+  line-height: 1.35;
+}
+/* Sidebar workspace name stays on one line */
+.workspace-switch > span:nth-child(2) {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+th:first-child,
+td:first-child {
+  padding-left: 22px;
+}
+th:last-child,
+td:last-child {
+  padding-right: 22px;
+}
+/* Small screens: product rows become stacked cards, actions always visible */
+@media (max-width: 720px) {
+  .stack-table thead {
+    display: none;
+  }
+  .stack-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .stack-table tr:last-child {
+    border-bottom: 0;
+  }
+  .stack-table td,
+  .stack-table td:first-child,
+  .stack-table td:last-child {
+    display: block;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  .stack-table td:first-child,
+  .stack-table td:last-child {
+    width: 100%;
+  }
+  .stack-table td.meta,
+  .stack-table td.num {
+    font-size: 14px;
+    color: var(--muted);
+    text-align: left;
+  }
+  .stack-table td.meta + td.meta::before {
+    content: "· ";
+  }
+  .stack-table td.meta + td.num::before {
+    content: "· " attr(data-label) ": ";
+  }
+  .stack-table .row-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .stack-table tbody tr:hover td {
+    background: none;
+  }
+}
+@media (max-width: 720px) {
+  .stack-table .row-actions > [style*="hidden"] {
+    display: none;
+  }
 }

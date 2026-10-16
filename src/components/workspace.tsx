@@ -26,6 +26,7 @@ import {
   CircleHelp,
   Compass,
   ExternalLink,
+  ImageOff,
   ImagePlus,
   Images,
   LayoutDashboard,
@@ -34,6 +35,7 @@ import {
   LogOut,
   Menu,
   Package,
+  Pencil,
   Plus,
   Search,
   Send,
@@ -393,13 +395,9 @@ export function Workspace({
                   "Se elige solo al aprobar"}
               </p>
               <div className="card-actions">
-                {!["queued", "published"].includes(c.status) && (
-                  <button className="secondary" onClick={() => edit(c)}>
-                    Editar
-                  </button>
-                )}
                 {["draft", "rejected"].includes(c.status) && (
                   <button
+                    className="card-main"
                     disabled={pending}
                     onClick={() =>
                       run(
@@ -408,47 +406,58 @@ export function Workspace({
                       )
                     }
                   >
-                    <Check size={15} /> Aprobar y publicar
+                    <Check size={18} /> Aprobar y publicar
                   </button>
                 )}
                 {c.status === "approved" && (
-                  <button onClick={() => schedule(c)}>
-                    <CalendarDays size={15} /> Programar
+                  <button className="card-main" onClick={() => schedule(c)}>
+                    <CalendarDays size={18} /> Programar
                   </button>
                 )}
-                {["draft", "approved"].includes(c.status) && (
-                  <button
-                    className="text-button danger"
-                    disabled={pending}
-                    onClick={() =>
-                      run({ action: "reject", id: c.id }, "Pin rechazado")
-                    }
-                  >
-                    Rechazar
-                  </button>
-                )}
-                {["draft", "approved", "rejected"].includes(c.status) && (
-                  <button
-                    className="text-button danger"
-                    disabled={pending}
-                    onClick={() => {
-                      if (window.confirm("¿Eliminar este Pin? No se puede deshacer."))
-                        run({ action: "deleteCreative", id: c.id }, "Pin eliminado");
-                    }}
-                  >
-                    <Trash2 size={15} /> Eliminar
-                  </button>
-                )}
-                <a
-                  href={`/api/artwork/${c.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Abrir PNG para descargar"
-                  className="icon-button"
-                >
-                  <ArrowDownToLine size={16} />
-                  <span className="sr-only">Descargar creatividad</span>
-                </a>
+                <div className="card-tools">
+                  {!["queued", "published"].includes(c.status) && (
+                    <button className="secondary" onClick={() => edit(c)}>
+                      <Pencil size={17} /> Editar
+                    </button>
+                  )}
+                  {["draft", "approved"].includes(c.status) && (
+                    <button
+                      className="secondary danger"
+                      disabled={pending}
+                      onClick={() =>
+                        run({ action: "reject", id: c.id }, "Pin rechazado")
+                      }
+                    >
+                      <X size={17} /> Rechazar
+                    </button>
+                  )}
+                  <span className="card-tools-end">
+                    {["draft", "approved", "rejected"].includes(c.status) && (
+                      <button
+                        className="secondary danger icon-only"
+                        disabled={pending}
+                        aria-label="Eliminar este Pin"
+                        title="Eliminar Pin"
+                        onClick={() => {
+                          if (window.confirm("¿Eliminar este Pin? No se puede deshacer."))
+                            run({ action: "deleteCreative", id: c.id }, "Pin eliminado");
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                    <a
+                      href={`/api/artwork/${c.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Abrir PNG para descargar"
+                      className="button secondary icon-only"
+                    >
+                      <ArrowDownToLine size={18} />
+                      <span className="sr-only">Descargar creatividad</span>
+                    </a>
+                  </span>
+                </div>
               </div>
             </div>
           </article>
@@ -889,14 +898,14 @@ export function Workspace({
                 </div>
                 {data.products.length ? (
                   <div className="table-wrap">
-                    <table>
+                    <table className="stack-table">
                       <thead>
                         <tr>
                           <th>Producto</th>
                           <th>Marketplace</th>
                           <th>Categoría</th>
-                          <th>Pins</th>
-                          <th />
+                          <th className="num">Pins</th>
+                          <th className="actions-head">Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -908,14 +917,14 @@ export function Workspace({
                           )
                           .map((p) => (
                             <tr key={p.id}>
-                              <td>
+                              <td className="wrap">
                                 <div className="table-product">
                                   {p.images?.length ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
+                                      className="table-thumb"
                                       src={`/api/product-image?path=${encodeURIComponent(p.images[0])}`}
                                       alt=""
-                                      style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 10 }}
                                     />
                                   ) : (
                                     <span className="product-icon">
@@ -928,9 +937,9 @@ export function Workspace({
                                   </div>
                                 </div>
                               </td>
-                              <td>{p.marketplace.replace("www.", "")}</td>
-                              <td>{p.category || "Sin categoría"}</td>
-                              <td>
+                              <td className="meta">{p.marketplace.replace("www.", "")}</td>
+                              <td className="wrap meta">{p.category || "Sin categoría"}</td>
+                              <td className="num" data-label="Pins">
                                 {
                                   data.creatives.filter(
                                     (c) => c.product_id === p.id,
@@ -938,21 +947,27 @@ export function Workspace({
                                 }
                               </td>
                               <td>
-                                <a
-                                  className="icon-button"
-                                  aria-label={`Abrir ${p.title} en Amazon`}
-                                  href={p.url}
-                                  target="_blank"
-                                  rel="noreferrer"
+                                <div className="row-actions">
+                                <button
+                                  disabled={pending}
+                                  onClick={() =>
+                                    run(
+                                      {
+                                        action: "generate",
+                                        product_id: p.id,
+                                        ai: data.settings.mode !== "manual",
+                                      },
+                                      "Tres conceptos creados en Pin Studio",
+                                    )
+                                  }
                                 >
-                                  <ExternalLink size={16} />
-                                </a>
+                                  <Sparkles size={17} /> Crear Pins
+                                </button>
                                 <label
-                                  className="secondary"
-                                  style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "8px 12px", borderRadius: 10, border: "1px solid #d8dccf", marginRight: 6 }}
+                                  className="button secondary"
                                   title="Agregar fotos del producto"
                                 >
-                                  <Camera size={14} /> Fotos ({p.images?.length || 0})
+                                  <Camera size={17} /> Fotos ({p.images?.length || 0})
                                   <input
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
@@ -973,9 +988,37 @@ export function Workspace({
                                     }}
                                   />
                                 </label>
+                                {/* Always rendered so every row keeps the same layout. */}
+                                  <button
+                                    className="secondary danger icon-only"
+                                    aria-label="Quitar todas las fotos"
+                                    title="Quitar todas las fotos"
+                                    style={p.images?.length ? undefined : { visibility: "hidden" }}
+                                    disabled={pending || !p.images?.length}
+                                    onClick={() => {
+                                      if (window.confirm("¿Quitar todas las fotos de este producto?"))
+                                        run(
+                                          { action: "clearProductImages", product_id: p.id },
+                                          "Fotos eliminadas",
+                                        );
+                                    }}
+                                  >
+                                    <ImageOff size={18} />
+                                  </button>
+                                <a
+                                  className="button secondary icon-only"
+                                  aria-label={`Abrir ${p.title} en Amazon`}
+                                  title="Ver en Amazon"
+                                  href={p.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  <ExternalLink size={17} />
+                                </a>
                                 <button
-                                  className="text-button danger"
+                                  className="secondary danger icon-only"
                                   disabled={pending}
+                                  aria-label={`Eliminar ${p.title}`}
                                   title="Eliminar producto"
                                   onClick={() => {
                                     const n = data.creatives.filter((c) => c.product_id === p.id).length;
@@ -989,39 +1032,9 @@ export function Workspace({
                                       run({ action: "deleteProduct", product_id: p.id }, "Producto eliminado");
                                   }}
                                 >
-                                  <Trash2 size={14} /> Eliminar
+                                  <Trash2 size={18} />
                                 </button>
-                                {!!p.images?.length && (
-                                  <button
-                                    className="text-button danger"
-                                    disabled={pending}
-                                    onClick={() => {
-                                      if (window.confirm("¿Quitar todas las fotos de este producto?"))
-                                        run(
-                                          { action: "clearProductImages", product_id: p.id },
-                                          "Fotos eliminadas",
-                                        );
-                                    }}
-                                  >
-                                    Quitar fotos
-                                  </button>
-                                )}
-                                <button
-                                  className="secondary"
-                                  disabled={pending}
-                                  onClick={() =>
-                                    run(
-                                      {
-                                        action: "generate",
-                                        product_id: p.id,
-                                        ai: data.settings.mode !== "manual",
-                                      },
-                                      "Tres conceptos creados en Pin Studio",
-                                    )
-                                  }
-                                >
-                                  <Sparkles size={14} /> Crear Pins
-                                </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
