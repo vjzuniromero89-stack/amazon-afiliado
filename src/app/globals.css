@@ -2097,3 +2097,109 @@ dialog::backdrop {
     transition: none !important;
   }
 }
+
+/* Photo library */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+  padding: 20px 22px 22px;
+}
+.photo-grid.compact {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+  padding: 0;
+}
+.photo-tile {
+  position: relative;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+.photo-tile img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #ffffff;
+  border-bottom: 1px solid var(--line);
+}
+.photo-tile figcaption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 6px 12px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.photo-tile figcaption span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.photo-tile.pick {
+  cursor: pointer;
+  border-width: 2px;
+  box-shadow: none;
+  transition: border-color 0.15s ease-out;
+}
+.photo-tile.pick img {
+  border-bottom: 0;
+}
+.photo-tile.pick:hover {
+  border-color: var(--navy-3);
+}
+.photo-tile.pick.selected {
+  border-color: var(--orange-press);
+}
+.photo-tile.pick:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.photo-tile.pick:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.pick-mark {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: var(--navy-ink);
+}
+.photo-picker {
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px 14px;
+  margin: 16px 0;
+}
+.photo-picker legend {
+  font-weight: 700;
+  padding: 0 6px;
+}
+.photo-picker legend small {
+  color: var(--muted);
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  .photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 14px;
+  }
+  .photo-grid.compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 0;
+  }
+}

@@ -12,6 +12,7 @@ export default async function Page({
     ![
       "dashboard",
       "products",
+      "fotos",
       "discover",
       "pin-studio",
       "approval-queue",

@@ -11,6 +11,14 @@ export type Product = {
   images?: string[];
   created_at: string;
 };
+// A photo in the "Fotos" library, reusable across products.
+export type Photo = {
+  id: string;
+  user_id: string;
+  path: string;
+  name: string;
+  created_at: string;
+};
 export type Board = {
   id: string;
   user_id: string;
@@ -95,6 +103,7 @@ export type Audit = {
 };
 export type Snapshot = {
   products: Product[];
+  photos: Photo[];
   creatives: Creative[];
   boards: Board[];
   queue: QueueItem[];

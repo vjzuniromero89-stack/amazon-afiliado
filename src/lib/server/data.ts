@@ -46,6 +46,7 @@ async function allRows(table: string, uid: string) {
 export async function snapshot(): Promise<Snapshot> {
   const empty: Snapshot = {
     products: [],
+    photos: [],
     creatives: [],
     boards: [],
     queue: [],
@@ -85,6 +86,13 @@ export async function snapshot(): Promise<Snapshot> {
       .order("created_at", { ascending: false })
       .limit(30),
   );
+  // Tolerate a database that does not have the photos table yet.
+  const photos = await admin()
+    .from("photos")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(500);
   const connection = check(
     await admin()
       .from("pinterest_connections")
@@ -95,6 +103,7 @@ export async function snapshot(): Promise<Snapshot> {
   return {
     ...empty,
     products: rows[0],
+    photos: photos.error ? [] : photos.data,
     creatives: rows[1],
     boards: rows[2],
     queue: rows[3],

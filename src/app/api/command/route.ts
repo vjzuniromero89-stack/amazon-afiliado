@@ -19,8 +19,11 @@ import {
 } from "@/lib/server/operations";
 import { pinterest, syncBoards } from "@/lib/server/pinterest";
 import {
+  addLibraryPhotos,
   addProductImages,
+  attachLibraryPhotos,
   clearProductImages,
+  deleteLibraryPhoto,
   deleteProduct,
 } from "@/lib/server/images";
 const photos = z.array(z.string().max(6_000_000)).max(5);
@@ -44,9 +47,12 @@ export async function POST(req: Request) {
             notes: z.string().trim().max(1000),
             marketplace: z.string(),
             images: photos.optional(),
+            library: z.array(uuid).max(5).optional(),
           })
           .parse(body);
-        const { images, ...fields } = data;
+        const { images, library, ...fields } = data;
+        if ((images?.length || 0) + (library?.length || 0) > 5)
+          throw new AppError("Máximo 5 fotos por producto.");
         let amazon: ReturnType<typeof parseAmazon>;
         try {
           amazon = parseAmazon(fields.input, fields.marketplace);
@@ -70,7 +76,24 @@ export async function POST(req: Request) {
         );
         if (images?.length)
           await addProductImages(uid, product.id, images);
+        if (library?.length)
+          await attachLibraryPhotos(uid, product.id, library);
         result = product;
+        break;
+      }
+      case "addPhotos": {
+        result = await addLibraryPhotos(
+          uid,
+          z
+            .array(z.object({ data: z.string().max(6_000_000), name: z.string().trim().max(120) }))
+            .min(1)
+            .max(5)
+            .parse(body.photos),
+        );
+        break;
+      }
+      case "deletePhoto": {
+        await deleteLibraryPhoto(uid, uuid.parse(body.id));
         break;
       }
       case "addProductImages": {

@@ -51,6 +51,75 @@ export async function addProductImages(
   return paths.length;
 }
 
+const LIBRARY_MAX = 300;
+// Saves photos to the "Fotos" library.
+export async function addLibraryPhotos(
+  uid: string,
+  items: { data: string; name: string }[],
+) {
+  const sb = admin();
+  const { count } = await sb
+    .from("photos")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", uid);
+  if ((count || 0) + items.length > LIBRARY_MAX)
+    throw new AppError(`La biblioteca admite hasta ${LIBRARY_MAX} fotos.`);
+  for (const [i, item] of items.entries()) {
+    const { bytes, type, ext } = decode(item.data);
+    const path = `${uid}/library/${Date.now()}-${i}.${ext}`;
+    const { error } = await sb.storage
+      .from(BUCKET)
+      .upload(path, bytes, { contentType: type, upsert: false });
+    if (error) throw new AppError("No se pudo guardar la foto. Inténtalo de nuevo.");
+    check(
+      await sb
+        .from("photos")
+        .insert({ user_id: uid, path, name: item.name })
+        .select("id"),
+    );
+  }
+  return items.length;
+}
+
+export async function deleteLibraryPhoto(uid: string, id: string) {
+  const photo = (await owned("photos", id, uid)) as { path: string };
+  const sb = admin();
+  await sb.storage.from(BUCKET).remove([photo.path]);
+  check(await sb.from("photos").delete().eq("id", id).eq("user_id", uid).select("id"));
+}
+
+// Copies library photos into a product, so deleting one later does not
+// break Pins already made from it.
+export async function attachLibraryPhotos(
+  uid: string,
+  productId: string,
+  ids: string[],
+) {
+  const p = (await owned("products", productId, uid)) as Product;
+  const current = p.images || [];
+  if (current.length + ids.length > MAX_IMAGES)
+    throw new AppError(`Máximo ${MAX_IMAGES} fotos por producto.`);
+  const sb = admin();
+  const paths: string[] = [];
+  for (const [i, id] of ids.entries()) {
+    const photo = (await owned("photos", id, uid)) as { path: string };
+    const ext = photo.path.endsWith(".png") ? "png" : "jpg";
+    const path = `${uid}/${productId}/${Date.now()}-lib${i}.${ext}`;
+    const { error } = await sb.storage.from(BUCKET).copy(photo.path, path);
+    if (error) throw new AppError("No se pudo copiar una foto de la biblioteca.");
+    paths.push(path);
+  }
+  check(
+    await sb
+      .from("products")
+      .update({ images: [...current, ...paths] })
+      .eq("id", productId)
+      .eq("user_id", uid)
+      .select("id"),
+  );
+  return paths.length;
+}
+
 export async function clearProductImages(uid: string, productId: string) {
   const p = (await owned("products", productId, uid)) as Product;
   const sb = admin();

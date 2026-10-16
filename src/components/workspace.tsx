@@ -24,6 +24,8 @@ import {
   CircleHelp,
   Compass,
   ExternalLink,
+  ImagePlus,
+  Images,
   LayoutDashboard,
   ListChecks,
   LoaderCircle,
@@ -41,11 +43,12 @@ import {
   X,
 } from "lucide-react";
 import { aggregate, breakdown, insights, marketplaces } from "@/lib/domain";
-import type { Creative, Settings, Snapshot } from "@/lib/types";
+import type { Creative, Photo, Settings, Snapshot } from "@/lib/types";
 
 export const sections = [
   "dashboard",
   "products",
+  "fotos",
   "discover",
   "pin-studio",
   "approval-queue",
@@ -58,6 +61,7 @@ export const sections = [
 const navigation = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "products", label: "Products", icon: Package },
+  { id: "fotos", label: "Fotos", icon: Images },
   { id: "discover", label: "Discover", icon: Compass },
   { id: "pin-studio", label: "Pin Studio", icon: WandSparkles },
   { id: "approval-queue", label: "Approval Queue", icon: ListChecks },
@@ -75,6 +79,10 @@ const titles: Record<string, [string, string]> = {
   products: [
     "Tu selección, con intención.",
     "Organiza productos de Amazon y conviértelos en nuevas ideas.",
+  ],
+  fotos: [
+    "Tu biblioteca de fotos.",
+    "Guarda aquí tus fotos y elígelas al añadir un producto.",
   ],
   discover: [
     "Encuentra tu próxima idea.",
@@ -470,10 +478,10 @@ export function Workspace({
           <nav aria-label="Navegación principal">
             {navigation.map((item, i) => (
               <div key={item.id}>
-                {i === 7 && (
+                {i === 8 && (
                   <div className="nav-label nav-divider">INTELLIGENCE</div>
                 )}
-                {i === 9 && <div className="nav-divider" />}
+                {i === 10 && <div className="nav-divider" />}
                 <Link
                   href={item.id === "dashboard" ? "/" : `/${item.id}`}
                   className={section === item.id ? "active" : ""}
@@ -1022,6 +1030,10 @@ export function Workspace({
               </section>
             )}
 
+            {section === "fotos" && (
+              <PhotoLibrary photos={data.photos} run={run} pending={pending} />
+            )}
+
             {section === "discover" && (
               <div className="two-col">
                 <section className="panel discover-card">
@@ -1359,6 +1371,7 @@ export function Workspace({
           <Modal title="Añadir un producto" close={() => setModal(null)}>
             <ProductForm
               settings={data.settings}
+              library={data.photos}
               pending={pending}
               submit={async (body) => {
                 if (await run(body, "Producto guardado en tu colección"))
@@ -1573,24 +1586,145 @@ async function readPhotos(files: FileList | null, max: number) {
     .slice(0, max);
   return Promise.all(list.map(resizePhoto));
 }
+function PhotoLibrary({
+  photos,
+  run,
+  pending,
+}: {
+  photos: Photo[];
+  run: Run;
+  pending: boolean;
+}) {
+  const [reading, setReading] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  return (
+    <section className="panel">
+      <div className="toolbar">
+        <span className="muted">
+          {photos.length} {photos.length === 1 ? "foto" : "fotos"}
+        </span>
+        <button
+          disabled={pending || reading}
+          onClick={() => input.current?.click()}
+        >
+          <ImagePlus size={18} />
+          {reading ? "Preparando fotos…" : "Subir fotos"}
+        </button>
+        <input
+          ref={input}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          hidden
+          onChange={async (e) => {
+            const files = Array.from(e.target.files || []).filter((f) =>
+              f.type.startsWith("image/"),
+            );
+            e.target.value = "";
+            if (!files.length) return;
+            setReading(true);
+            try {
+              // Five per request keeps each upload under the server limit.
+              for (let i = 0; i < files.length; i += 5) {
+                const batch = files.slice(i, i + 5);
+                const items = await Promise.all(
+                  batch.map(async (f) => ({
+                    data: await resizePhoto(f),
+                    name: f.name.slice(0, 120),
+                  })),
+                );
+                const saved = Math.min(i + 5, files.length);
+                if (
+                  !(await run(
+                    { action: "addPhotos", photos: items },
+                    files.length === 1
+                      ? "Foto guardada en tu biblioteca"
+                      : `${saved} de ${files.length} fotos guardadas`,
+                  ))
+                )
+                  break;
+              }
+            } finally {
+              setReading(false);
+            }
+          }}
+        />
+      </div>
+      {photos.length ? (
+        <div className="photo-grid">
+          {photos.map((p) => (
+            <figure key={p.id} className="photo-tile">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/api/product-image?path=${encodeURIComponent(p.path)}`}
+                alt={p.name || "Foto de la biblioteca"}
+                loading="lazy"
+              />
+              <figcaption>
+                <span title={p.name}>{p.name || "Sin nombre"}</span>
+                <button
+                  className="icon-button danger"
+                  aria-label={`Borrar ${p.name || "foto"}`}
+                  disabled={pending}
+                  onClick={() => {
+                    if (
+                      confirm(
+                        "¿Borrar esta foto de la biblioteca? Los productos que ya la usan la conservan.",
+                      )
+                    )
+                      run({ action: "deletePhoto", id: p.id }, "Foto borrada");
+                  }}
+                >
+                  <Trash2 size={18} />
+                </button>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      ) : (
+        <Empty
+          icon={Images}
+          title="Tu biblioteca está vacía"
+          action={
+            <button onClick={() => input.current?.click()}>
+              <ImagePlus size={18} /> Subir fotos
+            </button>
+          }
+        >
+          Sube aquí las fotos de tus productos, incluidas las que te preparemos.
+          Luego las eliges al añadir un producto, sin volver a subirlas.
+        </Empty>
+      )}
+    </section>
+  );
+}
 function ProductForm({
   settings,
+  library,
   pending,
   submit,
 }: {
   settings: Settings;
+  library: Photo[];
   pending: boolean;
   submit: (data: Record<string, unknown>) => void;
 }) {
   const [photos, setPhotos] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
   const [reading, setReading] = useState(false);
+  const room = 5 - photos.length;
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
         f.delete("photos");
-        submit({ action: "addProduct", ...Object.fromEntries(f), images: photos });
+        submit({
+          action: "addProduct",
+          ...Object.fromEntries(f),
+          images: photos,
+          library: picked,
+        });
       }}
     >
       <p className="body-copy">
@@ -1638,7 +1772,55 @@ function ProductForm({
           placeholder="Material, uso, características confirmadas…"
         />
       </Field>
-      <Field label="Fotos del producto (hasta 5)">
+      {library.length > 0 && (
+        <fieldset className="photo-picker">
+          <legend>
+            Elegir de tu biblioteca de Fotos{" "}
+            <small>({picked.length + photos.length}/5)</small>
+          </legend>
+          <div className="photo-grid compact">
+            {library.map((p) => {
+              const on = picked.includes(p.id);
+              return (
+                <label
+                  key={p.id}
+                  className={`photo-tile pick ${on ? "selected" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={on}
+                    disabled={!on && picked.length >= room}
+                    onChange={() =>
+                      setPicked(
+                        on ? picked.filter((x) => x !== p.id) : [...picked, p.id],
+                      )
+                    }
+                  />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/product-image?path=${encodeURIComponent(p.path)}`}
+                    alt={p.name || "Foto de la biblioteca"}
+                    loading="lazy"
+                  />
+                  {on && (
+                    <span className="pick-mark">
+                      <Check size={16} />
+                    </span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+      <Field
+        label={
+          library.length
+            ? "O sube fotos nuevas (hasta 5 en total)"
+            : "Fotos del producto (hasta 5)"
+        }
+      >
         <input
           name="photos"
           type="file"
@@ -1647,7 +1829,7 @@ function ProductForm({
           onChange={async (e) => {
             setReading(true);
             try {
-              setPhotos(await readPhotos(e.target.files, 5));
+              setPhotos(await readPhotos(e.target.files, 5 - picked.length));
             } finally {
               setReading(false);
             }
