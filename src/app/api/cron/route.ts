@@ -43,6 +43,8 @@ export async function GET(req: Request) {
         failed++;
       }
     }
+    // One line per run so the schedule can be checked in Vercel logs.
+    console.log(`cron run: ${completed} ok, ${failed} failed, ${users.length} accounts`);
     return Response.json({ completed, failed, accounts: users.length });
   } catch (e) {
     return errorResponse(e);
