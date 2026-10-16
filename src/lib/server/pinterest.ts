@@ -2,12 +2,12 @@ import "server-only";
 import { z } from "zod";
 import { admin, AppError, check, env } from "./db";
 import { encrypt, decrypt } from "./crypto";
-const API = "https://api.pinterest.com/v5";
-// Trial access only works against the sandbox host; tokens still come from API.
-const DATA_API =
+// Trial access only works against the sandbox host, and a sandbox call needs a
+// token issued by the sandbox host too: production tokens get a 401 there.
+const API =
   process.env.PINTEREST_SANDBOX === "true"
     ? "https://api-sandbox.pinterest.com/v5"
-    : API;
+    : "https://api.pinterest.com/v5";
 const tokenSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string().optional(),
@@ -120,7 +120,7 @@ export async function pinterestWithToken<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`${DATA_API}${path}`, {
+  const res = await fetch(`${API}${path}`, {
     ...init,
     headers: {
       Authorization: `Bearer ${access}`,
@@ -142,7 +142,8 @@ export async function syncBoards(uid: string) {
       bookmark?: string;
     }>(
       uid,
-      `/boards?page_size=100${bookmark ? "&bookmark=" + encodeURIComponent(bookmark) : ""}`,
+      // Sandbox can return empty pages before its boards; 250 is the maximum.
+      `/boards?page_size=250${bookmark ? "&bookmark=" + encodeURIComponent(bookmark) : ""}`,
     );
     if (page.items.length)
       check(
