@@ -92,10 +92,10 @@ export async function userId() {
       503,
     );
   const sb = await session();
-  const { data, error } = await sb.auth.getUser();
-  if (error || !data.user)
+  const { data, error } = await sb.auth.getClaims();
+  if (error || !data?.claims?.sub)
     throw new AppError("Inicia sesión para continuar.", 401);
-  return data.user.id;
+  return data.claims.sub;
 }
 export function check<T>({
   data,

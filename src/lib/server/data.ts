@@ -3,6 +3,14 @@ import { admin, check, configured, session } from "./db";
 import { defaults, type Snapshot } from "../types";
 export async function getSettings(uid: string) {
   const sb = admin();
+  const existing = check(
+    await sb
+      .from("affiliate_configuration")
+      .select("*")
+      .eq("user_id", uid)
+      .maybeSingle(),
+  );
+  if (existing) return existing;
   check(
     await sb
       .from("affiliate_configuration")
@@ -62,10 +70,12 @@ export async function snapshot(): Promise<Snapshot> {
   };
   if (!configured()) return empty;
   const sb = await session();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  if (!user) return empty;
+  // getClaims verifies the token locally when the project signs with
+  // asymmetric keys, saving a round trip to Supabase Auth on every page.
+  const { data: auth } = await sb.auth.getClaims();
+  const claims = auth?.claims;
+  if (!claims?.sub) return empty;
+  const user = { id: claims.sub, email: (claims.email as string | undefined) || null };
   const tables = [
     "products",
     "creatives",
@@ -75,31 +85,30 @@ export async function snapshot(): Promise<Snapshot> {
     "analytics_metrics",
     "campaigns",
   ] as const;
-  const rows = await Promise.all(
-    tables.map((table) => allRows(table, user.id)),
-  );
-  const audit = check(
-    await admin()
+  const [rows, auditRes, photos, connectionRes, settings] = await Promise.all([
+    Promise.all(tables.map((table) => allRows(table, user.id))),
+    admin()
       .from("audit_logs")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(30),
-  );
-  // Tolerate a database that does not have the photos table yet.
-  const photos = await admin()
-    .from("photos")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(500);
-  const connection = check(
-    await admin()
+    // Tolerate a database that does not have the photos table yet.
+    admin()
+      .from("photos")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(500),
+    admin()
       .from("pinterest_connections")
       .select("user_id")
       .eq("user_id", user.id)
       .maybeSingle(),
-  );
+    getSettings(user.id),
+  ]);
+  const audit = check(auditRes);
+  const connection = check(connectionRes);
   return {
     ...empty,
     products: rows[0],
@@ -111,8 +120,8 @@ export async function snapshot(): Promise<Snapshot> {
     metrics: rows[5],
     campaigns: rows[6],
     audit,
-    settings: await getSettings(user.id),
-    email: user.email || null,
+    settings,
+    email: user.email,
     connected: !!connection,
   } as Snapshot;
 }

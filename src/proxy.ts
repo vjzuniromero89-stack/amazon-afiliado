@@ -26,10 +26,12 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  await sb.auth.getUser();
+  await sb.auth.getClaims();
   response.headers.set("Cache-Control", "private, no-store");
   return response;
 }
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/cron).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|api/cron|api/artwork|api/product-image).*)",
+  ],
 };

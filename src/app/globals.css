@@ -2373,7 +2373,7 @@ td.wrap {
 }
 td.wrap .table-product > div {
   max-width: 340px;
-  min-width: 180px;
+  min-width: 150px;
 }
 th.num,
 td.num {
@@ -2486,4 +2486,13 @@ td:last-child {
   .stack-table .row-actions > [style*="hidden"] {
     display: none;
   }
+}
+.button.done-pins {
+  color: var(--green);
+  border-color: #8fd1ad;
+  background: var(--green-soft);
+}
+.button.done-pins:hover {
+  background: #cdebd9;
+  border-color: var(--green);
 }

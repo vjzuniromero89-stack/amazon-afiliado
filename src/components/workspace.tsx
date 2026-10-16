@@ -361,6 +361,9 @@ export function Workspace({
     setScheduling(c);
     setModal("schedule");
   }
+  // Versioned so the browser can keep each Pin image until it changes.
+  const artworkSrc = (c: Creative) =>
+    `/api/artwork/${c.id}?v=${c.revision}-${shortHash((data.products.find((p) => p.id === c.product_id)?.images || []).join("|") + data.settings.disclosure)}`;
   const cards = (items: Creative[]) =>
     items.length ? (
       <div className="creative-grid">
@@ -369,7 +372,7 @@ export function Workspace({
             <div className="creative-image">
               <Image
                 unoptimized
-                src={`/api/artwork/${c.id}?v=${c.revision}-${data.products.find((p) => p.id === c.product_id)?.images?.length || 0}`}
+                src={artworkSrc(c)}
                 width={1000}
                 height={1500}
                 alt={c.alt_text}
@@ -447,7 +450,7 @@ export function Workspace({
                       </button>
                     )}
                     <a
-                      href={`/api/artwork/${c.id}`}
+                      href={artworkSrc(c)}
                       target="_blank"
                       rel="noreferrer"
                       title="Abrir PNG para descargar"
@@ -948,21 +951,35 @@ export function Workspace({
                               </td>
                               <td>
                                 <div className="row-actions">
-                                <button
-                                  disabled={pending}
-                                  onClick={() =>
-                                    run(
-                                      {
-                                        action: "generate",
-                                        product_id: p.id,
-                                        ai: data.settings.mode !== "manual",
-                                      },
-                                      "Tres conceptos creados en Pin Studio",
-                                    )
-                                  }
-                                >
-                                  <Sparkles size={17} /> Crear Pins
-                                </button>
+                                {(() => {
+                                  const made = data.creatives.filter((c) => c.product_id === p.id).length;
+                                  // Once a product has Pins, the next step is reviewing them.
+                                  return made ? (
+                                    <Link
+                                      className="button secondary done-pins"
+                                      href="/approval-queue"
+                                      title="Ver y revisar los Pins de este producto"
+                                    >
+                                      <Check size={17} /> {made} Pins creados
+                                    </Link>
+                                  ) : (
+                                    <button
+                                      disabled={pending}
+                                      onClick={() =>
+                                        run(
+                                          {
+                                            action: "generate",
+                                            product_id: p.id,
+                                            ai: data.settings.mode !== "manual",
+                                          },
+                                          "Tres Pins creados. Revísalos en Approval Queue.",
+                                        )
+                                      }
+                                    >
+                                      <Sparkles size={17} /> Crear Pins
+                                    </button>
+                                  );
+                                })()}
                                 <label
                                   className="button secondary"
                                   title="Agregar fotos del producto"
@@ -1880,6 +1897,12 @@ function Combo(props: React.InputHTMLAttributes<HTMLInputElement> & { list: stri
       </button>
     </span>
   );
+}
+// Short stable key for cache-busting URLs.
+function shortHash(text: string) {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
 }
 // Distinct non-empty values, most recent first.
 function remembered(values: (string | undefined)[]) {
