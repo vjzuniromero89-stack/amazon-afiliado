@@ -1835,6 +1835,9 @@ function CreativeForm({
             <option value="editorial">Editorial</option>
             <option value="minimal">Minimal</option>
             <option value="bold">Bold</option>
+            <option value="spotlight">Spotlight</option>
+            <option value="split">Split</option>
+            <option value="frame">Frame</option>
           </select>
         </Field>
       </div>

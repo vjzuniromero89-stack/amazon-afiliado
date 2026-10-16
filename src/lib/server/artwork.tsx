@@ -124,12 +124,99 @@ function PhotoBold({ c, s, photo }: { c: Creative; s: Settings; photo: string })
   );
 }
 
+// Deep teal field, product inside a white arch.
+function PhotoSpotlight({ c, s, photo }: { c: Creative; s: Settings; photo: string }) {
+  const { hook, main } = split(c.title);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "#0e4f4c", color: "#fdf6ec", padding: "66px 70px 46px", alignItems: "center" }}>
+      <div style={{ display: "flex", fontFamily: "Montserrat", fontWeight: 700, fontSize: 24, letterSpacing: 8, color: "#9fe0d6", textTransform: "uppercase" }}>
+        {hook || "Self-care find"}
+      </div>
+      <div style={{ display: "flex", fontFamily: "Playfair", fontSize: size(main, 86, 72, 58), lineHeight: 1.06, textAlign: "center", justifyContent: "center", marginTop: 18 }}>
+        {main}
+      </div>
+      <div style={{ display: "flex", flex: 1, width: 720, marginTop: 44, background: "#ffffff", borderRadius: "360px 360px 32px 32px", overflow: "hidden", padding: "150px 70px 40px", alignItems: "center", justifyContent: "center" }}>
+        <img src={photo} width={600} height={700} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      </div>
+      <div style={{ display: "flex", marginTop: 38, background: "#f4a98c", color: "#2b1a14", fontFamily: "Montserrat", fontWeight: 700, fontSize: 30, padding: "20px 48px", borderRadius: 60 }}>
+        {c.cta}
+      </div>
+      <div style={{ display: "flex", fontFamily: "Montserrat", fontSize: 19, marginTop: 22, opacity: 0.85 }}>
+        {s.disclosure}
+      </div>
+    </div>
+  );
+}
+
+// Blush headline block on top, product on white below, navy action bar.
+function PhotoSplit({ c, s, photo }: { c: Creative; s: Settings; photo: string }) {
+  const { hook, main } = split(c.title);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "#ffffff" }}>
+      <div style={{ display: "flex", flexDirection: "column", background: "#f6dcd2", padding: "60px 70px 54px", color: "#1c3863" }}>
+        <div style={{ display: "flex", fontFamily: "Script", fontSize: 92, lineHeight: 1, color: "#b4533a" }}>
+          {hook || "Worth saving"}
+        </div>
+        <div style={{ display: "flex", fontFamily: "Montserrat", fontWeight: 700, fontSize: size(main, 64, 54, 44), lineHeight: 1.1, letterSpacing: 1, textTransform: "uppercase", marginTop: 18 }}>
+          {main}
+        </div>
+      </div>
+      <div style={{ display: "flex", flex: 1, padding: "50px 90px", alignItems: "center", justifyContent: "center" }}>
+        <img src={photo} width={820} height={760} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", background: "#1c3863", color: "#ffffff", padding: "34px 70px 30px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "Montserrat", fontWeight: 700, fontSize: 32 }}>
+          <div style={{ display: "flex" }}>{c.cta}</div>
+          <div style={{ display: "flex", background: "#f59a23", color: "#0f1f38", width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", fontSize: 34 }}>
+            →
+          </div>
+        </div>
+        <div style={{ display: "flex", fontFamily: "Montserrat", fontSize: 18, marginTop: 16, opacity: 0.8 }}>
+          {s.disclosure}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Warm paper with a fine gold frame, like a printed card.
+function PhotoFrame({ c, s, photo }: { c: Creative; s: Settings; photo: string }) {
+  const { hook, main } = split(c.title);
+  return (
+    <div style={{ display: "flex", width: "100%", height: "100%", background: "#fbf7f1", padding: 40 }}>
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, border: "3px solid #b08d57", background: "#ffffff", alignItems: "center", padding: "56px 60px 40px", color: "#222222" }}>
+        <div style={{ display: "flex", fontFamily: "Script", fontSize: 84, lineHeight: 1, color: "#9a7440" }}>
+          {hook || "Little luxuries"}
+        </div>
+        <div style={{ display: "flex", flex: 1, width: "100%", padding: "36px 40px", alignItems: "center", justifyContent: "center" }}>
+          <img src={photo} width={760} height={720} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+        <div style={{ display: "flex", fontFamily: "Playfair", fontSize: size(main, 76, 64, 52), lineHeight: 1.08, textAlign: "center", justifyContent: "center" }}>
+          {main}
+        </div>
+        <div style={{ display: "flex", width: 120, height: 3, background: "#b08d57", marginTop: 28 }} />
+        <div style={{ display: "flex", fontFamily: "Montserrat", fontWeight: 700, fontSize: 26, letterSpacing: 6, textTransform: "uppercase", marginTop: 26 }}>
+          {c.cta}
+        </div>
+        <div style={{ display: "flex", fontFamily: "Montserrat", fontSize: 18, marginTop: 22, color: "#6b5d4a" }}>
+          {s.disclosure}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Used when the product has no photos yet.
 function TextOnly({ c, s }: { c: Creative; s: Settings }) {
-  const bold = c.template === "bold",
-    minimal = c.template === "minimal";
-  const bg = bold ? "#253f37" : minimal ? "#f5f1e8" : "#eadcc7",
-    fg = bold ? "#f9f4e9" : "#253f37";
+  const colors: Record<string, [string, string]> = {
+    editorial: ["#eadcc7", "#253f37"],
+    minimal: ["#f5f1e8", "#253f37"],
+    bold: ["#253f37", "#f9f4e9"],
+    spotlight: ["#0e4f4c", "#fdf6ec"],
+    split: ["#f6dcd2", "#1c3863"],
+    frame: ["#fbf7f1", "#222222"],
+  };
+  const [bg, fg] = colors[c.template] || colors.editorial;
   const { hook, main } = split(c.title);
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: bg, color: fg, padding: "90px 76px", justifyContent: "space-between" }}>
@@ -159,6 +246,12 @@ export class VerticalTemplateProvider implements ImageProvider {
       <PhotoBold c={c} s={s} photo={photo} />
     ) : c.template === "minimal" ? (
       <PhotoMinimal c={c} s={s} photo={photo} />
+    ) : c.template === "spotlight" ? (
+      <PhotoSpotlight c={c} s={s} photo={photo} />
+    ) : c.template === "split" ? (
+      <PhotoSplit c={c} s={s} photo={photo} />
+    ) : c.template === "frame" ? (
+      <PhotoFrame c={c} s={s} photo={photo} />
     ) : (
       <PhotoEditorial c={c} s={s} photo={photo} />
     );

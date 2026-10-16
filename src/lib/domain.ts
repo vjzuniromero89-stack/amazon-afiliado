@@ -58,6 +58,8 @@ export function affiliateUrl(url: string, tag: string) {
   u.searchParams.set("tag", tag);
   return u.toString();
 }
+// The first three are the original designs; the rest were added on 2026-10-16.
+export const TEMPLATES = ["editorial", "minimal", "bold", "spotlight", "split", "frame"] as const;
 export const creativeInput = z.object({
   title: z.string().trim().min(3).max(100),
   description: z.string().trim().min(10).max(600),
@@ -65,7 +67,7 @@ export const creativeInput = z.object({
   alt_text: z.string().trim().min(5).max(500),
   cta: z.string().trim().min(2).max(60),
   board_id: z.string().uuid().nullable(),
-  template: z.enum(["editorial", "minimal", "bold"]),
+  template: z.enum(TEMPLATES),
   campaign_id: z.string().uuid().nullable().optional(),
 });
 export const settingsInput = z.object({

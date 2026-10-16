@@ -74,7 +74,7 @@ export async function imageBytes(uid: string, path: string) {
 }
 
 // Each template uses a different photo when the product has several.
-const ORDER: Record<string, number> = { editorial: 0, minimal: 1, bold: 2 };
+const ORDER: Record<string, number> = { editorial: 0, minimal: 1, bold: 2, spotlight: 0, split: 1, frame: 2 };
 export async function photoFor(c: Pick<Creative, "user_id" | "product_id" | "template">) {
   const p = (await owned("products", c.product_id, c.user_id)) as Product;
   const imgs = p.images || [];

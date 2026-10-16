@@ -6,6 +6,7 @@ import {
   affiliateUrl,
   creativeInput,
   descriptionWithDisclosure,
+  TEMPLATES,
 } from "../domain";
 import { imageProvider } from "./artwork";
 import { photoFor } from "./images";
@@ -35,6 +36,14 @@ export async function generate(
     await sb.from("boards").select("*").eq("user_id", uid),
   ) as Board[];
   const concepts = await conceptProvider(ai).generate(p, boards, s);
+  // Alternate design sets on each round so regenerating shows new looks.
+  const { count } = await sb
+    .from("creatives")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", uid)
+    .eq("product_id", productId);
+  const set = Math.floor((count || 0) / 3) % 2 ? TEMPLATES.slice(0, 3) : TEMPLATES.slice(3);
+  concepts.forEach((c, i) => (c.template = set[i % 3]));
   return check(
     await sb
       .from("creatives")
