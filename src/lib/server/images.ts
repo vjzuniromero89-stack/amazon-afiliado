@@ -56,6 +56,7 @@ const LIBRARY_MAX = 300;
 export async function addLibraryPhotos(
   uid: string,
   items: { data: string; name: string }[],
+  category = "",
 ) {
   const sb = admin();
   const { count } = await sb
@@ -74,11 +75,22 @@ export async function addLibraryPhotos(
     check(
       await sb
         .from("photos")
-        .insert({ user_id: uid, path, name: item.name })
+        .insert({ user_id: uid, path, name: item.name, category })
         .select("id"),
     );
   }
   return items.length;
+}
+
+export async function setPhotoCategory(uid: string, ids: string[], category: string) {
+  check(
+    await admin()
+      .from("photos")
+      .update({ category })
+      .eq("user_id", uid)
+      .in("id", ids)
+      .select("id"),
+  );
 }
 
 export async function deleteLibraryPhoto(uid: string, id: string) {

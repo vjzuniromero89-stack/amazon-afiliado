@@ -17,6 +17,7 @@ export type Photo = {
   user_id: string;
   path: string;
   name: string;
+  category: string;
   created_at: string;
 };
 export type Board = {

@@ -1587,6 +1587,40 @@ async function readPhotos(files: FileList | null, max: number) {
     .slice(0, max);
   return Promise.all(list.map(resizePhoto));
 }
+// "" is a photo without category; null in a filter means all photos.
+function CategoryChips({
+  photos,
+  value,
+  onChange,
+}: {
+  photos: Photo[];
+  value: string | null;
+  onChange: (v: string | null) => void;
+}) {
+  const counts = new Map<string, number>();
+  photos.forEach((p) => counts.set(p.category || "", (counts.get(p.category || "") || 0) + 1));
+  const named = [...counts.keys()].filter(Boolean).sort((a, b) => a.localeCompare(b, "es"));
+  const chips: [string | null, string, number][] = [
+    [null, "Todas", photos.length],
+    ...named.map((c): [string, string, number] => [c, c, counts.get(c) || 0]),
+    ...(counts.get("") ? [["", "Sin categoría", counts.get("") || 0] as [string, string, number]] : []),
+  ];
+  return (
+    <div className="chip-row" role="group" aria-label="Filtrar por categoría">
+      {chips.map(([key, label, n]) => (
+        <button
+          type="button"
+          key={key ?? "all"}
+          className={`chip ${value === key ? "on" : ""}`}
+          aria-pressed={value === key}
+          onClick={() => onChange(key)}
+        >
+          {label} <span>{n}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 function PhotoLibrary({
   photos,
   run,
@@ -1598,8 +1632,14 @@ function PhotoLibrary({
 }) {
   const [reading, setReading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [filter, setFilter] = useState<string | null>(null);
+  const [category, setCategory] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const busy = useRef(false);
+  const listId = useId();
+  const names = [...new Set(photos.map((p) => p.category).filter(Boolean))].sort();
+  const shown =
+    filter === null ? photos : photos.filter((p) => (p.category || "") === filter);
   const upload = async (list: File[]) => {
     const files = list.filter((f) => f.type.startsWith("image/"));
     if (!files.length || busy.current) return;
@@ -1622,7 +1662,7 @@ function PhotoLibrary({
         const saved = Math.min(i + 5, files.length);
         if (
           !(await run(
-            { action: "addPhotos", photos: items },
+            { action: "addPhotos", photos: items, category: category.trim() },
             files.length === 1
               ? "Foto guardada en tu biblioteca"
               : `${saved} de ${files.length} fotos guardadas`,
@@ -1666,9 +1706,21 @@ function PhotoLibrary({
       }}
     >
       <div className="toolbar">
-        <span className="muted">
-          {photos.length} {photos.length === 1 ? "foto" : "fotos"}
-        </span>
+        <label className="inline-field">
+          <span>Categoría para fotos nuevas</span>
+          <input
+            list={listId}
+            value={category}
+            maxLength={60}
+            placeholder="Ej: Colágeno"
+            onChange={(e) => setCategory(e.target.value)}
+          />
+        </label>
+        <datalist id={listId}>
+          {names.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
         <button
           disabled={pending || reading}
           onClick={() => input.current?.click()}
@@ -1694,18 +1746,48 @@ function PhotoLibrary({
         <p>
           <b>Copia tus fotos y pégalas aquí con Ctrl+V.</b> En la carpeta: Ctrl+A
           para seleccionar todas, Ctrl+C para copiar. También puedes
-          arrastrarlas a esta página.
+          arrastrarlas a esta página. Se guardan en la categoría de arriba.
         </p>
       </div>
+      {photos.length > 0 && (
+        <CategoryChips
+          photos={photos}
+          value={filter}
+          onChange={(v) => {
+            setFilter(v);
+            if (v) setCategory(v);
+          }}
+        />
+      )}
       {photos.length ? (
         <div className="photo-grid">
-          {photos.map((p) => (
+          {shown.map((p) => (
             <figure key={p.id} className="photo-tile">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`/api/product-image?path=${encodeURIComponent(p.path)}`}
                 alt={p.name || "Foto de la biblioteca"}
                 loading="lazy"
+              />
+              <input
+                key={p.category || ""}
+                className="tile-category"
+                list={listId}
+                defaultValue={p.category || ""}
+                maxLength={60}
+                placeholder="Sin categoría"
+                aria-label={`Categoría de ${p.name || "la foto"}`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v !== (p.category || ""))
+                    run(
+                      { action: "setPhotoCategory", ids: [p.id], category: v },
+                      v ? `Foto movida a ${v}` : "Foto sin categoría",
+                    );
+                }}
               />
               <figcaption>
                 <span title={p.name}>{p.name || "Sin nombre"}</span>
@@ -1759,7 +1841,10 @@ function ProductForm({
   const [photos, setPhotos] = useState<string[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [reading, setReading] = useState(false);
+  const [filter, setFilter] = useState<string | null>(null);
   const room = 5 - photos.length;
+  const shown =
+    filter === null ? library : library.filter((p) => (p.category || "") === filter);
   return (
     <form
       onSubmit={(e) => {
@@ -1825,8 +1910,9 @@ function ProductForm({
             Elegir de tu biblioteca de Fotos{" "}
             <small>({picked.length + photos.length}/5)</small>
           </legend>
+          <CategoryChips photos={library} value={filter} onChange={setFilter} />
           <div className="photo-grid compact">
-            {library.map((p) => {
+            {shown.map((p) => {
               const on = picked.includes(p.id);
               return (
                 <label

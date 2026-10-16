@@ -24,6 +24,7 @@ import {
   attachLibraryPhotos,
   clearProductImages,
   deleteLibraryPhoto,
+  setPhotoCategory,
   deleteProduct,
 } from "@/lib/server/images";
 const photos = z.array(z.string().max(6_000_000)).max(5);
@@ -89,6 +90,15 @@ export async function POST(req: Request) {
             .min(1)
             .max(5)
             .parse(body.photos),
+          z.string().trim().max(60).default("").parse(body.category),
+        );
+        break;
+      }
+      case "setPhotoCategory": {
+        await setPhotoCategory(
+          uid,
+          z.array(uuid).min(1).max(100).parse(body.ids),
+          z.string().trim().max(60).parse(body.category),
         );
         break;
       }
