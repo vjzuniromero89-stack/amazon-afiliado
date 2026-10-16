@@ -2522,3 +2522,22 @@ button.thumb-button:hover .table-thumb {
 td.wrap.meta {
   min-width: 110px;
 }
+.gallery-main {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-top: 14px;
+}
+.gallery-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.gallery-thumbs .thumb-button.on .table-thumb {
+  border: 3px solid var(--orange-press);
+}

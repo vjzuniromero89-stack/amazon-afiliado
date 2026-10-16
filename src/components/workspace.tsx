@@ -926,8 +926,8 @@ export function Workspace({
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <button
                                       className="thumb-button"
-                                      title="Ver y cambiar fotos"
-                                      onClick={() => setModal(`photos:${p.id}`)}
+                                      title="Ver foto en grande"
+                                      onClick={() => setModal(`view:${p.id}`)}
                                     >
                                       <img
                                         className="table-thumb"
@@ -1400,6 +1400,15 @@ export function Workspace({
             </footer>
           </main>
         </div>
+        {modal?.startsWith("view:") &&
+          (() => {
+            const prod = data.products.find((x) => x.id === modal.slice(5));
+            return prod?.images?.length ? (
+              <Modal title={prod.title} close={() => setModal(null)}>
+                <ProductGallery images={prod.images} title={prod.title} />
+              </Modal>
+            ) : null;
+          })()}
         {modal?.startsWith("photos:") &&
           (() => {
             const prod = data.products.find((x) => x.id === modal.slice(7));
@@ -1964,6 +1973,33 @@ function LibraryPicker({
         })}
       </div>
     </fieldset>
+  );
+}
+// Large view of the product photos; changing them is the Fotos button job.
+function ProductGallery({ images, title }: { images: string[]; title: string }) {
+  const [i, setI] = useState(0);
+  const src = (path: string) => `/api/product-image?path=${encodeURIComponent(path)}`;
+  return (
+    <div className="gallery">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="gallery-main" src={src(images[i])} alt={`Foto ${i + 1} de ${title}`} />
+      {images.length > 1 && (
+        <div className="gallery-thumbs">
+          {images.map((path, n) => (
+            <button
+              key={path}
+              className={`thumb-button ${n === i ? "on" : ""}`}
+              aria-label={`Ver foto ${n + 1}`}
+              aria-pressed={n === i}
+              onClick={() => setI(n)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="table-thumb" src={src(path)} alt="" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 // Adds photos to an existing product, from the library or the computer.
