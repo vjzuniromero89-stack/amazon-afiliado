@@ -21,6 +21,7 @@ import {
   Check,
   CheckCheck,
   ChevronRight,
+  ClipboardPaste,
   CircleHelp,
   Compass,
   ExternalLink,
@@ -1596,9 +1597,74 @@ function PhotoLibrary({
   pending: boolean;
 }) {
   const [reading, setReading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const busy = useRef(false);
+  const upload = async (list: File[]) => {
+    const files = list.filter((f) => f.type.startsWith("image/"));
+    if (!files.length || busy.current) return;
+    busy.current = true;
+    setReading(true);
+    try {
+      // Five per request keeps each upload under the server limit.
+      for (let i = 0; i < files.length; i += 5) {
+        const batch = files.slice(i, i + 5);
+        const items = await Promise.all(
+          batch.map(async (f, n) => ({
+            data: await resizePhoto(f),
+            // Pasted screenshots all arrive as "image.png".
+            name: (f.name && f.name !== "image.png"
+              ? f.name
+              : `foto-pegada-${new Date().toISOString().slice(0, 10)}-${i + n + 1}.jpg`
+            ).slice(0, 120),
+          })),
+        );
+        const saved = Math.min(i + 5, files.length);
+        if (
+          !(await run(
+            { action: "addPhotos", photos: items },
+            files.length === 1
+              ? "Foto guardada en tu biblioteca"
+              : `${saved} de ${files.length} fotos guardadas`,
+          ))
+        )
+          break;
+      }
+    } finally {
+      busy.current = false;
+      setReading(false);
+    }
+  };
+  // Ctrl+V anywhere on the page adds the copied photos.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.closest("input, textarea, [contenteditable='true']")) return;
+      const files = Array.from(e.clipboardData?.files || []);
+      if (!files.some((f) => f.type.startsWith("image/"))) return;
+      e.preventDefault();
+      upload(files);
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  });
   return (
-    <section className="panel">
+    <section
+      className={`panel photo-drop ${dragging ? "dragging" : ""}`}
+      onDragOver={(e) => {
+        if (!Array.from(e.dataTransfer.types).includes("Files")) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        upload(Array.from(e.dataTransfer.files));
+      }}
+    >
       <div className="toolbar">
         <span className="muted">
           {photos.length} {photos.length === 1 ? "foto" : "fotos"}
@@ -1608,7 +1674,7 @@ function PhotoLibrary({
           onClick={() => input.current?.click()}
         >
           <ImagePlus size={18} />
-          {reading ? "Preparando fotos…" : "Subir fotos"}
+          {reading ? "Guardando fotos…" : "Subir fotos"}
         </button>
         <input
           ref={input}
@@ -1616,39 +1682,20 @@ function PhotoLibrary({
           accept="image/jpeg,image/png,image/webp"
           multiple
           hidden
-          onChange={async (e) => {
-            const files = Array.from(e.target.files || []).filter((f) =>
-              f.type.startsWith("image/"),
-            );
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
             e.target.value = "";
-            if (!files.length) return;
-            setReading(true);
-            try {
-              // Five per request keeps each upload under the server limit.
-              for (let i = 0; i < files.length; i += 5) {
-                const batch = files.slice(i, i + 5);
-                const items = await Promise.all(
-                  batch.map(async (f) => ({
-                    data: await resizePhoto(f),
-                    name: f.name.slice(0, 120),
-                  })),
-                );
-                const saved = Math.min(i + 5, files.length);
-                if (
-                  !(await run(
-                    { action: "addPhotos", photos: items },
-                    files.length === 1
-                      ? "Foto guardada en tu biblioteca"
-                      : `${saved} de ${files.length} fotos guardadas`,
-                  ))
-                )
-                  break;
-              }
-            } finally {
-              setReading(false);
-            }
+            upload(files);
           }}
         />
+      </div>
+      <div className="paste-hint">
+        <ClipboardPaste size={22} />
+        <p>
+          <b>Copia tus fotos y pégalas aquí con Ctrl+V.</b> En la carpeta: Ctrl+A
+          para seleccionar todas, Ctrl+C para copiar. También puedes
+          arrastrarlas a esta página.
+        </p>
       </div>
       {photos.length ? (
         <div className="photo-grid">

@@ -2203,3 +2203,35 @@ dialog::backdrop {
     padding: 0;
   }
 }
+.paste-hint {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 22px 0;
+  padding: 14px 18px;
+  border: 2px dashed var(--line-strong);
+  border-radius: 10px;
+  background: var(--paper-2);
+  color: var(--navy-2);
+}
+.paste-hint p {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.paste-hint b {
+  color: var(--navy-ink);
+}
+.photo-drop.dragging {
+  outline: 3px dashed var(--orange-press);
+  outline-offset: 4px;
+}
+.photo-drop.dragging .paste-hint {
+  border-color: var(--orange-press);
+  background: var(--orange-soft);
+}
+@media (max-width: 720px) {
+  .paste-hint {
+    margin: 14px 14px 0;
+  }
+}
