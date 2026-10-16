@@ -980,31 +980,14 @@ export function Workspace({
                                     </button>
                                   );
                                 })()}
-                                <label
-                                  className="button secondary"
-                                  title="Agregar fotos del producto"
+                                <button
+                                  className="secondary"
+                                  title="Elegir fotos de tu biblioteca"
+                                  disabled={pending}
+                                  onClick={() => setModal(`photos:${p.id}`)}
                                 >
                                   <Camera size={17} /> Fotos ({p.images?.length || 0})
-                                  <input
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp"
-                                    multiple
-                                    hidden
-                                    disabled={pending}
-                                    onChange={async (e) => {
-                                      const images = await readPhotos(
-                                        e.target.files,
-                                        5 - (p.images?.length || 0),
-                                      );
-                                      e.target.value = "";
-                                      if (images.length)
-                                        run(
-                                          { action: "addProductImages", product_id: p.id, images },
-                                          "Fotos agregadas. Los Pins de este producto ya las usan.",
-                                        );
-                                    }}
-                                  />
-                                </label>
+                                </button>
                                 {/* Always rendered so every row keeps the same layout. */}
                                   <button
                                     className="secondary danger icon-only"
@@ -1411,6 +1394,21 @@ export function Workspace({
             </footer>
           </main>
         </div>
+        {modal?.startsWith("photos:") &&
+          (() => {
+            const prod = data.products.find((x) => x.id === modal.slice(7));
+            return prod ? (
+              <Modal title={`Fotos de ${prod.title}`} close={() => setModal(null)}>
+                <ProductPhotos
+                  product={prod}
+                  library={data.photos}
+                  pending={pending}
+                  run={run}
+                  done={() => setModal(null)}
+                />
+              </Modal>
+            ) : null;
+          })()}
         {modal === "product" && (
           <Modal title="Añadir un producto" close={() => setModal(null)}>
             <ProductForm
@@ -1908,6 +1906,151 @@ function shortHash(text: string) {
 function remembered(values: (string | undefined)[]) {
   return [...new Set(values.map((v) => (v || "").trim()).filter(Boolean))];
 }
+function LibraryPicker({
+  library,
+  picked,
+  setPicked,
+  room,
+  used,
+}: {
+  library: Photo[];
+  picked: string[];
+  setPicked: (ids: string[]) => void;
+  room: number;
+  used: number;
+}) {
+  const [filter, setFilter] = useState<string | null>(null);
+  const shown =
+    filter === null ? library : library.filter((p) => (p.category || "") === filter);
+  return (
+    <fieldset className="photo-picker">
+      <legend>
+        Elegir de tu biblioteca de Fotos <small>({used}/5)</small>
+      </legend>
+      <CategoryChips photos={library} value={filter} onChange={setFilter} />
+      <div className="photo-grid compact">
+        {shown.map((p) => {
+          const on = picked.includes(p.id);
+          return (
+            <label key={p.id} className={`photo-tile pick ${on ? "selected" : ""}`}>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={on}
+                disabled={!on && picked.length >= room}
+                onChange={() =>
+                  setPicked(on ? picked.filter((x) => x !== p.id) : [...picked, p.id])
+                }
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/api/product-image?path=${encodeURIComponent(p.path)}`}
+                alt={p.name || "Foto de la biblioteca"}
+                loading="lazy"
+              />
+              {on && (
+                <span className="pick-mark">
+                  <Check size={16} />
+                </span>
+              )}
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+// Adds photos to an existing product, from the library or the computer.
+function ProductPhotos({
+  product,
+  library,
+  pending,
+  run,
+  done,
+}: {
+  product: Product;
+  library: Photo[];
+  pending: boolean;
+  run: Run;
+  done: () => void;
+}) {
+  const current = product.images?.length || 0;
+  const [picked, setPicked] = useState<string[]>([]);
+  const [uploads, setUploads] = useState<string[]>([]);
+  const [reading, setReading] = useState(false);
+  const free = 5 - current;
+  const total = picked.length + uploads.length;
+  return (
+    <div>
+      <p className="body-copy">
+        Este producto tiene <b>{current} de 5</b> fotos. Las fotos que agregues
+        se usan en sus Pins (también en los ya creados).
+      </p>
+      {free <= 0 ? (
+        <div className="notice error">
+          Ya tiene 5 fotos. Quita fotos del producto para agregar otras.
+        </div>
+      ) : (
+        <>
+          {library.length > 0 ? (
+            <LibraryPicker
+              library={library}
+              picked={picked}
+              setPicked={setPicked}
+              room={free - uploads.length}
+              used={current + total}
+            />
+          ) : (
+            <p className="body-copy">
+              Tu biblioteca de Fotos está vacía. Puedes subir fotos aquí abajo o
+              guardarlas primero en la pestaña Fotos.
+            </p>
+          )}
+          <Field label="O sube desde tu computadora">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={async (e) => {
+                setReading(true);
+                try {
+                  setUploads(await readPhotos(e.target.files, free - picked.length));
+                } finally {
+                  setReading(false);
+                }
+              }}
+            />
+          </Field>
+          <button
+            className="full"
+            disabled={pending || reading || total === 0}
+            onClick={async () => {
+              let ok = true;
+              if (picked.length)
+                ok = await run(
+                  { action: "attachLibraryPhotos", product_id: product.id, ids: picked },
+                  "Fotos agregadas. Los Pins de este producto ya las usan.",
+                );
+              if (ok && uploads.length)
+                ok = await run(
+                  { action: "addProductImages", product_id: product.id, images: uploads },
+                  "Fotos agregadas. Los Pins de este producto ya las usan.",
+                );
+              if (ok) done();
+            }}
+          >
+            <Plus size={16} />
+            {reading
+              ? "Preparando fotos…"
+              : total
+                ? `Agregar ${total} ${total === 1 ? "foto" : "fotos"}`
+                : "Elige fotos para agregar"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
 function ProductForm({
   settings,
   library,
@@ -1924,7 +2067,6 @@ function ProductForm({
   const [photos, setPhotos] = useState<string[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [reading, setReading] = useState(false);
-  const [filter, setFilter] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const room = 5 - photos.length;
   const ids = useId();
@@ -1934,8 +2076,6 @@ function ProductForm({
     ...library.map((p) => p.category),
   ]);
   const pastNotes = remembered(products.map((p) => p.notes));
-  const shown =
-    filter === null ? library : library.filter((p) => (p.category || "") === filter);
   return (
     <form
       onSubmit={(e) => {
@@ -2024,47 +2164,13 @@ function ProductForm({
         />
       </Field>
       {library.length > 0 && (
-        <fieldset className="photo-picker">
-          <legend>
-            Elegir de tu biblioteca de Fotos{" "}
-            <small>({picked.length + photos.length}/5)</small>
-          </legend>
-          <CategoryChips photos={library} value={filter} onChange={setFilter} />
-          <div className="photo-grid compact">
-            {shown.map((p) => {
-              const on = picked.includes(p.id);
-              return (
-                <label
-                  key={p.id}
-                  className={`photo-tile pick ${on ? "selected" : ""}`}
-                >
-                  <input
-                    type="checkbox"
-                    className="sr-only"
-                    checked={on}
-                    disabled={!on && picked.length >= room}
-                    onChange={() =>
-                      setPicked(
-                        on ? picked.filter((x) => x !== p.id) : [...picked, p.id],
-                      )
-                    }
-                  />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`/api/product-image?path=${encodeURIComponent(p.path)}`}
-                    alt={p.name || "Foto de la biblioteca"}
-                    loading="lazy"
-                  />
-                  {on && (
-                    <span className="pick-mark">
-                      <Check size={16} />
-                    </span>
-                  )}
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
+        <LibraryPicker
+          library={library}
+          picked={picked}
+          setPicked={setPicked}
+          room={room}
+          used={picked.length + photos.length}
+        />
       )}
       <Field
         label={

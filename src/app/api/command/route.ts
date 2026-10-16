@@ -102,6 +102,14 @@ export async function POST(req: Request) {
         );
         break;
       }
+      case "attachLibraryPhotos": {
+        result = await attachLibraryPhotos(
+          uid,
+          uuid.parse(body.product_id),
+          z.array(uuid).min(1).max(5).parse(body.ids),
+        );
+        break;
+      }
       case "deletePhoto": {
         await deleteLibraryPhoto(uid, uuid.parse(body.id));
         break;
