@@ -180,16 +180,28 @@ function Modal({
   const feedback = useContext(FeedbackContext);
   const titleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
+  const pressedOutside = useRef(false);
   useEffect(() => {
     ref.current?.showModal();
   }, []);
+  // The dialog element also covers its own padding, so "target is the
+  // dialog" is not "outside". Close only when the press started and ended
+  // outside the box: a quick drag or a text selection never closes it.
+  const outside = (e: React.MouseEvent<HTMLDialogElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+  };
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
       onCancel={close}
+      onMouseDown={(e) => {
+        pressedOutside.current = e.target === e.currentTarget && outside(e);
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) close();
+        if (pressedOutside.current && e.target === e.currentTarget && outside(e)) close();
+        pressedOutside.current = false;
       }}
     >
       <div className="modal-head">
