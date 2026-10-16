@@ -924,11 +924,17 @@ export function Workspace({
                                 <div className="table-product">
                                   {p.images?.length ? (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                      className="table-thumb"
-                                      src={`/api/product-image?path=${encodeURIComponent(p.images[0])}`}
-                                      alt=""
-                                    />
+                                    <button
+                                      className="thumb-button"
+                                      title="Ver y cambiar fotos"
+                                      onClick={() => setModal(`photos:${p.id}`)}
+                                    >
+                                      <img
+                                        className="table-thumb"
+                                        src={`/api/product-image?path=${encodeURIComponent(p.images[0])}`}
+                                        alt={`Fotos de ${p.title}`}
+                                      />
+                                    </button>
                                   ) : (
                                     <span className="product-icon">
                                       <Package size={21} />
@@ -1986,6 +1992,19 @@ function ProductPhotos({
         Este producto tiene <b>{current} de 5</b> fotos. Las fotos que agregues
         se usan en sus Pins (también en los ya creados).
       </p>
+      {current > 0 && (
+        <div className="photo-grid current">
+          {product.images!.map((path, i) => (
+            <figure key={path} className="photo-tile">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/api/product-image?path=${encodeURIComponent(path)}`}
+                alt={`Foto ${i + 1} de ${product.title}`}
+              />
+            </figure>
+          ))}
+        </div>
+      )}
       {free <= 0 ? (
         <div className="notice error">
           Ya tiene 5 fotos. Quita fotos del producto para agregar otras.

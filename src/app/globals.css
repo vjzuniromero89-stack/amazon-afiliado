@@ -2406,9 +2406,9 @@ button.icon-only,
   padding: 0;
 }
 .table-thumb {
-  width: 52px;
-  height: 52px;
-  object-fit: contain;
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
   background: #ffffff;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -2495,4 +2495,30 @@ td:last-child {
 .button.done-pins:hover {
   background: #cdebd9;
   border-color: var(--green);
+}
+button.thumb-button {
+  padding: 0;
+  min-height: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  border-radius: 10px;
+}
+button.thumb-button:hover .table-thumb {
+  border-color: var(--navy-3);
+}
+.photo-grid.current {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  padding: 0 0 16px;
+}
+.photo-grid.current .photo-tile img {
+  border-bottom: 0;
+}
+.table-product .product-icon {
+  width: 76px;
+  height: 76px;
+}
+td.wrap.meta {
+  min-width: 110px;
 }
