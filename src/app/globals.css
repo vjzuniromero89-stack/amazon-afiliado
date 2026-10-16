@@ -2317,3 +2317,38 @@ button.chip.on span {
     padding: 12px 14px 0;
   }
 }
+/* Inputs with remembered values: our own arrow, the native one hidden. */
+input[list]::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
+.combo {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.combo input {
+  flex: 1;
+  width: 100%;
+  padding-right: 48px;
+}
+button.combo-arrow {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  min-height: 38px;
+  width: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--navy-2);
+  border-radius: 7px;
+}
+button.combo-arrow:hover {
+  background: var(--paper-2);
+}
+button.combo-arrow:active {
+  transform: translateY(-50%);
+}

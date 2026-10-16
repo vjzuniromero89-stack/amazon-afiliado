@@ -20,6 +20,7 @@ import {
   Camera,
   Check,
   CheckCheck,
+  ChevronDown,
   ChevronRight,
   ClipboardPaste,
   CircleHelp,
@@ -44,7 +45,7 @@ import {
   X,
 } from "lucide-react";
 import { aggregate, breakdown, insights, marketplaces } from "@/lib/domain";
-import type { Creative, Photo, Settings, Snapshot } from "@/lib/types";
+import type { Creative, Photo, Product, Settings, Snapshot } from "@/lib/types";
 
 export const sections = [
   "dashboard",
@@ -1373,6 +1374,7 @@ export function Workspace({
             <ProductForm
               settings={data.settings}
               library={data.photos}
+              products={data.products}
               pending={pending}
               submit={async (body) => {
                 if (await run(body, "Producto guardado en tu colección"))
@@ -1708,7 +1710,7 @@ function PhotoLibrary({
       <div className="toolbar">
         <label className="inline-field">
           <span>Categoría para fotos nuevas</span>
-          <input
+          <Combo
             list={listId}
             value={category}
             maxLength={60}
@@ -1827,14 +1829,47 @@ function PhotoLibrary({
     </section>
   );
 }
+// Text input with a visible arrow that opens its remembered values.
+function Combo(props: React.InputHTMLAttributes<HTMLInputElement> & { list: string }) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <span className="combo">
+      <input ref={ref} autoComplete="off" {...props} />
+      <button
+        type="button"
+        className="combo-arrow"
+        aria-label="Ver opciones guardadas"
+        tabIndex={-1}
+        onClick={() => {
+          const el = ref.current;
+          if (!el) return;
+          el.focus();
+          try {
+            el.showPicker();
+          } catch {
+            /* Older browsers: focusing still lists the options as you type. */
+          }
+        }}
+      >
+        <ChevronDown size={20} />
+      </button>
+    </span>
+  );
+}
+// Distinct non-empty values, most recent first.
+function remembered(values: (string | undefined)[]) {
+  return [...new Set(values.map((v) => (v || "").trim()).filter(Boolean))];
+}
 function ProductForm({
   settings,
   library,
+  products,
   pending,
   submit,
 }: {
   settings: Settings;
   library: Photo[];
+  products: Product[];
   pending: boolean;
   submit: (data: Record<string, unknown>) => void;
 }) {
@@ -1842,7 +1877,15 @@ function ProductForm({
   const [picked, setPicked] = useState<string[]>([]);
   const [reading, setReading] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
   const room = 5 - photos.length;
+  const ids = useId();
+  const titles = remembered(products.map((p) => p.title));
+  const categories = remembered([
+    ...products.map((p) => p.category),
+    ...library.map((p) => p.category),
+  ]);
+  const pastNotes = remembered(products.map((p) => p.notes));
   const shown =
     filter === null ? library : library.filter((p) => (p.category || "") === filter);
   return (
@@ -1872,8 +1915,9 @@ function ProductForm({
         />
       </Field>
       <Field label="Nombre del producto">
-        <input
+        <Combo
           name="title"
+          list={`${ids}-titles`}
           placeholder="Un nombre claro para tu colección"
           required
           minLength={3}
@@ -1889,18 +1933,45 @@ function ProductForm({
           </select>
         </Field>
         <Field label="Categoría">
-          <input
+          <Combo
             name="category"
+            list={`${ids}-categories`}
             placeholder="Hogar, tecnología, cocina…"
             maxLength={80}
           />
         </Field>
       </div>
+      <datalist id={`${ids}-titles`}>
+        {titles.map((t) => (
+          <option key={t} value={t} />
+        ))}
+      </datalist>
+      <datalist id={`${ids}-categories`}>
+        {categories.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
       <Field label="Detalles verificados (opcional)">
+        {pastNotes.length > 0 && (
+          <select
+            aria-label="Usar detalles de antes"
+            value=""
+            onChange={(e) => setNotes(e.target.value)}
+          >
+            <option value="">Usar detalles de antes…</option>
+            {pastNotes.map((n) => (
+              <option key={n} value={n}>
+                {n.length > 90 ? n.slice(0, 90) + "…" : n}
+              </option>
+            ))}
+          </select>
+        )}
         <textarea
           name="notes"
           rows={3}
           maxLength={1000}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
           placeholder="Material, uso, características confirmadas…"
         />
       </Field>
