@@ -205,38 +205,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     </label>
   );
 }
-function TemplatePreview({
-  template = "editorial",
-  title = "Pequeños hallazgos. Grandes ideas.",
-  cta = "Descubre tu próximo favorito",
-  disclosure = "Ejemplo de plantilla · Sin producto asociado",
-}: {
-  template?: string;
-  title?: string;
-  cta?: string;
-  disclosure?: string;
-}) {
-  return (
-    <div className={`pin-preview ${template}`}>
-      <span className="pin-eyebrow">THE EVERYDAY EDIT</span>
-      <div className="pin-center">
-        <div className="pin-orb" />
-        <strong>{title}</strong>
-        <p>
-          Pequeños descubrimientos.
-          <br />
-          Nuevas posibilidades.
-        </p>
-      </div>
-      <div>
-        <span className="pin-cta">
-          {cta} <ArrowUpRight size={14} />
-        </span>
-        <small>{disclosure}</small>
-      </div>
-    </div>
-  );
-}
 
 export function Workspace({
   section,
@@ -593,10 +561,6 @@ export function Workspace({
           <main>
             <div className="page-heading">
               <div>
-                <div className="eyebrow">
-                  AMAZON AFFILIATE COMMAND{" "}
-                  <span> / {header.label.toUpperCase()}</span>
-                </div>
                 <h1>{titles[section][0]}</h1>
                 <p>{titles[section][1]}</p>
               </div>
@@ -655,46 +619,23 @@ export function Workspace({
               <>
                 <section className="hero">
                   <div className="hero-copy">
-                    <span className="hero-tag">
-                      <Sparkles size={14} /> CREATIVIDAD CON DIRECCIÓN
-                    </span>
                     <h2>
-                      Descubre.
-                      <br />
-                      Crea. <em>Conecta.</em>
+                      Descubre. Crea. <em>Conecta.</em>
                     </h2>
                     <p>
                       Convierte productos que te gustan en contenido que
                       inspira. La automatización te acompaña; tú decides qué
                       publicar.
                     </p>
-                    <Link className="button light" href="/pin-studio">
-                      Abrir Pin Studio <ArrowUpRight size={17} />
-                    </Link>
-                    <div className="hero-foot">
-                      <ShieldCheck size={14} /> Revisión humana activada por
-                      defecto
+                    <div className="hero-actions">
+                      <Link className="button" href="/pin-studio">
+                        Abrir Pin Studio <ArrowUpRight size={18} />
+                      </Link>
+                      <span className="hero-foot">
+                        <ShieldCheck size={18} /> Revisión humana activada por
+                        defecto
+                      </span>
                     </div>
-                  </div>
-                  <div
-                    className="hero-art"
-                    aria-label="Ejemplos de las plantillas verticales"
-                  >
-                    <div className="floating-note">
-                      <CheckCheck size={16} /> De la idea al próximo Pin
-                    </div>
-                    <div className="hero-pin back">
-                      <TemplatePreview
-                        template="minimal"
-                        title="Menos ruido. Más inspiración."
-                      />
-                    </div>
-                    <div className="hero-pin front">
-                      <TemplatePreview title="Tu próxima pequeña gran idea." />
-                    </div>
-                    <span className="art-caption">
-                      PLANTILLAS INCLUIDAS · FORMATO 2:3
-                    </span>
                   </div>
                 </section>
                 <div className="metrics-grid">
@@ -1087,7 +1028,6 @@ export function Workspace({
                   <span className="empty-icon">
                     <Compass size={28} />
                   </span>
-                  <div className="eyebrow">TU CURADURÍA, PRIMERO</div>
                   <h2>
                     Lo que recomiendas
                     <br />
@@ -1749,9 +1689,6 @@ function StudioTools({
   return (
     <section className="panel studio-tools">
       <div>
-        <span className="eyebrow">
-          <Sparkles size={14} /> DE PRODUCTO A CONCEPTO
-        </span>
         <h2>Un producto. Tres posibilidades.</h2>
         <p>Elige tu punto de partida y crea variaciones para revisar.</p>
       </div>
