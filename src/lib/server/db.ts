@@ -38,8 +38,22 @@ export function admin() {
   return createClient(
     env("NEXT_PUBLIC_SUPABASE_URL"),
     env("SUPABASE_SERVICE_ROLE_KEY"),
-    { auth: { persistSession: false, autoRefreshToken: false } },
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: patientFetch },
+    },
   );
+}
+// Supabase sometimes rejects a fresh token for a few seconds with
+// "JWT issued at future" (clock drift between its servers). Retry those.
+async function patientFetch(input: RequestInfo | URL, init?: RequestInit) {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(input, init);
+    if (attempt === 2 || (res.status !== 400 && res.status !== 401)) return res;
+    const body = await res.clone().text();
+    if (!body.includes("issued at future")) return res;
+    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+  }
 }
 export async function session() {
   const jar = await cookies();
@@ -47,6 +61,7 @@ export async function session() {
     env("NEXT_PUBLIC_SUPABASE_URL"),
     env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
     {
+      global: { fetch: patientFetch },
       cookies: {
         getAll: () => jar.getAll(),
         setAll: (values) => {
