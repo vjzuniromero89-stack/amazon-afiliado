@@ -1957,6 +1957,21 @@ function shortHash(text: string) {
   return (h >>> 0).toString(36);
 }
 // Distinct non-empty values, most recent first.
+// Fixed categories, one per board topic: the category picks the boards and
+// search words, so these always land on a fitting board.
+const CATEGORIES = [
+  "Skincare",
+  "Beauty & Makeup",
+  "Supplements & Wellness",
+  "Home Decor & Organization",
+  "Kitchen",
+  "Fashion & Clothing",
+  "Fitness & Workout",
+  "Tech & Gadgets",
+  "Baby & Mom",
+  "Pets & Dogs",
+  "Gift Ideas",
+];
 function remembered(values: (string | undefined)[]) {
   return [...new Set(values.map((v) => (v || "").trim()).filter(Boolean))];
 }
@@ -2166,6 +2181,7 @@ function ProductForm({
   const ids = useId();
   const titles = remembered(products.map((p) => p.title));
   const categories = remembered([
+    ...CATEGORIES,
     ...products.map((p) => p.category),
     ...library.map((p) => p.category),
   ]);
