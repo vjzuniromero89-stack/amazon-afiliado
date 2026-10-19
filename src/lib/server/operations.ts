@@ -35,7 +35,11 @@ export async function generate(
   const boards = check(
     await sb.from("boards").select("*").eq("user_id", uid),
   ) as Board[];
-  const concepts = await conceptProvider(ai).generate(p, boards, s);
+  const concepts = await conceptProvider(ai).generate(
+    p,
+    boards.filter((b) => !b.archived),
+    s,
+  );
   // Alternate design sets on each round so regenerating shows new looks.
   const { count } = await sb
     .from("creatives")

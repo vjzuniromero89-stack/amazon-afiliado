@@ -136,6 +136,7 @@ export async function pinterestWithToken<T>(
 export async function syncBoards(uid: string) {
   let bookmark: string | undefined;
   let count = 0;
+  const seen: string[] = [];
   do {
     const page = await pinterest<{
       items: { id: string; name: string }[];
@@ -145,6 +146,7 @@ export async function syncBoards(uid: string) {
       // Sandbox can return empty pages before its boards; 250 is the maximum.
       `/boards?page_size=250${bookmark ? "&bookmark=" + encodeURIComponent(bookmark) : ""}`,
     );
+    seen.push(...page.items.map((b) => b.id));
     if (page.items.length)
       check(
         await admin()
@@ -154,6 +156,7 @@ export async function syncBoards(uid: string) {
               user_id: uid,
               pinterest_id: b.id,
               name: b.name,
+              archived: false,
             })),
             { onConflict: "user_id,pinterest_id" },
           ),
@@ -165,5 +168,37 @@ export async function syncBoards(uid: string) {
         "Demasiados boards para sincronizar en una solicitud.",
       );
   } while (bookmark);
+  await archiveMissingBoards(uid, seen);
   return count;
+}
+// Boards the connected account no longer has (Sandbox boards after the move
+// to production, or boards deleted on Pinterest) are archived and unlinked
+// from Pins that have not been published, so nothing tries to post there.
+async function archiveMissingBoards(uid: string, seen: string[]) {
+  const sb = admin();
+  const local = check(
+    await sb.from("boards").select("id,pinterest_id,archived").eq("user_id", uid),
+  ) as { id: string; pinterest_id: string; archived: boolean | null }[];
+  const gone = local
+    .filter((b) => !b.archived && !seen.includes(b.pinterest_id))
+    .map((b) => b.id);
+  if (!gone.length) return;
+  check(
+    await sb
+      .from("affiliate_configuration")
+      .update({ default_board_id: null })
+      .eq("user_id", uid)
+      .in("default_board_id", gone),
+  );
+  check(
+    await sb
+      .from("creatives")
+      .update({ board_id: null })
+      .eq("user_id", uid)
+      .in("board_id", gone)
+      .in("status", ["draft", "approved", "rejected"]),
+  );
+  check(
+    await sb.from("boards").update({ archived: true }).eq("user_id", uid).in("id", gone),
+  );
 }

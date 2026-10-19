@@ -2415,7 +2415,7 @@ function CreativeForm({
         <Field label="Board">
           <select name="board_id" defaultValue={creative?.board_id || ""}>
             <option value="">Seleccionar board</option>
-            {data.boards.map((b) => (
+            {data.boards.filter((b) => !b.archived).map((b) => (
               <option value={b.id} key={b.id}>
                 {b.name}
               </option>
@@ -2769,7 +2769,7 @@ function SettingsPanel({
             </button>
           )}
           <p className="fine-print">
-            {data.boards.length} boards disponibles ·{" "}
+            {data.boards.filter((b) => !b.archived).length} boards disponibles ·{" "}
             {data.aiEnabled
               ? "IA de textos configurada"
               : "Plantillas activas · IA de textos sin configurar"}
@@ -2893,7 +2893,7 @@ function SettingsPanel({
                 }
               >
                 <option value="">Seleccionar board</option>
-                {data.boards.map((b) => (
+                {data.boards.filter((b) => !b.archived).map((b) => (
                   <option value={b.id} key={b.id}>
                     {b.name}
                   </option>

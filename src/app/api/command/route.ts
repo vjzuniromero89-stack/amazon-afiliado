@@ -288,7 +288,7 @@ export async function POST(req: Request) {
           await sb
             .from("boards")
             .upsert(
-              { user_id: uid, pinterest_id: b.id, name: b.name },
+              { user_id: uid, pinterest_id: b.id, name: b.name, archived: false },
               { onConflict: "user_id,pinterest_id" },
             ),
         );

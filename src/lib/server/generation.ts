@@ -162,7 +162,8 @@ function groupFor(p: Product) {
 
 // Picks the board whose name best matches the product's topic,
 // then falls back to the default board, then to the only board available.
-export function pickBoard(p: Product, boards: Board[], s: Settings) {
+export function pickBoard(p: Product, all: Board[], s: Settings) {
+  const boards = all.filter((b) => !b.archived);
   if (!boards.length) return null;
   const g = groupFor(p);
   const terms = [...g.match, g.noun, ...strip(p.category || "").split(/\W+/)]

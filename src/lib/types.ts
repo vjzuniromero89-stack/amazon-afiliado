@@ -25,6 +25,8 @@ export type Board = {
   user_id: string;
   pinterest_id: string;
   name: string;
+  // Boards that no longer exist on the connected Pinterest (e.g. Sandbox ones).
+  archived?: boolean;
 };
 export type Creative = {
   id: string;
