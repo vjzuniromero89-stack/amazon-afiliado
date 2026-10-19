@@ -1201,8 +1201,9 @@ export function Workspace({
                   <CalendarDays size={20} />
                   <p>
                     Horas mostradas en <b>{data.settings.timezone}</b>. Máximo{" "}
-                    {data.settings.daily_limit} Pins por día UTC, separados al
-                    menos {data.settings.min_interval_minutes} minutos.
+                    {data.settings.daily_limit} Pins por día (Nueva York), separados
+                    al menos {data.settings.min_interval_minutes} minutos. El
+                    Autopilot planea 24 horas y da prioridad a productos nuevos.
                   </p>
                   <button
                     className="secondary"
@@ -2893,7 +2894,7 @@ function SettingsPanel({
               </label>
             )}
             <div className="form-grid">
-              <Field label="Máximo de Pins por día UTC">
+              <Field label="Máximo de Pins por día">
                 <input
                   type="number"
                   min={1}

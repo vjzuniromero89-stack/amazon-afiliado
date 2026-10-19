@@ -337,13 +337,14 @@ export async function syncAnalytics(uid: string, limit = 20) {
 const OPEN_HOUR = 9,
   CLOSE_HOUR = 21,
   NY = "America/New_York";
+// Built once: creating a formatter per call made planning slow.
+const NY_HOUR = new Intl.DateTimeFormat("en-US", { timeZone: NY, hour: "numeric", hourCycle: "h23" });
+const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: NY });
 function nyHour(t: number) {
-  return Number(
-    new Intl.DateTimeFormat("en-US", { timeZone: NY, hour: "numeric", hourCycle: "h23" }).format(t),
-  );
+  return Number(NY_HOUR.format(t));
 }
 function nyDay(t: number) {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: NY }).format(t);
+  return NY_DAY.format(t);
 }
 // Next moment inside the posting window, in 15-minute steps.
 function inWindow(t: number) {
@@ -420,13 +421,17 @@ export async function approveAll(uid: string) {
 }
 
 type Slot = { at: number; product: string; board: string | null; live: boolean };
+// Plans approved Pins for the next 24 hours only; the rest wait approved and
+// are planned on a later run. That way a product added tomorrow still gets
+// its first Pin before older products get their second or third.
 export async function scheduleApproved(uid: string, s: Settings) {
   const sb = admin();
   const since = new Date(Date.now() - 8 * 86400000).toISOString();
-  const [approvedRes, queueRes, pubsRes] = await Promise.all([
+  const [approvedRes, queueRes, pubsRes, allPubsRes] = await Promise.all([
     sb.from("creatives").select("id,product_id,board_id,created_at").eq("user_id", uid).eq("status", "approved").order("created_at").limit(60),
     sb.from("publication_queue").select("scheduled_at,started_at,status,creative_id").eq("user_id", uid).in("status", ["pending", "processing", "published", "uncertain"]).gte("scheduled_at", since),
     sb.from("publications").select("product_id,board_id,published_at").eq("user_id", uid).gte("published_at", since),
+    sb.from("publications").select("product_id").eq("user_id", uid).limit(10000),
   ]);
   const approved = check(approvedRes) as Pick<Creative, "id" | "product_id" | "board_id">[];
   if (!approved.length) return 0;
@@ -445,10 +450,23 @@ export async function scheduleApproved(uid: string, s: Settings) {
       live: q.status !== "published",
     };
   });
+  // How many Pins each product already has out: published or waiting.
+  const out = new Map<string, number>();
+  const bump = (product: string) => out.set(product, (out.get(product) || 0) + 1);
+  for (const x of check(allPubsRes) as { product_id: string }[]) bump(x.product_id);
+  for (const x of slots) if (x.live && x.product) bump(x.product);
+
   const gap = s.min_interval_minutes * 60000;
   const week = 7 * 86400000;
+  const horizon = Date.now() + 86400000;
+  const utcDay = (t: number) => new Date(t).toISOString().slice(0, 10);
   let scheduled = 0;
-  for (const c of approved) {
+  const left = [...approved];
+  while (left.length) {
+    // New products first: the Pin whose product has the fewest Pins out.
+    // The sort is stable, so ties keep the oldest Pin first.
+    left.sort((a, b) => (out.get(a.product_id) || 0) - (out.get(b.product_id) || 0));
+    const c = left.shift()!;
     if (!c.board_id) continue;
     // Same product on the same board: one at a time, then a 7-day pause.
     const sameBoard = (x: { product: string; board: string | null }) =>
@@ -458,15 +476,20 @@ export async function scheduleApproved(uid: string, s: Settings) {
       continue;
     let t = inWindow(Date.now() + 2 * 60000);
     let found: number | null = null;
-    for (let i = 0; i < 500 && t < Date.now() + 60 * 86400000; i++) {
+    for (let i = 0; i < 500 && t < horizon; i++) {
       t = inWindow(t);
       const clash = slots.find((x) => Math.abs(x.at - t) < gap);
       if (clash) {
         t = clash.at + gap + 60000;
         continue;
       }
-      const utc = new Date(t).toISOString().slice(0, 10);
-      if (slots.filter((x) => new Date(x.at).toISOString().slice(0, 10) === utc).length >= s.daily_limit) {
+      // Daily limit on the New York day.
+      if (slots.filter((x) => nyDay(x.at) === nyDay(t)).length >= s.daily_limit) {
+        t = nextDayOpen(t);
+        continue;
+      }
+      // The database also counts the UTC day; never ask it for a slot it refuses.
+      if (slots.filter((x) => utcDay(x.at) === utcDay(t)).length >= s.daily_limit) {
         const d = new Date(t);
         d.setUTCDate(d.getUTCDate() + 1);
         d.setUTCHours(0, 5, 0, 0);
@@ -480,10 +503,11 @@ export async function scheduleApproved(uid: string, s: Settings) {
       found = t;
       break;
     }
-    if (found === null) continue;
+    if (found === null || found >= horizon) continue;
     try {
       await enqueue(uid, c.id, new Date(found).toISOString());
       slots.push({ at: found, product: c.product_id, board: c.board_id, live: true });
+      bump(c.product_id);
       scheduled++;
     } catch {
       /* Rejected by a database rule; the next run tries again. */
