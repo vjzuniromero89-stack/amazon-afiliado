@@ -366,7 +366,8 @@ export async function syncAnalytics(uid: string, limit = 20) {
 // same board within 7 days (that Pin waits).
 const OPEN_HOUR = 9,
   CLOSE_HOUR = 21,
-  NY = "America/New_York";
+  NY = "America/New_York",
+  QUARTER = 15 * 60000;
 // Built once: creating a formatter per call made planning slow.
 const NY_HOUR = new Intl.DateTimeFormat("en-US", { timeZone: NY, hour: "numeric", hourCycle: "h23" });
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: NY });
@@ -501,10 +502,12 @@ export async function scheduleApproved(uid: string, s: Settings) {
     let t = inWindow(Date.now() + 2 * 60000);
     let found: number | null = null;
     for (let i = 0; i < 500 && t < horizon; i++) {
-      t = inWindow(t);
+      // On the quarter hour, when the clock runs (:00, :15, :30, :45), so a
+      // Pin goes out at the time the app shows instead of up to 15 min later.
+      t = inWindow(Math.ceil(t / QUARTER) * QUARTER);
       const clash = slots.find((x) => Math.abs(x.at - t) < gap);
       if (clash) {
-        t = clash.at + gap + 60000;
+        t = clash.at + gap;
         continue;
       }
       // Daily limit on the New York day.
