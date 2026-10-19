@@ -2572,3 +2572,11 @@ td.wrap.meta {
     align-items: stretch;
   }
 }
+
+/* What the app will save after repairing the product data. */
+.field-fix {
+  display: block;
+  margin-top: 6px;
+  color: var(--navy);
+  font-weight: 600;
+}

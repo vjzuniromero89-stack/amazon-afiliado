@@ -46,7 +46,15 @@ import {
   WandSparkles,
   X,
 } from "lucide-react";
-import { aggregate, breakdown, insights, marketplaces } from "@/lib/domain";
+import {
+  aggregate,
+  breakdown,
+  CATEGORIES,
+  cleanProductName,
+  detectCategory,
+  insights,
+  marketplaces,
+} from "@/lib/domain";
 import type { Creative, Photo, Product, Settings, Snapshot } from "@/lib/types";
 
 export const sections = [
@@ -1957,21 +1965,6 @@ function shortHash(text: string) {
   return (h >>> 0).toString(36);
 }
 // Distinct non-empty values, most recent first.
-// Fixed categories, one per board topic: the category picks the boards and
-// search words, so these always land on a fitting board.
-const CATEGORIES = [
-  "Skincare",
-  "Beauty & Makeup",
-  "Supplements & Wellness",
-  "Home Decor & Organization",
-  "Kitchen",
-  "Fashion & Clothing",
-  "Fitness & Workout",
-  "Tech & Gadgets",
-  "Baby & Mom",
-  "Pets & Dogs",
-  "Gift Ideas",
-];
 function remembered(values: (string | undefined)[]) {
   return [...new Set(values.map((v) => (v || "").trim()).filter(Boolean))];
 }
@@ -2177,6 +2170,10 @@ function ProductForm({
   const [picked, setPicked] = useState<string[]>([]);
   const [reading, setReading] = useState(false);
   const [notes, setNotes] = useState("");
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const fixedTitle = cleanProductName(title);
+  const fixedCategory = title.trim() || category.trim() ? detectCategory(title, category) : "";
   const room = 5 - photos.length;
   const ids = useId();
   const titles = remembered(products.map((p) => p.title));
@@ -2220,7 +2217,12 @@ function ProductForm({
           required
           minLength={3}
           maxLength={160}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
+        {title.trim() && fixedTitle !== title.trim() && (
+          <small className="field-fix">Se guardará como: {fixedTitle}</small>
+        )}
       </Field>
       <div className="form-grid">
         <Field label="Marketplace para ASIN">
@@ -2234,9 +2236,14 @@ function ProductForm({
           <Combo
             name="category"
             list={`${ids}-categories`}
-            placeholder="Hogar, tecnología, cocina…"
+            placeholder="Se elige sola si la dejas vacía"
             maxLength={80}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
           />
+          {fixedCategory && fixedCategory !== category.trim() && (
+            <small className="field-fix">La app usará: {fixedCategory}</small>
+          )}
         </Field>
       </div>
       <datalist id={`${ids}-titles`}>

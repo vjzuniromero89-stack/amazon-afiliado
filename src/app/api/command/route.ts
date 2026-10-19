@@ -8,7 +8,13 @@ import {
   owned,
   userId,
 } from "@/lib/server/db";
-import { creativeInput, parseAmazon, settingsInput } from "@/lib/domain";
+import {
+  cleanProductName,
+  creativeInput,
+  detectCategory,
+  parseAmazon,
+  settingsInput,
+} from "@/lib/domain";
 import {
   approveAll,
   approveAndPublish,
@@ -70,8 +76,10 @@ export async function POST(req: Request) {
             .insert({
               ...amazon,
               user_id: uid,
-              title: fields.title,
-              category: fields.category,
+              // Repaired here so every Pin starts from a clean name and a
+              // category that maps to a board.
+              title: cleanProductName(fields.title),
+              category: detectCategory(fields.title, fields.category),
               notes: fields.notes,
             })
             .select("*")

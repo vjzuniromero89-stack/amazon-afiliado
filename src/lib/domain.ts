@@ -14,6 +14,67 @@ export const marketplaces = [
   "www.amazon.co.jp",
   "www.amazon.in",
 ] as const;
+// Fixed categories, one per board topic: the category picks the boards and
+// search words, so these always land on a fitting board.
+export const CATEGORIES = [
+  "Skincare",
+  "Beauty & Makeup",
+  "Supplements & Wellness",
+  "Home Decor & Organization",
+  "Kitchen",
+  "Fashion & Clothing",
+  "Fitness & Workout",
+  "Tech & Gadgets",
+  "Baby & Mom",
+  "Pets & Dogs",
+  "Gift Ideas",
+] as const;
+// First match wins, so the more specific topics come first.
+const CATEGORY_RULES: [string, RegExp][] = [
+  // Words only skincare uses go before supplements ("Vitamin C Serum");
+  // plain "skin" goes after them ("Collagen for Hair, Skin and Nails").
+  ["Skincare", /serum|toner|cleanser|face wash|moisturi|sunscreen|\bspf\b|face mask|sheet mask|eye cream|eye patch|retinol|niacinamide/],
+  ["Supplements & Wellness", /supplement|suplement|vitamin|collagen|colageno|protein|probiotic|omega|magnesium|gumm|capsul|wellness|health|salud/],
+  ["Skincare", /skin|piel|acne|\bpores?\b/],
+  ["Beauty & Makeup", /beauty|belleza|makeup|maquillaje|lipstick|lip gloss|mascara|eyeshadow|nail|hair|cabello|perfume|fragrance/],
+  ["Pets & Dogs", /\bpets?\b|mascota|\bdogs?\b|perro|\bcats?\b|gato|puppy|kitten/],
+  ["Baby & Mom", /baby|bebe|toddler|\bkids?\b|nino|\btoys?\b|juguete|\bmom\b|maternity|diaper|nursing/],
+  ["Fitness & Workout", /fitness|\bgym\b|workout|ejercicio|\bsports?\b|yoga|running|dumbbell|resistance band/],
+  ["Tech & Gadgets", /\btech|electronic|gadget|phone|laptop|headphone|earbud|charger|speaker|\bcable|keyboard|\bmouse\b|tablet|camera/],
+  ["Kitchen", /kitchen|cocina|\bcook|baking|coffee|cafe|blender|knife|\bpans?\b|\bpots?\b|cutting board|utensil|water bottle|tumbler/],
+  ["Fashion & Clothing", /fashion|moda|ropa|cloth|dress|vestido|\bshoes?\b|zapato|handbag|\bbags?\b|bolso|jewel|joya|outfit|jacket|\bbras?\b|bralette|legging|shirt|jeans|socks?\b/],
+  ["Home Decor & Organization", /\bhome\b|hogar|casa|decor|furniture|mueble|bedroom|bathroom|storage|organiz|\blamps?\b|mattress|pillow|\bsheets?\b|blanket|curtain|\brugs?\b/],
+  ["Gift Ideas", /gift|regalo/],
+];
+function plain(text: string) {
+  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+// Cleans a product name pasted from Amazon: page prefixes and suffixes,
+// symbols and stray spaces.
+export function cleanProductName(raw: string) {
+  let t = raw.replace(/[™®©]/g, "").replace(/\s+/g, " ").trim();
+  if (/^amazon\.[a-z.]+\s*:\s*/i.test(t))
+    t = t.replace(/^amazon\.[a-z.]+\s*:\s*/i, "").replace(/\s+:\s+[^:]{3,40}$/, "");
+  t = t
+    .replace(/\s+([,;:.!?])/g, "$1")
+    .replace(/([,;:])(?=\S)/g, "$1 ")
+    .replace(/([,;])\s*\1+/g, "$1")
+    .replace(/[\s,;:\-–|]+$/, "")
+    .trim();
+  return t.slice(0, 160);
+}
+// Picks one of the fixed categories from what was typed, then from the name.
+export function detectCategory(title: string, category: string) {
+  const typed = plain(category.trim());
+  const exact = CATEGORIES.find((c) => plain(c) === typed);
+  if (exact) return exact;
+  for (const text of [typed, plain(title)]) {
+    if (!text) continue;
+    const hit = CATEGORY_RULES.find(([, re]) => re.test(text));
+    if (hit) return hit[0];
+  }
+  return "Gift Ideas";
+}
 export function parseAmazon(input: string, marketplace = "www.amazon.com") {
   let asin = input.trim().toUpperCase();
   let host = marketplace;
