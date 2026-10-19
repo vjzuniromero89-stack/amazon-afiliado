@@ -1,6 +1,13 @@
 import "server-only";
 import { z } from "zod";
-import { creativeInput } from "../domain";
+import {
+  CATEGORY_PHRASE,
+  creativeInput,
+  detectCategory,
+  hasClaim,
+  readsWrong,
+  stripClaims,
+} from "../domain";
 import type { Board, Product, Settings } from "../types";
 import { AppError } from "./db";
 export interface ProductProvider {
@@ -77,6 +84,8 @@ export function parseTitle(raw: string): Parsed {
   let full = clean(aud ? head.replace(aud[0], "") : head);
   if (size) full = clean(full.replace(size, ""));
   full = full.replace(/[,;:\-–|/]+$/, "").trim() || head;
+  // "Silk Pillowcase Pillowcase Set" -> "Silk Pillowcase Set".
+  full = full.replace(/\b(\w{3,})(\s+\1\b)+/gi, "$1");
   return { full, short: truncateWords(full, SHORT_NAME_MAX), size, audience };
 }
 
@@ -172,7 +181,8 @@ export function pinExtras(p: Product) {
         t.length >= 3 &&
         t.length <= 22 &&
         !t.includes(":") &&
-        !/^(manufacturer|brand|made by|by)\b/i.test(t),
+        !/^(manufacturer|brand|made by|by)\b/i.test(t) &&
+        !hasClaim(t),
     )
     .slice(0, 2);
   return { kicker: groupFor(p).hook, perks };
@@ -274,8 +284,14 @@ function searchTerms(p: Product, parsed: Parsed) {
   const pick = words.length >= 4 ? words.slice(-3) : words;
   while (pick.length > 1 && STOP.test(pick[0])) pick.shift();
   while (pick.length > 1 && STOP.test(pick[pick.length - 1])) pick.pop();
-  const noun = pick.join(" ");
-  return { phrase: truncateWords(noun, 40), related: [] as string[] };
+  const noun = truncateWords(pick.join(" "), 40);
+  // Repaired here: a phrase that reads wrong becomes the category's phrase.
+  if (readsWrong(noun) || hasClaim(noun))
+    return {
+      phrase: CATEGORY_PHRASE[detectCategory(p.title, p.category || "")] || "Amazon Find",
+      related: [] as string[],
+    };
+  return { phrase: noun, related: [] as string[] };
 }
 
 const STOP = /^(for|with|and|&|of|in|to|by|the|a|an)$/i;
@@ -323,7 +339,9 @@ export class TemplateConceptProvider implements ConceptProvider {
     const g = groupFor(p);
     const sizeTxt = parsed.size ? ` (${parsed.size})` : "";
     const forTxt = parsed.audience ? ` for ${parsed.audience}` : "";
-    const details = p.notes ? ` Key details: ${sentence(p.notes.slice(0, 280))}` : "";
+    // Facts only: parts of the details that read as claims are left out.
+    const facts = stripClaims((p.notes || "").slice(0, 280));
+    const details = facts ? ` Key details: ${sentence(facts)}` : "";
     const close = " Tap to see the full details, reviews and current price on Amazon.";
 
     // Search words first: "Collagen Supplement: Vital Vitamins Multi Collagen".

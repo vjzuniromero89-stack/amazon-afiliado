@@ -55,6 +55,7 @@ import {
   insights,
   suggestDetails,
   marketplaces,
+  reviewPin,
 } from "@/lib/domain";
 import type { Creative, Photo, Product, Settings, Snapshot } from "@/lib/types";
 
@@ -500,6 +501,20 @@ export function Workspace({
                 {data.boards.find((b) => b.id === c.board_id)?.name ||
                   "Se elige solo al aprobar"}
               </p>
+              {["draft", "rejected", "approved"].includes(c.status) &&
+                (() => {
+                  // The app's own check; most problems were already repaired
+                  // when the Pin was made, so this is usually a green tick.
+                  const issues = reviewPin(
+                    c,
+                    data.products.find((x) => x.id === c.product_id),
+                  );
+                  return issues.length ? (
+                    <p className="review-warn">⚠ Revisar: {issues.join(" ")}</p>
+                  ) : (
+                    <p className="review-ok">✓ Revisado por la app</p>
+                  );
+                })()}
               <div className="card-actions">
                 {["draft", "rejected"].includes(c.status) && (
                   <button

@@ -74,7 +74,7 @@ const FEATURES = [
   "queen size", "king size", "full size", "twin size", "travel size",
 ];
 // Words that would turn a fact into a claim; never shown.
-const CLAIMS = /support|boost|relief|reliev|anti|weight|immun|sleep|joint|heal|cure|treat|detox|energy|hydrat|repair|acne|wrinkle|aging|glow|slim|burn|pain|clinically|doctor|best|#1/i;
+const CLAIMS = /\b(support|boost\w*|relief|reliev\w*|anti[- ]\w+|weight loss|lose weight|immun\w*|sleep|joints?|heal(?:s|ing)?|cures?|treats? (?:acne|pain)|detox|energy|hydrat\w*|repair\w*|acne|wrinkles?|aging|glowing skin|slim\w*|fat burn\w*|pain|clinically|doctor\w*|best|#1)\b/i;
 const titleCase = (t: string) => t.replace(/\b\w/g, (m) => m.toUpperCase()).replace(/\bBpa\b/, "BPA").replace(/\bLed\b/, "LED").replace(/\bUsb C\b/, "USB-C").replace(/\bGmo\b/, "GMO");
 // Short facts read from the product name ("Waterproof, Queen Size,
 // Noiseless") so the details field fills itself. Only what the name says.
@@ -94,6 +94,59 @@ export function suggestDetails(title: string) {
   // Short phrases after the first comma ("..., Queen Size Mattress Pad").
   for (const part of name.split(/,|\s[-–|]\s/).slice(1)) if (part.trim().split(" ").length <= 3) add(part);
   return found.slice(0, 4).join(", ");
+}
+// The app's own check of a Pin before you approve it. Each problem comes
+// back as a short sentence; an empty list means nothing was found.
+const ODD_START = /^(and|or|for|with|of|in|to|by|the|a|an|up|down|off|out|on|at)\b/i;
+const REPEATED = /\b(\w{3,})\s+\1\b/i;
+// A search phrase or title that reads wrong ("and Pore Care", "Bras Bras").
+export function readsWrong(text: string) {
+  const t = text.trim();
+  return !t || ODD_START.test(t) || REPEATED.test(t);
+}
+export function hasClaim(text: string) {
+  return CLAIMS.test(text);
+}
+// Drops the parts of a text that read as a promise or a health claim
+// ("Hair, Skin, Nails & Joint Support") and keeps the plain facts.
+export function stripClaims(text: string) {
+  return text
+    .split(/[,;\n]|\.\s/)
+    .map((t) => t.trim().replace(/\.$/, ""))
+    .filter((t) => t && !CLAIMS.test(t))
+    .join(", ");
+}
+// A safe search phrase for each category, used when the product name gives
+// none that reads well.
+export const CATEGORY_PHRASE: Record<string, string> = {
+  Skincare: "Skincare Must Have",
+  "Beauty & Makeup": "Beauty Must Have",
+  "Supplements & Wellness": "Daily Supplement",
+  "Home Decor & Organization": "Home Find",
+  Kitchen: "Kitchen Gadget",
+  "Fashion & Clothing": "Amazon Fashion Find",
+  "Fitness & Workout": "Workout Gear",
+  "Tech & Gadgets": "Tech Gadget",
+  "Baby & Mom": "Baby Must Have",
+  "Pets & Dogs": "Pet Must Have",
+  "Gift Ideas": "Gift Idea",
+};
+export function reviewPin(
+  c: Pick<Creative, "title" | "description" | "board_id">,
+  p?: { images?: string[] | null },
+) {
+  const issues: string[] = [];
+  const title = c.title.trim();
+  if (ODD_START.test(title))
+    issues.push(`El título empieza raro: «${title.split(" ").slice(0, 3).join(" ")}…»`);
+  if (title.length < 12) issues.push("El título es muy corto.");
+  const twice = title.match(REPEATED);
+  if (twice) issues.push(`Palabra repetida en el título: «${twice[1]}».`);
+  const claim = `${title} ${c.description}`.match(CLAIMS);
+  if (claim) issues.push(`Posible promesa o afirmación de salud: «${claim[0]}». Revísala.`);
+  if (!c.board_id) issues.push("No tiene board.");
+  if (p && !(p.images || []).length) issues.push("El producto no tiene fotos.");
+  return issues;
 }
 // Picks one of the fixed categories from what was typed, then from the name.
 export function detectCategory(title: string, category: string) {

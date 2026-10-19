@@ -2660,3 +2660,20 @@ td.wrap.meta {
   width: 100%;
   margin-top: 16px;
 }
+
+/* The app's check on each Pin before you approve it. */
+.review-ok,
+.review-warn {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+.review-ok {
+  background: #e6f6ec;
+  color: #17663a;
+}
+.review-warn {
+  background: #fff1e0;
+  color: #8a4a00;
+}
