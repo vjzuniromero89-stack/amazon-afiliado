@@ -2580,3 +2580,14 @@ td.wrap.meta {
   color: var(--navy);
   font-weight: 600;
 }
+
+/* Cancelled queue rows: history, folded under the live queue. */
+.queue-cancelled > summary {
+  cursor: pointer;
+  padding: 14px 0;
+  color: var(--navy);
+  font-weight: 700;
+}
+.queue-cancelled .queue-row {
+  opacity: 0.7;
+}

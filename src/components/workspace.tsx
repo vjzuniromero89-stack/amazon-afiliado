@@ -1224,11 +1224,20 @@ export function Workspace({
                 <section className="panel">
                   <div className="panel-heading">
                     <h2>Cola de publicación</h2>
-                    <span className="subtle-pill">CRON · DIARIO · 12 UTC</span>
+                    <span className="subtle-pill">RELOJ · CADA 15 MIN</span>
                   </div>
-                  {data.queue.length ? (
-                    <div className="queue-list">
-                      {data.queue.map((q) => (
+                  {data.queue.length ? (() => {
+                    // Next Pins first (soonest at the top), then the published
+                    // ones; cancelled rows are history, folded away.
+                    const live = ["pending", "processing", "uncertain", "failed"];
+                    const upcoming = data.queue
+                      .filter((q) => live.includes(q.status))
+                      .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
+                    const done = data.queue.filter(
+                      (q) => !live.includes(q.status) && q.status !== "cancelled",
+                    );
+                    const cancelled = data.queue.filter((q) => q.status === "cancelled");
+                    const row = (q: (typeof data.queue)[number]) => (
                         <div className="queue-row" key={q.id}>
                           <div className="date-tile">
                             <CalendarDays size={19} />
@@ -1281,9 +1290,20 @@ export function Workspace({
                             </button>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
+                    );
+                    return (
+                      <div className="queue-list">
+                        {upcoming.map(row)}
+                        {done.map(row)}
+                        {cancelled.length > 0 && (
+                          <details className="queue-cancelled">
+                            <summary>Ver cancelados ({cancelled.length})</summary>
+                            {cancelled.map(row)}
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })() : (
                     <Empty
                       icon={CalendarDays}
                       title="Un calendario con espacio para tus ideas"
