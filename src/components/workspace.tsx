@@ -311,6 +311,7 @@ export function Workspace({
               month: "long",
               hour: "numeric",
               minute: "2-digit",
+              hour12: true,
               timeZone: data.settings.timezone || "America/New_York",
             })}.`
           : "Pin aprobado. Se programa solo cuando le toque (1 por producto al día, máximo por día).";
@@ -325,6 +326,7 @@ export function Workspace({
             month: "long",
             hour: "numeric",
             minute: "2-digit",
+            hour12: true,
             timeZone: data.settings.timezone || "America/New_York",
           })}.`;
         else if (json.result?.warning)
@@ -1019,9 +1021,7 @@ export function Workspace({
                         <span className="online-dot" />
                         <strong>{a.action}</strong>
                         <time>
-                          {new Date(a.created_at).toLocaleString("es", {
-                            timeZone: data.settings.timezone,
-                          })}
+                          {new Date(a.created_at).toLocaleString("es", whenOptions(data.settings.timezone))}
                         </time>
                       </div>
                     ))
@@ -1382,9 +1382,7 @@ export function Workspace({
                               )?.title || "Pin"}
                             </h3>
                             <p>
-                              {new Date(q.scheduled_at).toLocaleString("es", {
-                                timeZone: data.settings.timezone,
-                              })}{" "}
+                              {new Date(q.scheduled_at).toLocaleString("es", whenOptions(data.settings.timezone))}{" "}
                               · {q.attempts} intentos
                             </p>
                             {q.error && <p className="danger">{q.error}</p>}
@@ -1479,9 +1477,7 @@ export function Workspace({
                               }
                             </td>
                             <td>
-                              {new Date(p.published_at).toLocaleString("es", {
-                                timeZone: data.settings.timezone,
-                              })}
+                              {new Date(p.published_at).toLocaleString("es", whenOptions(data.settings.timezone))}
                             </td>
                             <td>
                               <a
@@ -2108,6 +2104,18 @@ function shortHash(text: string) {
   return (h >>> 0).toString(36);
 }
 // Distinct non-empty values, most recent first.
+// Dates and times read the same everywhere: "lun 20 oct, 9:15 a. m.".
+function whenOptions(timeZone: string): Intl.DateTimeFormatOptions {
+  return {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone,
+  };
+}
 function remembered(values: (string | undefined)[]) {
   return [...new Set(values.map((v) => (v || "").trim()).filter(Boolean))];
 }

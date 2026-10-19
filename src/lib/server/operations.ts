@@ -396,6 +396,7 @@ export async function autopilot(uid: string) {
   if (s.mode === "autopilot" && s.autopilot_enabled) {
     await autoGenerate(uid);
   }
+  await alignQueue(uid);
   // Only Pins the user approved one by one get scheduled: Pinterest requires
   // the user to choose each Pin an app publishes.
   // Approved Pins that had to wait (same board within 7 days, full days)
@@ -443,6 +444,30 @@ export async function approveOne(uid: string, id: string) {
       .maybeSingle(),
   ) as { scheduled_at: string } | null;
   return { scheduled_at: job?.scheduled_at || null };
+}
+
+// Waiting Pins set off the quarter hour (from before that rule) move to the
+// next clock run, e.g. 9:02 -> 9:15, so they go out at the time shown.
+// Only ever later, never earlier, so no spacing rule is broken.
+async function alignQueue(uid: string) {
+  const sb = admin();
+  const jobs = check(
+    await sb.from("publication_queue").select("id,scheduled_at").eq("user_id", uid).eq("status", "pending"),
+  ) as { id: string; scheduled_at: string }[];
+  for (const j of jobs) {
+    const t = Date.parse(j.scheduled_at);
+    const aligned = Math.ceil(t / QUARTER) * QUARTER;
+    if (aligned === t) continue;
+    check(
+      await sb
+        .from("publication_queue")
+        .update({ scheduled_at: new Date(aligned).toISOString() })
+        .eq("id", j.id)
+        .eq("user_id", uid)
+        .eq("status", "pending")
+        .select("id"),
+    );
+  }
 }
 
 type Slot = { at: number; product: string; board: string | null; live: boolean };
