@@ -172,6 +172,9 @@ export function rankBoards(p: Product, all: Board[], s: Settings) {
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((x) => x.b);
+  // A gift board fits any product: it gives the third Pin somewhere to go.
+  if (scored.length && scored.length < 3)
+    scored.push(...boards.filter((b) => /gift|regalo/.test(strip(b.name)) && !scored.includes(b)).slice(0, 1));
   if (scored.length) return scored;
   const fallback = pickBoard(p, all, s);
   return fallback ? [fallback] : [];

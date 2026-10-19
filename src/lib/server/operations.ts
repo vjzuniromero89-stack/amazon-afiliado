@@ -48,6 +48,11 @@ export async function generate(
     .eq("product_id", productId);
   const set = Math.floor((count || 0) / 3) % 2 ? TEMPLATES.slice(0, 3) : TEMPLATES.slice(3);
   concepts.forEach((c, i) => (c.template = set[i % 3]));
+  // Each Pin on its own fitting board when there are several, so the
+  // 7-day same-board rule does not hold the other two back.
+  const ranked = rankBoards(p, boards, s);
+  if (ranked.length > 1)
+    concepts.forEach((c, i) => (c.board_id = ranked[i % ranked.length].id));
   return check(
     await sb
       .from("creatives")
@@ -368,14 +373,12 @@ export async function autopilot(uid: string) {
 }
 
 // New products with at least one photo and no Pins yet: 3 Pins each,
-// spread over the boards that fit. Five products per run at most.
+// spread over the boards that fit (see generate). Five products per run at most.
 async function autoGenerate(uid: string) {
   const sb = admin();
-  const [products, used, boards, s] = await Promise.all([
+  const [products, used] = await Promise.all([
     sb.from("products").select("*").eq("user_id", uid).order("created_at").limit(1000),
     sb.from("creatives").select("product_id").eq("user_id", uid).limit(10000),
-    sb.from("boards").select("*").eq("user_id", uid),
-    getSettings(uid),
   ]);
   const done = new Set((check(used) as { product_id: string }[]).map((c) => c.product_id));
   const fresh = (check(products) as Product[])
@@ -383,21 +386,7 @@ async function autoGenerate(uid: string) {
     .slice(0, 5);
   for (const p of fresh) {
     if (!check(await sb.rpc("reserve_generation", { p_user: uid, p_auto: false }))) return;
-    const made = await generate(uid, p.id, true, true);
-    const ranked = rankBoards(p, (check(boards) as Board[]) || [], s);
-    for (const [i, c] of made.entries()) {
-      const board = ranked[i % Math.max(ranked.length, 1)];
-      if (board && board.id !== c.board_id)
-        check(
-          await sb
-            .from("creatives")
-            .update({ board_id: board.id })
-            .eq("id", c.id)
-            .eq("user_id", uid)
-            .eq("status", "draft")
-            .select("id"),
-        );
-    }
+    await generate(uid, p.id, true, true);
   }
 }
 
