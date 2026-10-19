@@ -571,8 +571,7 @@ export function Workspace({
                         <CalendarDays size={16} /> En cola
                         {job
                           ? `: sale el ${new Date(job.scheduled_at).toLocaleString("es", whenOptions(data.settings.timezone))}`
-                          : ""}
-                        .
+                          : "."}
                       </p>
                     );
                   })()}
