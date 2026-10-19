@@ -2683,3 +2683,16 @@ td.wrap.meta {
   font-weight: 700;
   color: var(--navy);
 }
+
+/* Pin card: approved or queued, nothing left for you to do. */
+.card-wait {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #eef3fb;
+  color: var(--navy);
+  font-weight: 700;
+}

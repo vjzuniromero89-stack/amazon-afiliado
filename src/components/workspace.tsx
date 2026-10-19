@@ -384,10 +384,6 @@ export function Workspace({
     setEditing(c);
     setModal("edit");
   }
-  function schedule(c: Creative) {
-    setScheduling(c);
-    setModal("schedule");
-  }
   // Versioned so the browser can keep each Pin image until it changes.
   const artworkSrc = (c: Creative) =>
     `/api/artwork/${c.id}?v=${c.revision}-${artworkKey(c)}`;
@@ -559,10 +555,27 @@ export function Workspace({
                   </button>
                 )}
                 {c.status === "approved" && (
-                  <button className="card-main" onClick={() => schedule(c)}>
-                    <CalendarDays size={18} /> Programar
-                  </button>
+                  // Nothing left to do: the clock plans it with the rules.
+                  <p className="card-wait">
+                    ✓ Aprobado. La app lo programa sola cuando le toque (1 por
+                    producto al día).
+                  </p>
                 )}
+                {c.status === "queued" &&
+                  (() => {
+                    const job = data.queue.find(
+                      (q) => q.creative_id === c.id && q.status === "pending",
+                    );
+                    return (
+                      <p className="card-wait">
+                        <CalendarDays size={16} /> En cola
+                        {job
+                          ? `: sale el ${new Date(job.scheduled_at).toLocaleString("es", whenOptions(data.settings.timezone))}`
+                          : ""}
+                        .
+                      </p>
+                    );
+                  })()}
                 <div className="card-tools">
                   {!["queued", "published"].includes(c.status) && (
                     <button className="secondary" onClick={() => edit(c)}>
