@@ -2591,3 +2591,62 @@ td.wrap.meta {
 .queue-cancelled .queue-row {
   opacity: 0.7;
 }
+
+/* Next Pin and today's Pins (dashboard and scheduler). */
+.today-panel {
+  margin-bottom: 24px;
+}
+.next-pin {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 18px 0;
+}
+.next-pin img {
+  width: 110px;
+  height: auto;
+  border-radius: 10px;
+  border: 2px solid var(--line, #d6deea);
+  flex: none;
+}
+.next-pin h3 {
+  margin: 4px 0 8px;
+  font-size: 1.25rem;
+  color: var(--navy);
+}
+.next-pin p {
+  margin: 4px 0;
+}
+.today-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line, #d6deea);
+}
+.today-list li {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--line, #d6deea);
+}
+.today-list li.is-next {
+  background: #fff4e3;
+  border-left: 4px solid var(--orange);
+}
+@media (max-width: 640px) {
+  .next-pin {
+    align-items: flex-start;
+  }
+  .next-pin img {
+    width: 84px;
+  }
+  .today-list li {
+    grid-template-columns: 70px 1fr;
+  }
+  .today-list li .badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

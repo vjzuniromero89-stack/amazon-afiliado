@@ -372,6 +372,83 @@ export function Workspace({
   // Versioned so the browser can keep each Pin image until it changes.
   const artworkSrc = (c: Creative) =>
     `/api/artwork/${c.id}?v=${c.revision}-${shortHash((data.products.find((p) => p.id === c.product_id)?.images || []).join("|") + data.settings.disclosure)}`;
+  // The next Pin to go out and today's Pins (New York day), shown on the
+  // dashboard and the scheduler so it is always clear what comes next.
+  const tz = data.settings.timezone;
+  const dayOf = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-CA", { timeZone: tz });
+  const timeOf = (iso: string) =>
+    new Date(iso).toLocaleTimeString("es", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: tz,
+    });
+  const todayKey = dayOf(new Date().toISOString());
+  const nextJob = data.queue
+    .filter((q) => ["pending", "processing"].includes(q.status))
+    .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))[0];
+  const todayJobs = data.queue
+    .filter((q) => q.status !== "cancelled" && dayOf(q.scheduled_at) === todayKey)
+    .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
+  const creativeOf = (id: string) => data.creatives.find((c) => c.id === id);
+  const nextCreative = nextJob && creativeOf(nextJob.creative_id);
+  const todayPanel = (
+    <section className="panel today-panel">
+      <div className="panel-heading">
+        <h2>Siguiente Pin</h2>
+        <span className="subtle-pill">
+          HOY · {todayJobs.length} DE {data.settings.daily_limit}
+        </span>
+      </div>
+      {nextJob && nextCreative ? (
+        <div className="next-pin">
+          <Image
+            unoptimized
+            src={artworkSrc(nextCreative)}
+            width={1000}
+            height={1500}
+            alt={nextCreative.alt_text}
+          />
+          <div>
+            <small>
+              {data.products.find((x) => x.id === nextCreative.product_id)?.title}
+            </small>
+            <h3>{nextCreative.title}</h3>
+            <p>
+              <b>
+                {dayOf(nextJob.scheduled_at) === todayKey
+                  ? "Hoy"
+                  : new Date(nextJob.scheduled_at).toLocaleDateString("es", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "short",
+                      timeZone: tz,
+                    })}{" "}
+                a las {timeOf(nextJob.scheduled_at)}
+              </b>{" "}
+              · {data.boards.find((b) => b.id === nextCreative.board_id)?.name}
+            </p>
+            <p className="muted">
+              Sale con la siguiente pasada del reloj (cada 15 minutos).
+            </p>
+          </div>
+        </div>
+      ) : (
+        <p className="muted">No hay Pins en cola.</p>
+      )}
+      {todayJobs.length > 0 && (
+        <ol className="today-list">
+          {todayJobs.map((q) => (
+            <li key={q.id} className={q.id === nextJob?.id ? "is-next" : ""}>
+              <b>{timeOf(q.scheduled_at)}</b>
+              <span>{creativeOf(q.creative_id)?.title || "Pin"}</span>
+              <Badge status={q.status} />
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
   const cards = (items: Creative[]) =>
     items.length ? (
       <div className="creative-grid">
@@ -659,6 +736,7 @@ export function Workspace({
 
             {section === "dashboard" && (
               <>
+                {todayPanel}
                 <section className="hero">
                   <div className="hero-copy">
                     <h2>
@@ -1205,6 +1283,7 @@ export function Workspace({
             )}
             {section === "scheduler" && (
               <>
+                {todayPanel}
                 <div className="info-strip">
                   <CalendarDays size={20} />
                   <p>
