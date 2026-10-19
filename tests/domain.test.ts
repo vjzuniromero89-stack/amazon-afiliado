@@ -7,6 +7,8 @@ import {
   creativeInput,
   insights,
   parseAmazon,
+  parseStoreLink,
+  pinLink,
   settingsInput,
   descriptionWithDisclosure,
 } from "../src/lib/domain";
@@ -138,4 +140,25 @@ test("AES-GCM encrypts and authenticates tokens and state compare rejects empty 
 });
 test("incomplete daily series never produces a misleading CTR", () => {
   assert.equal(aggregate([metric(100, 2), metric(300, null)]).ctr, null);
+});
+test("Target and Walmart links must be tracked, on the store and point at a product", () => {
+  const t = parseStoreLink(
+    "target",
+    "https://goto.target.com/c/1/2/3?u=https%3A%2F%2Fwww.target.com%2Fp%2Fmug%2F-%2FA-87654321",
+  );
+  assert.equal(t.asin, "T87654321");
+  assert.equal(pinLink({ store: "target", url: t.url }, ""), t.url);
+  const w = parseStoreLink(
+    "walmart",
+    "https://goto.walmart.com/c/1/2/3?u=https%3A%2F%2Fwww.walmart.com%2Fip%2FPillow%2F123456789",
+  );
+  assert.equal(w.asin, "W123456789");
+  for (const [store, url] of [
+    ["walmart", "https://www.walmart.com/ip/Pillow/123456789"],
+    ["target", "https://evil.com/c/1?u=https%3A%2F%2Fwww.target.com%2Fp%2Fx%2F-%2FA-1234567"],
+    ["walmart", "https://goto.walmart.com/c/1/2/3?u=https%3A%2F%2Fevil.com%2Fip%2Fx%2F12345678"],
+    ["target", "http://goto.target.com/c/1/2/3?u=https%3A%2F%2Fwww.target.com%2Fp%2Fx%2F-%2FA-1234567"],
+    ["target", "https://goto.target.com/c/1/2/3"],
+  ] as const)
+    assert.throws(() => parseStoreLink(store, url), url);
 });

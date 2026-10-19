@@ -2,6 +2,9 @@ export type Mode = "manual" | "assisted" | "autopilot";
 export type Product = {
   id: string;
   user_id: string;
+  // "amazon" (default), "target" or "walmart".
+  store?: string | null;
+  // Amazon ASIN, or T/W + the Target or Walmart product number.
   asin: string;
   marketplace: string;
   url: string;

@@ -53,6 +53,8 @@ function plain(text: string) {
 // symbols and stray spaces.
 export function cleanProductName(raw: string) {
   let t = raw.replace(/[™®©]/g, "").replace(/\s+/g, " ").trim();
+  // Target and Walmart page titles end with the store: "… : Target".
+  t = t.replace(/\s*[:\-–|]\s*(target|walmart\.com|walmart)\s*$/i, "");
   if (/^amazon\.[a-z.]+\s*:\s*/i.test(t))
     t = t.replace(/^amazon\.[a-z.]+\s*:\s*/i, "").replace(/\s+:\s+[^:]{3,40}$/, "");
   t = t
@@ -254,6 +256,72 @@ export const settingsInput = z.object({
   }),
   autopilot_enabled: z.boolean(),
 });
+// ---------- Stores ----------
+// Amazon links are built here from the ASIN and your tag. Target and
+// Walmart links come ready from Impact (or the Walmart Creator portal):
+// the app checks them and uses them as they are.
+export const STORES = { amazon: "Amazon", target: "Target", walmart: "Walmart" } as const;
+export type StoreId = keyof typeof STORES;
+export function storeOf(p: { store?: string | null }): StoreId {
+  return p.store === "target" || p.store === "walmart" ? p.store : "amazon";
+}
+const STORE_ROOT = { target: "target.com", walmart: "walmart.com" } as const;
+const onStore = (host: string, root: string) => host === root || host.endsWith("." + root);
+export function parseStoreLink(store: "target" | "walmart", input: string) {
+  const name = STORES[store],
+    root = STORE_ROOT[store];
+  let u: URL;
+  try {
+    u = new URL(input.trim());
+  } catch {
+    throw new Error(`Pega el link de afiliado de ${name} que te da Impact (empieza con https://).`);
+  }
+  if (u.protocol !== "https:" || u.username || u.password || !onStore(u.hostname.toLowerCase(), root))
+    throw new Error(`El link tiene que ser https y de ${root} (por ejemplo https://goto.${root}/c/…). Si es un link corto, ábrelo y copia el largo.`);
+  // A plain product page earns nothing: the link must come from Impact
+  // (goto.…) or carry the affiliate tracking from the Walmart Creator portal.
+  const tracked =
+    u.hostname.toLowerCase().startsWith("goto.") ||
+    ["wmlspartner", "affiliates_ad_id", "irgwc", "clickid", "afsrc", "sourceid"].some((k) => u.searchParams.has(k));
+  if (!tracked)
+    throw new Error(`Ese link de ${name} no tiene tu código de afiliado. Créalo en Impact (Create link) y pega ese link.`);
+  // The product page is either the link itself or the one inside ?u=.
+  let page = u;
+  const inner = u.searchParams.get("u");
+  if (inner) {
+    try {
+      page = new URL(inner);
+    } catch {
+      throw new Error(`El link de ${name} no trae una página de producto válida.`);
+    }
+    if (!onStore(page.hostname.toLowerCase(), root))
+      throw new Error(`El link de ${name} lleva a otra tienda.`);
+  }
+  const id =
+    store === "target"
+      ? page.pathname.match(/\/A-(\d{5,12})(?:\/|$)/)?.[1]
+      : page.pathname.match(/\/ip\/(?:[^/]+\/)?(\d{5,15})(?:\/|$)/)?.[1];
+  if (!id)
+    throw new Error(`No encuentro el producto en el link. En Impact crea el link con la página del producto de ${name}.`);
+  return { asin: `${store === "target" ? "T" : "W"}${id}`, marketplace: `www.${root}`, url: u.toString() };
+}
+// The link that goes in the Pin.
+export function pinLink(p: { store?: string | null; url: string }, tag: string) {
+  const store = storeOf(p);
+  if (store === "amazon") return affiliateUrl(p.url, tag);
+  return parseStoreLink(store, p.url).url;
+}
+// Disclosure for the store: Amazon keeps your Amazon statement; Walmart asks
+// for #WalmartPartner; both say plainly it is an affiliate link.
+export function storeDisclosure(store: StoreId, amazonDisclosure: string) {
+  if (store === "amazon") return amazonDisclosure;
+  return `${store === "walmart" ? "#WalmartPartner " : ""}#ad · Affiliate link: I may earn a commission from purchases.`;
+}
+// Copy written for Amazon ("See it on Amazon") adapted to the product's store.
+export function forStore(text: string, store: StoreId) {
+  return store === "amazon" ? text : text.replace(/\bAmazon\b/g, STORES[store]).replace(/\bamazon\b/g, store);
+}
+
 export function descriptionWithDisclosure(
   c: Pick<Creative, "description" | "cta">,
   s: Settings,

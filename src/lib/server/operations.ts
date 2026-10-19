@@ -3,7 +3,10 @@ import { admin, AppError, check, owned } from "./db";
 import { getSettings } from "./data";
 import { conceptProvider, pickBoard, pinExtras, rankBoards } from "./generation";
 import {
-  affiliateUrl,
+  forStore,
+  pinLink,
+  storeDisclosure,
+  storeOf,
   creativeInput,
   descriptionWithDisclosure,
   TEMPLATES,
@@ -55,6 +58,16 @@ export async function generate(
   const ranked = rankBoards(p, boards, s);
   if (ranked.length > 1)
     concepts.forEach((c, i) => (c.board_id = ranked[i % ranked.length].id));
+  // Copy written for Amazon ("See it on Amazon") follows the product's store.
+  const store = storeOf(p);
+  if (store !== "amazon")
+    for (const c of concepts) {
+      c.title = forStore(c.title, store);
+      c.description = forStore(c.description, store);
+      c.alt_text = forStore(c.alt_text, store);
+      c.cta = forStore(c.cta, store);
+      c.keywords = c.keywords.map((k) => forStore(k, store));
+    }
   let chosen = concepts;
   if (only !== undefined) {
     // Topping up: prefer a design, board and title the product does not have yet.
@@ -112,7 +125,7 @@ export async function approve(uid: string, id: string) {
   await owned("boards", c.board_id, uid);
   const s = await getSettings(uid);
   const p = await owned("products", c.product_id, uid);
-  affiliateUrl(p.url, s.tracking_id);
+  pinLink(p, s.tracking_id);
   const rows = check(
     await admin()
       .from("creatives")
@@ -136,7 +149,7 @@ export async function approve(uid: string, id: string) {
 export async function enqueue(uid: string, id: string, when: string) {
   const p = await owned("creatives", id, uid);
   const product = await owned("products", p.product_id, uid);
-  affiliateUrl(product.url, (await getSettings(uid)).tracking_id);
+  pinLink(product, (await getSettings(uid)).tracking_id);
   return check(
     await admin().rpc("enqueue_pin", {
       p_user: uid,
@@ -223,15 +236,17 @@ export async function publishNext(uid: string) {
       getSettings(uid),
       token(uid),
     ]);
-    const link = affiliateUrl(p.url, s.tracking_id);
-    const png = await imageProvider.render(c, s, await photoFor(c), pinExtras(p as Product));
+    const link = pinLink(p, s.tracking_id);
+    // Target and Walmart Pins carry their own disclosure, not Amazon's.
+    const ss = { ...s, disclosure: storeDisclosure(storeOf(p), s.disclosure) };
+    const png = await imageProvider.render(c, ss, await photoFor(c), pinExtras(p as Product));
     attempted = true;
     const pin = await pinterestWithToken<{ id: string }>(access, "/pins", {
       method: "POST",
       body: JSON.stringify({
         board_id: b.pinterest_id,
         title: c.title,
-        description: descriptionWithDisclosure(c, s),
+        description: descriptionWithDisclosure(c, ss),
         alt_text: c.alt_text,
         link,
         media_source: {
@@ -541,7 +556,9 @@ export async function reconcile(uid: string, jobId: string, pinId: string) {
   if (
     pin.board_id !== b.pinterest_id ||
     pin.title !== c.title ||
-    !pin.link.includes(`/dp/${p.asin}`)
+    !(storeOf(p) === "amazon"
+      ? pin.link.includes(`/dp/${p.asin}`)
+      : pin.link.includes(p.asin.slice(1)))
   )
     throw new AppError(
       "El Pin no coincide con board, título y producto de este trabajo.",

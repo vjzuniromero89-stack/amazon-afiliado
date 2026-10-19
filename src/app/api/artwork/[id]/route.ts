@@ -4,6 +4,7 @@ import { imageProvider } from "@/lib/server/artwork";
 import { photoFor } from "@/lib/server/images";
 import { pinExtras } from "@/lib/server/generation";
 import type { Product } from "@/lib/types";
+import { storeDisclosure, storeOf } from "@/lib/domain";
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -17,7 +18,8 @@ export async function GET(
       photoFor(c),
       owned("products", c.product_id, uid),
     ]);
-    const png = await imageProvider.render(c, settings, photo, pinExtras(product as Product));
+    const shown = { ...settings, disclosure: storeDisclosure(storeOf(product), settings.disclosure) };
+    const png = await imageProvider.render(c, shown, photo, pinExtras(product as Product));
     return new Response(Buffer.from(png), {
       headers: {
         "Content-Type": "image/png",

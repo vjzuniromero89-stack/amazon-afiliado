@@ -13,6 +13,7 @@ import {
   creativeInput,
   detectCategory,
   parseAmazon,
+  parseStoreLink,
   suggestDetails,
   settingsInput,
 } from "@/lib/domain";
@@ -56,16 +57,20 @@ export async function POST(req: Request) {
             category: z.string().trim().max(80),
             notes: z.string().trim().max(1000),
             marketplace: z.string(),
+            store: z.enum(["amazon", "target", "walmart"]).default("amazon"),
             images: photos.optional(),
             library: z.array(uuid).max(5).optional(),
           })
           .parse(body);
-        const { images, library, ...fields } = data;
+        const { images, library, store, ...fields } = data;
         if ((images?.length || 0) + (library?.length || 0) > 5)
           throw new AppError("Máximo 5 fotos por producto.");
         let amazon: ReturnType<typeof parseAmazon>;
         try {
-          amazon = parseAmazon(fields.input, fields.marketplace);
+          amazon =
+            store === "amazon"
+              ? parseAmazon(fields.input, fields.marketplace)
+              : parseStoreLink(store, fields.input);
         } catch (e) {
           throw new AppError(
             e instanceof Error ? e.message : "URL o ASIN no válido.",
@@ -76,6 +81,9 @@ export async function POST(req: Request) {
             .from("products")
             .insert({
               ...amazon,
+              // Only sent for Target and Walmart, so Amazon products save
+              // the same way before and after the store column exists.
+              ...(store === "amazon" ? {} : { store }),
               user_id: uid,
               // Repaired here so every Pin starts from a clean name and a
               // category that maps to a board.

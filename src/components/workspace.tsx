@@ -56,6 +56,10 @@ import {
   suggestDetails,
   marketplaces,
   reviewPin,
+  STORES,
+  storeDisclosure,
+  storeOf,
+  type StoreId,
 } from "@/lib/domain";
 import type { Creative, Photo, Product, Settings, Snapshot } from "@/lib/types";
 
@@ -495,7 +499,12 @@ export function Workspace({
                   <span key={i}>{k}</span>
                 ))}
               </div>
-              <p className="disclosure-line">{data.settings.disclosure}</p>
+              <p className="disclosure-line">
+                {storeDisclosure(
+                  storeOf(data.products.find((x) => x.id === c.product_id) || {}),
+                  data.settings.disclosure,
+                )}
+              </p>
               <p className="board-line">
                 Board:{" "}
                 {data.boards.find((b) => b.id === c.board_id)?.name ||
@@ -2289,6 +2298,7 @@ function ProductForm({
   const [notes, setNotes] = useState("");
   // Details fill themselves from the name until you type your own.
   const [notesAuto, setNotesAuto] = useState(true);
+  const [store, setStore] = useState<StoreId>("amazon");
   const writeNotes = (v: string) => {
     setNotes(v);
     setNotesAuto(!v.trim());
@@ -2324,13 +2334,42 @@ function ProductForm({
         Introduce información verificada por ti y sube fotos del producto. Las
         fotos se usan en el diseño del Pin.
       </p>
-      <Field label="URL de Amazon o ASIN">
+      <Field label="Tienda">
+        <select
+          name="store"
+          value={store}
+          onChange={(e) => setStore(e.target.value as StoreId)}
+        >
+          {(Object.keys(STORES) as StoreId[]).map((k) => (
+            <option key={k} value={k}>
+              {STORES[k]}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field
+        label={
+          store === "amazon"
+            ? "URL de Amazon o ASIN"
+            : `Link de afiliado de ${STORES[store]} (de Impact)`
+        }
+      >
         <input
           name="input"
-          placeholder="https://www.amazon.com/dp/…"
+          placeholder={
+            store === "amazon"
+              ? "https://www.amazon.com/dp/…"
+              : `https://goto.${store}.com/c/…`
+          }
           required
           maxLength={2048}
         />
+        {store !== "amazon" && (
+          <small className="field-fix">
+            En Impact: Create link → pega la página del producto de{" "}
+            {STORES[store]} → copia el link largo aquí.
+          </small>
+        )}
       </Field>
       <Field label="Nombre del producto">
         <Combo
@@ -2351,13 +2390,17 @@ function ProductForm({
         )}
       </Field>
       <div className="form-grid">
-        <Field label="Marketplace para ASIN">
-          <select name="marketplace" defaultValue={settings.marketplace}>
-            {marketplaces.map((m) => (
-              <option key={m}>{m}</option>
-            ))}
-          </select>
-        </Field>
+        {store === "amazon" ? (
+          <Field label="Marketplace para ASIN">
+            <select name="marketplace" defaultValue={settings.marketplace}>
+              {marketplaces.map((m) => (
+                <option key={m}>{m}</option>
+              ))}
+            </select>
+          </Field>
+        ) : (
+          <input type="hidden" name="marketplace" value={settings.marketplace} />
+        )}
         <Field label="Categoría">
           <Combo
             name="category"

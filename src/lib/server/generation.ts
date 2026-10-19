@@ -4,8 +4,10 @@ import {
   CATEGORY_PHRASE,
   creativeInput,
   detectCategory,
+  forStore,
   hasClaim,
   readsWrong,
+  storeOf,
   stripClaims,
 } from "../domain";
 import type { Board, Product, Settings } from "../types";
@@ -185,7 +187,7 @@ export function pinExtras(p: Product) {
         !hasClaim(t),
     )
     .slice(0, 2);
-  return { kicker: groupFor(p).hook, perks };
+  return { kicker: forStore(groupFor(p).hook, storeOf(p)), perks };
 }
 
 // Boards that fit the product, best first. Used to give each of a product's
