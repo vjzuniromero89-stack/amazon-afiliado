@@ -462,6 +462,7 @@ export function Workspace({
         <p className="muted">No hay Pins en cola.</p>
       )}
       {todayJobs.length > 0 && (
+        <>
         <p className="today-date">
           Hoy,{" "}
           {new Date().toLocaleDateString("es", {
@@ -481,6 +482,7 @@ export function Workspace({
             </li>
           ))}
         </ol>
+        </>
       )}
     </section>
   );
