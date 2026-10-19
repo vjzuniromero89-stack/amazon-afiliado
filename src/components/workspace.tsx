@@ -666,8 +666,13 @@ export function Workspace({
                         Abrir Pin Studio <ArrowUpRight size={18} />
                       </Link>
                       <span className="hero-foot">
-                        <ShieldCheck size={18} /> Revisión humana activada por
-                        defecto
+                        <ShieldCheck size={18} />{" "}
+                        {data.settings.mode === "autopilot" &&
+                        data.settings.autopilot_enabled
+                          ? data.settings.require_approval
+                            ? "Autopilot: tú apruebas con Aprobar todo"
+                            : "Autopilot: crea, aprueba y publica solo"
+                          : "Revisión humana activada"}
                       </span>
                     </div>
                   </div>
@@ -709,7 +714,12 @@ export function Workspace({
                         <h2>Tu flujo de trabajo</h2>
                         <p>Un paso a la vez. Todo bajo control.</p>
                       </div>
-                      <span className="subtle-pill">SEMIAUTOMÁTICO</span>
+                      <span className="subtle-pill">
+                        {data.settings.mode === "autopilot" &&
+                        data.settings.autopilot_enabled
+                          ? "AUTOPILOT"
+                          : "SEMIAUTOMÁTICO"}
+                      </span>
                     </div>
                     <div className="workflow">
                       {[

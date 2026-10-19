@@ -12,6 +12,7 @@ import { creativeInput, parseAmazon, settingsInput } from "@/lib/domain";
 import {
   approveAll,
   approveAndPublish,
+  autopilot,
   enqueue,
   generate,
   publishNext,
@@ -307,6 +308,10 @@ export async function POST(req: Request) {
       default:
         throw new AppError("Operación desconocida.", 400);
     }
+    // New product or photos: in Autopilot, make and plan its Pins now
+    // instead of waiting up to 15 minutes for the clock.
+    if (["addProduct", "addProductImages", "attachLibraryPhotos"].includes(action))
+      await autopilot(uid).catch((e) => console.error("autopilot after " + action, e));
     return Response.json({ ok: true, result });
   } catch (e) {
     return errorResponse(e);
