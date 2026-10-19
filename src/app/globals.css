@@ -2625,7 +2625,7 @@ td.wrap.meta {
 }
 .today-list li {
   display: grid;
-  grid-template-columns: 90px 1fr auto;
+  grid-template-columns: 120px 1fr auto;
   gap: 12px;
   align-items: center;
   padding: 12px 8px;
@@ -2643,7 +2643,7 @@ td.wrap.meta {
     width: 84px;
   }
   .today-list li {
-    grid-template-columns: 70px 1fr;
+    grid-template-columns: 96px 1fr;
   }
   .today-list li .badge {
     grid-column: 2;
@@ -2676,4 +2676,10 @@ td.wrap.meta {
 .review-warn {
   background: #fff1e0;
   color: #8a4a00;
+}
+
+.today-date {
+  margin: 6px 0 8px;
+  font-weight: 700;
+  color: var(--navy);
 }

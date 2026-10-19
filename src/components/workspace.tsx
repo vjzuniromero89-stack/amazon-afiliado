@@ -400,10 +400,12 @@ export function Workspace({
   const tz = data.settings.timezone;
   const dayOf = (iso: string) =>
     new Date(iso).toLocaleDateString("en-CA", { timeZone: tz });
+  // "5:16 p. m.", easier to read than "17:16".
   const timeOf = (iso: string) =>
     new Date(iso).toLocaleTimeString("es", {
       hour: "numeric",
       minute: "2-digit",
+      hour12: true,
       timeZone: tz,
     });
   const todayKey = dayOf(new Date().toISOString());
@@ -460,6 +462,16 @@ export function Workspace({
         <p className="muted">No hay Pins en cola.</p>
       )}
       {todayJobs.length > 0 && (
+        <p className="today-date">
+          Hoy,{" "}
+          {new Date().toLocaleDateString("es", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            timeZone: tz,
+          })}{" "}
+          (hora de Nueva York)
+        </p>
         <ol className="today-list">
           {todayJobs.map((q) => (
             <li key={q.id} className={q.id === nextJob?.id ? "is-next" : ""}>
