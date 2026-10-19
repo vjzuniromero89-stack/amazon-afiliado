@@ -216,6 +216,16 @@ function fitTitle(build: (name: string) => string, parsed: Parsed) {
 // on the words at the start of the title and description, so these go first.
 // Plain product names only: no benefits or health claims.
 const SEARCH_TERMS: { match: RegExp; phrase: string; related: string[] }[] = [
+  { match: /toner pad/, phrase: "Toner Pads", related: ["exfoliating toner pads", "korean skincare", "skincare routine"] },
+  { match: /toner/, phrase: "Face Toner", related: ["toner for face", "korean skincare", "skincare routine"] },
+  { match: /cleanser|face wash/, phrase: "Face Cleanser", related: ["face wash", "skincare routine", "skincare products"] },
+  { match: /eye patch/, phrase: "Under Eye Patches", related: ["eye patches", "self care", "skincare routine"] },
+  { match: /eye cream/, phrase: "Eye Cream", related: ["under eye cream", "skincare routine", "skincare products"] },
+  { match: /sheet mask|face mask/, phrase: "Face Mask", related: ["sheet mask", "self care night", "korean skincare"] },
+  { match: /bralette|\bbras?\b/, phrase: "Wireless Bra", related: ["bralette", "comfy bras", "amazon fashion finds"] },
+  { match: /legging/, phrase: "Leggings", related: ["leggings outfit", "workout leggings", "amazon fashion finds"] },
+  { match: /mattress protector/, phrase: "Waterproof Mattress Protector", related: ["mattress protector", "bedroom essentials", "home finds"] },
+  { match: /water bottle/, phrase: "Water Bottle", related: ["insulated water bottle", "everyday essentials", "amazon finds"] },
   { match: /hyaluronic/, phrase: "Hyaluronic Acid Supplement", related: ["hyaluronic acid capsules", "hyaluronic acid pills", "skincare supplements"] },
   { match: /collagen|colageno/, phrase: "Collagen Supplement", related: ["collagen pills", "collagen capsules", "multi collagen", "collagen for women"] },
   { match: /biotin/, phrase: "Biotin Supplement", related: ["biotin gummies", "hair vitamins", "biotin pills"] },
@@ -238,8 +248,15 @@ function searchTerms(p: Product, parsed: Parsed) {
   const hit = SEARCH_TERMS.find((t) => t.match.test(text));
   if (hit) return { phrase: hit.phrase, related: hit.related };
   // No known type: the product noun without the brand ("Bamboo Cutting Board").
-  const words = clean(parsed.full.split(/\s+with\s+/i)[0]).split(" ");
-  const noun = (words.length >= 4 ? words.slice(-3) : words).join(" ");
+  // Cut at "with", "for" or a comma, drop sizes like "2.0", and never start
+  // or end on a small word ("and Pore Care").
+  const words = clean(parsed.full.split(/\s+(?:with|for)\s+|,/i)[0])
+    .split(" ")
+    .filter((w) => !/^[\d.]+$/.test(w));
+  const pick = words.length >= 4 ? words.slice(-3) : words;
+  while (pick.length > 1 && STOP.test(pick[0])) pick.shift();
+  while (pick.length > 1 && STOP.test(pick[pick.length - 1])) pick.pop();
+  const noun = pick.join(" ");
   return { phrase: truncateWords(noun, 40), related: [] as string[] };
 }
 
