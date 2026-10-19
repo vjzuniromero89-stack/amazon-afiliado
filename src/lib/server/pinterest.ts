@@ -171,6 +171,48 @@ export async function syncBoards(uid: string) {
   await archiveMissingBoards(uid, seen);
   return count;
 }
+// Short, search-friendly descriptions for the topic boards. Pinterest reads
+// board titles and descriptions to decide where Pins belong. First match wins.
+const BOARD_TEXT: [RegExp, string][] = [
+  [/skin ?care/i, "Skincare routine ideas and product finds: toner pads, serums, cleansers, moisturizers and sunscreen for an easy daily skincare routine."],
+  [/collagen|supplement/i, "Collagen and supplement finds for a daily wellness routine: capsules, powders and gummies with clear label details."],
+  [/self ?care/i, "Self care and wellness routine ideas: cozy, practical products for a calmer everyday routine."],
+  [/wellness|health/i, "Health and wellness finds for an easy daily routine: supplements, self care and home wellness products worth saving."],
+  [/home.*kitchen/i, "Amazon home and kitchen finds: practical products for every room, from bedding and storage to kitchen gadgets."],
+  [/kitchen/i, "Kitchen must haves and gadgets: cookware, cutting boards, tumblers and kitchen organization finds from Amazon."],
+  [/home|decor|organi/i, "Home decor and organization ideas: bedroom essentials, bedding, storage and cozy home finds from Amazon."],
+  [/beauty|makeup/i, "Beauty must haves and makeup finds: everyday makeup, nail and hair care products worth saving for your beauty routine."],
+  [/fashion|outfit|style/i, "Amazon fashion finds: comfy bras, leggings, outfits and accessories for everyday style."],
+  [/fitness|workout|gym/i, "Fitness and workout gear: home workout equipment, gym essentials and activewear finds."],
+  [/tech|desk|gadget/i, "Tech and desk setup ideas: gadgets, chargers, earbuds and desk accessories worth saving."],
+  [/baby|mom/i, "Baby and mom must haves: practical baby essentials, nursery finds and mom life products."],
+  [/pet|dog|cat/i, "Pet products and dog accessories: toys, beds, grooming and pet care finds for dog and cat lovers."],
+  [/gift/i, "Gift ideas and Amazon finds for every occasion: birthdays, holidays and gifts for her, him, mom and friends."],
+];
+// Fills the description of topic boards that have none; never overwrites
+// one already written, and leaves personal boards alone.
+export async function describeBoards(uid: string) {
+  let bookmark: string | undefined;
+  let updated = 0;
+  do {
+    const page = await pinterest<{
+      items: { id: string; name: string; description?: string | null }[];
+      bookmark?: string;
+    }>(uid, `/boards?page_size=250${bookmark ? "&bookmark=" + encodeURIComponent(bookmark) : ""}`);
+    for (const b of page.items) {
+      if ((b.description || "").trim()) continue;
+      const text = BOARD_TEXT.find(([re]) => re.test(b.name))?.[1];
+      if (!text) continue;
+      await pinterest(uid, `/boards/${b.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ description: text }),
+      });
+      updated++;
+    }
+    bookmark = page.bookmark || undefined;
+  } while (bookmark);
+  return { updated };
+}
 // Boards the connected account no longer has (Sandbox boards after the move
 // to production, or boards deleted on Pinterest) are archived and unlinked
 // from Pins that have not been published, so nothing tries to post there.

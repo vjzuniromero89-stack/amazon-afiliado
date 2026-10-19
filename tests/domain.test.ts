@@ -52,7 +52,11 @@ test("disclosure is first and never truncated by a full description", () => {
     { description: "x".repeat(600), cta: "y".repeat(60) },
     defaults,
   );
-  assert.ok(d.startsWith(defaults.disclosure));
+  // "#ad · Affiliate link." leads, then the Amazon statement, both whole.
+  assert.ok(d.startsWith("#ad · Affiliate link. "));
+  assert.ok(
+    d.slice(0, 200).includes("As an Amazon Associate I earn from qualifying purchases"),
+  );
   assert.ok(d.length <= 800);
 });
 test("settings enforce daily cap, timezone, marketplace and disclosure", () => {

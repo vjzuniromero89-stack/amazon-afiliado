@@ -2650,3 +2650,13 @@ td.wrap.meta {
     justify-self: start;
   }
 }
+
+/* Analytics: which design and title kind bring clicks. */
+.what-works {
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.what-works table {
+  width: 100%;
+  margin-top: 16px;
+}

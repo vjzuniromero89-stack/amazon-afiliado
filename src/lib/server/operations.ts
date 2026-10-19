@@ -364,10 +364,9 @@ export async function autopilot(uid: string) {
   const s = await getSettings(uid);
   if (s.mode === "autopilot" && s.autopilot_enabled) {
     await autoGenerate(uid);
-    // With review on, only Pins you approved are scheduled; with it off,
-    // the new drafts are approved here first.
-    if (!s.require_approval) await approveDrafts(uid);
   }
+  // Only Pins the user approved one by one get scheduled: Pinterest requires
+  // the user to choose each Pin an app publishes.
   // Approved Pins that had to wait (same board within 7 days, full days)
   // are placed as soon as the rules allow, in every mode.
   await scheduleApproved(uid, s);
@@ -391,33 +390,21 @@ async function autoGenerate(uid: string) {
   }
 }
 
-async function approveDrafts(uid: string) {
-  const drafts = check(
+// One Pin approved by the user (Pinterest requires the user to choose each
+// Pin an app publishes), then planned by the same rules as every other Pin.
+export async function approveOne(uid: string, id: string) {
+  await approve(uid, id);
+  await scheduleApproved(uid, await getSettings(uid));
+  const job = check(
     await admin()
-      .from("creatives")
-      .select("id")
+      .from("publication_queue")
+      .select("scheduled_at")
       .eq("user_id", uid)
-      .eq("status", "draft")
-      .order("created_at")
-      .limit(60),
-  ) as { id: string }[];
-  let approved = 0;
-  for (const d of drafts) {
-    try {
-      await approve(uid, d.id);
-      approved++;
-    } catch {
-      /* A Pin that cannot be approved (e.g. no board) stays in review. */
-    }
-  }
-  return approved;
-}
-
-// "Aprobar todo": approve every Pin in review and plan them right away.
-export async function approveAll(uid: string) {
-  const approved = await approveDrafts(uid);
-  const scheduled = await scheduleApproved(uid, await getSettings(uid));
-  return { approved, scheduled };
+      .eq("creative_id", id)
+      .eq("status", "pending")
+      .maybeSingle(),
+  ) as { scheduled_at: string } | null;
+  return { scheduled_at: job?.scheduled_at || null };
 }
 
 type Slot = { at: number; product: string; board: string | null; live: boolean };

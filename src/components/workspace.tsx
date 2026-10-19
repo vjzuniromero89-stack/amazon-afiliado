@@ -298,6 +298,17 @@ export function Workspace({
             : json.result?.status === "idle"
               ? "No hay Pins listos para publicar. Revisa la fecha y los límites."
               : "El trabajo requiere atención. Consulta Scheduler.";
+      if (body.action === "approveOne")
+        text = json.result?.scheduled_at
+          ? `Pin aprobado. Saldrá el ${new Date(json.result.scheduled_at).toLocaleString("es", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              hour: "numeric",
+              minute: "2-digit",
+              timeZone: data.settings.timezone || "America/New_York",
+            })}.`
+          : "Pin aprobado. Se programa solo cuando le toque (1 por producto al día, máximo por día).";
       if (body.action === "approve") {
         if (json.result?.published) text = "¡Listo! El Pin ya está publicado en tu Pinterest.";
         else if (json.result?.scheduled_at)
@@ -496,12 +507,12 @@ export function Workspace({
                     disabled={pending}
                     onClick={() =>
                       run(
-                        { action: "approve", id: c.id },
+                        { action: "approveOne", id: c.id },
                         "Pin aprobado.",
                       )
                     }
                   >
-                    <Check size={18} /> Aprobar y publicar
+                    <Check size={18} /> Aprobar
                   </button>
                 )}
                 {c.status === "approved" && (
@@ -625,9 +636,7 @@ export function Workspace({
                     ? "Manual"
                     : "Autopilot"}
                 <small>
-                  {data.settings.require_approval
-                    ? "Tú tienes la última palabra"
-                    : "Aprobación automática habilitada"}
+                  Tú apruebas cada Pin
                 </small>
               </div>
               <span className="online-dot" />
@@ -762,9 +771,7 @@ export function Workspace({
                         <ShieldCheck size={18} />{" "}
                         {data.settings.mode === "autopilot" &&
                         data.settings.autopilot_enabled
-                          ? data.settings.require_approval
-                            ? "Autopilot: tú apruebas con Aprobar todo"
-                            : "Autopilot: crea, aprueba y publica solo"
+                          ? "Autopilot: crea y programa; tú apruebas cada Pin"
                           : "Revisión humana activada"}
                       </span>
                     </div>
@@ -1260,25 +1267,14 @@ export function Workspace({
                         {draftCount} {draftCount === 1 ? "Pin listo" : "Pins listos"} para revisar
                       </b>
                       <small>
-                        Al aprobar, se publican solos: 1 por producto al día,
+                        Mira cada Pin y toca Aprobar en los que quieras
+                        publicar (Pinterest pide que elijas cada uno). Después
+                        se publican solos: 1 por producto al día,
                         máximo {data.settings.daily_limit} al día, entre 9 am y
                         9 pm (Nueva York), sin repetir producto en el mismo board
                         antes de 7 días.
                       </small>
                     </div>
-                    <button
-                      disabled={pending}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `¿Aprobar los ${draftCount} Pins y dejar que se publiquen solos con estas reglas?`,
-                          )
-                        )
-                          run({ action: "approveAll" }, "Pins aprobados y programados. Míralos en Scheduler.");
-                      }}
-                    >
-                      <CheckCheck size={18} /> Aprobar todo
-                    </button>
                   </div>
                 )}
                 {cards(
@@ -2712,6 +2708,84 @@ function ScheduleForm({
   );
 }
 
+// Which design and which kind of title bring more clicks, from every Pin
+// published so far. Below 500 impressions a group is not judged yet: early
+// numbers on a new account mislead.
+const titleKind = (t: string) =>
+  /save for later/i.test(t)
+    ? "Guárdalo para después"
+    : /for your .* routine|for your/i.test(t)
+      ? "Para tu rutina"
+      : t.includes(": ")
+        ? "Búsqueda: nombre"
+        : "Solo el nombre";
+function WhatWorks({ data }: { data: Snapshot }) {
+  type Row = { pins: number; imp: number; saves: number; clicks: number };
+  const groups: Record<"Diseño" | "Tipo de título", Map<string, Row>> = {
+    Diseño: new Map(),
+    "Tipo de título": new Map(),
+  };
+  for (const pub of data.publications) {
+    const c = data.creatives.find((x) => x.id === pub.creative_id);
+    const ms = data.metrics.filter((m) => m.publication_id === pub.id);
+    const sum = (k: "impressions" | "saves" | "outbound_clicks") =>
+      ms.reduce((t, m) => t + (m[k] ?? 0), 0);
+    const add = (map: Map<string, Row>, key: string) => {
+      const r = map.get(key) || { pins: 0, imp: 0, saves: 0, clicks: 0 };
+      r.pins++;
+      r.imp += sum("impressions");
+      r.saves += sum("saves");
+      r.clicks += sum("outbound_clicks");
+      map.set(key, r);
+    };
+    add(groups.Diseño, pub.template);
+    if (c) add(groups["Tipo de título"], titleKind(c.title));
+  }
+  if (!data.publications.length) return null;
+  return (
+    <section className="panel what-works">
+      <div className="panel-heading">
+        <h2>Qué funciona</h2>
+        <span className="subtle-pill">TODOS LOS PINS PUBLICADOS</span>
+      </div>
+      <p className="muted">
+        Clics por cada 100 vistas, por diseño y por tipo de título. Con menos
+        de 500 vistas un grupo dice «Faltan datos»: es muy pronto para elegir.
+      </p>
+      {(Object.keys(groups) as (keyof typeof groups)[]).map((name) => (
+        <table key={name}>
+          <thead>
+            <tr>
+              <th>{name}</th>
+              <th>Pins</th>
+              <th>Vistas</th>
+              <th>Guardados</th>
+              <th>Clics</th>
+              <th>Clics / 100 vistas</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...groups[name].entries()]
+              .sort((a, b) => b[1].imp - a[1].imp)
+              .map(([key, r]) => (
+                <tr key={key}>
+                  <td>{key}</td>
+                  <td>{r.pins}</td>
+                  <td>{r.imp}</td>
+                  <td>{r.saves}</td>
+                  <td>{r.clicks}</td>
+                  <td>{r.imp ? ((r.clicks / r.imp) * 100).toFixed(1) : "–"}</td>
+                  <td>{r.imp < 500 ? "Faltan datos" : "Comparable"}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      ))}
+    </section>
+  );
+}
+
 function Analytics({
   data,
   run,
@@ -2740,6 +2814,7 @@ function Analytics({
         : key;
   return (
     <>
+      <WhatWorks data={data} />
       <div className="analytics-toolbar">
         <select
           aria-label="Periodo de análisis"
@@ -2918,6 +2993,18 @@ function SettingsPanel({
               >
                 Sincronizar boards
               </button>
+              <button
+                className="secondary"
+                disabled={pending}
+                onClick={() =>
+                  run(
+                    { action: "describeBoards" },
+                    "Descripciones escritas en los boards de tema que no tenían.",
+                  )
+                }
+              >
+                Describir boards
+              </button>
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -3005,15 +3092,12 @@ function SettingsPanel({
               <div>
                 <b>Revisión antes de publicar</b>
                 <small>
-                  En Autopilot, desactivar permite aprobar y programar
-                  automáticamente.
+                  Siempre activa: Pinterest pide que elijas cada Pin que la
+                  app publica. Tú tocas Aprobar en cada uno y la app hace el
+                  resto.
                 </small>
               </div>
-              <input
-                type="checkbox"
-                checked={s.require_approval}
-                onChange={(e) => change("require_approval", e.target.checked)}
-              />
+              <input type="checkbox" checked readOnly disabled />
             </label>
             {s.mode === "autopilot" && (
               <label className="toggle-row">
@@ -3023,8 +3107,8 @@ function SettingsPanel({
                     Cada producto nuevo con fotos recibe 3 Pins (otra foto,
                     diseño y board en cada uno). Se publican solos: 1 por
                     producto al día, máximo por día y entre 9 am y 9 pm
-                    (Nueva York). Con revisión activada, tú los apruebas con
-                    "Aprobar todo".
+                    (Nueva York). Tú apruebas cada Pin con un toque en
+                    Approval Queue.
                   </small>
                 </div>
                 <input

@@ -205,7 +205,12 @@ export function descriptionWithDisclosure(
   c: Pick<Creative, "description" | "cta">,
   s: Settings,
 ) {
-  return `${s.disclosure}\n\n${c.description}\n${c.cta}`.slice(0, 800);
+  // A plain "affiliate link" note first (FTC: hard to miss), then the
+  // Amazon statement.
+  const lead = /affiliate link/i.test(s.disclosure)
+    ? s.disclosure
+    : `#ad · Affiliate link. ${s.disclosure.replace(/\s*#ad\.?\s*$/i, "")}`;
+  return `${lead}\n\n${c.description}\n${c.cta}`.slice(0, 800);
 }
 export function aggregate(metrics: Metric[]) {
   const sum = (key: "impressions" | "saves" | "outbound_clicks") => {

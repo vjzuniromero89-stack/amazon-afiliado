@@ -17,8 +17,8 @@ import {
   settingsInput,
 } from "@/lib/domain";
 import {
-  approveAll,
   approveAndPublish,
+  approveOne,
   autopilot,
   enqueue,
   generate,
@@ -26,7 +26,7 @@ import {
   reconcile,
   syncAnalytics,
 } from "@/lib/server/operations";
-import { pinterest, syncBoards } from "@/lib/server/pinterest";
+import { describeBoards, pinterest, syncBoards } from "@/lib/server/pinterest";
 import {
   addLibraryPhotos,
   addProductImages,
@@ -203,8 +203,8 @@ export async function POST(req: Request) {
       case "approve":
         result = await approveAndPublish(uid, uuid.parse(body.id));
         break;
-      case "approveAll":
-        result = await approveAll(uid);
+      case "approveOne":
+        result = await approveOne(uid, uuid.parse(body.id));
         break;
       case "reject": {
         const rows = check(
@@ -290,6 +290,9 @@ export async function POST(req: Request) {
       }
       case "syncBoards":
         result = await syncBoards(uid);
+        break;
+      case "describeBoards":
+        result = await describeBoards(uid);
         break;
       case "createBoard": {
         const name = z.string().trim().min(1).max(50).parse(body.name);

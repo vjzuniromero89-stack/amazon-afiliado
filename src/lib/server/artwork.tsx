@@ -5,7 +5,7 @@ import { ImageResponse } from "next/og";
 import type { Creative, Settings } from "../types";
 
 // From the product: the small label for its topic ("Home Find") and up to
-// three short facts from its verified details, shown large on the image.
+// two short facts from its verified details, shown large on the image.
 export type PinExtras = { kicker: string; perks: string[] };
 const NO_EXTRAS: PinExtras = { kicker: "Amazon Find", perks: [] };
 

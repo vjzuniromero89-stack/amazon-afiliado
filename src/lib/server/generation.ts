@@ -161,7 +161,7 @@ function groupFor(p: Product) {
 }
 
 // What the Pin image shows besides the title: the topic label ("Home Find")
-// and up to three short facts from the details you verified ("Deep Pocket",
+// and up to two short facts from the details you verified ("Deep Pocket",
 // "60 Capsules"). Only label facts, never benefits or health claims.
 export function pinExtras(p: Product) {
   const perks = (p.notes || "")
@@ -174,7 +174,7 @@ export function pinExtras(p: Product) {
         !t.includes(":") &&
         !/^(manufacturer|brand|made by|by)\b/i.test(t),
     )
-    .slice(0, 3);
+    .slice(0, 2);
   return { kicker: groupFor(p).hook, perks };
 }
 
