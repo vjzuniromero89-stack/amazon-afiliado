@@ -160,6 +160,24 @@ function groupFor(p: Product) {
   );
 }
 
+// What the Pin image shows besides the title: the topic label ("Home Find")
+// and up to three short facts from the details you verified ("Deep Pocket",
+// "60 Capsules"). Only label facts, never benefits or health claims.
+export function pinExtras(p: Product) {
+  const perks = (p.notes || "")
+    .split(/[,;\n]|\.\s|\s[-–]\s/)
+    .map((t) => clean(t).replace(/^(key details|features?)\s*:\s*/i, "").replace(/\.$/, ""))
+    .filter(
+      (t) =>
+        t.length >= 3 &&
+        t.length <= 22 &&
+        !t.includes(":") &&
+        !/^(manufacturer|brand|made by|by)\b/i.test(t),
+    )
+    .slice(0, 3);
+  return { kicker: groupFor(p).hook, perks };
+}
+
 // Boards that fit the product, best first. Used to give each of a product's
 // Pins its own board, so the 7-day same-board rule does not hold them back.
 export function rankBoards(p: Product, all: Board[], s: Settings) {
@@ -312,7 +330,6 @@ export class TemplateConceptProvider implements ConceptProvider {
     const search = searchTerms(p, parsed);
     const phrase = search.phrase;
     const lower = phrase.toLowerCase();
-    const related = search.related.slice(0, 3).join(", ");
     const routine = g.noun === "everyday" ? "Daily" : g.noun.replace(/^\w/, (m) => m.toUpperCase());
     // When the product name already says it ("Bamboo Cutting Board Set"), do not repeat it.
     const named = strip(parsed.short).includes(strip(phrase));
@@ -325,7 +342,11 @@ export class TemplateConceptProvider implements ConceptProvider {
     ];
     if (new Set(titles).size < 3) titles[2] = `${phrase} – ${g.hook}`.slice(0, 100);
 
-    const more = related ? ` Also searched as: ${related}.` : "";
+    // Related searches as a plain sentence ("a, b or c"), not a keyword list.
+    const list = search.related.slice(0, 3);
+    const more = list.length
+      ? ` Handy if you're looking for ${list.length > 1 ? `${list.slice(0, -1).join(", ")} or ${list[list.length - 1]}` : list[0]}.`
+      : "";
     const descriptions = [
       `${phrase} idea: ${parsed.full}${forTxt}${sizeTxt}.${details}${more}${close}`,
       `Adding a ${lower} to your ${g.noun} routine? ${parsed.full}${sizeTxt} is worth a look${forTxt ? ` – made${forTxt.toLowerCase()}` : ""}.${details}${more}${close}`,

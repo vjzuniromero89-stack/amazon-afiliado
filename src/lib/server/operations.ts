@@ -1,7 +1,7 @@
 import "server-only";
 import { admin, AppError, check, owned } from "./db";
 import { getSettings } from "./data";
-import { conceptProvider, pickBoard, rankBoards } from "./generation";
+import { conceptProvider, pickBoard, pinExtras, rankBoards } from "./generation";
 import {
   affiliateUrl,
   creativeInput,
@@ -209,7 +209,7 @@ export async function publishNext(uid: string) {
       token(uid),
     ]);
     const link = affiliateUrl(p.url, s.tracking_id);
-    const png = await imageProvider.render(c, s, await photoFor(c));
+    const png = await imageProvider.render(c, s, await photoFor(c), pinExtras(p as Product));
     attempted = true;
     const pin = await pinterestWithToken<{ id: string }>(access, "/pins", {
       method: "POST",

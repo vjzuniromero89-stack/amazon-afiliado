@@ -371,7 +371,13 @@ export function Workspace({
   }
   // Versioned so the browser can keep each Pin image until it changes.
   const artworkSrc = (c: Creative) =>
-    `/api/artwork/${c.id}?v=${c.revision}-${shortHash((data.products.find((p) => p.id === c.product_id)?.images || []).join("|") + data.settings.disclosure)}`;
+    `/api/artwork/${c.id}?v=${c.revision}-${artworkKey(c)}`;
+  const artworkKey = (c: Creative) => {
+    const p = data.products.find((x) => x.id === c.product_id);
+    return shortHash(
+      "d2" + (p?.images || []).join("|") + (p?.notes || "") + (p?.category || "") + data.settings.disclosure,
+    );
+  };
   // The next Pin to go out and today's Pins (New York day), shown on the
   // dashboard and the scheduler so it is always clear what comes next.
   const tz = data.settings.timezone;
