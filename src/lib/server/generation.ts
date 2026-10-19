@@ -301,9 +301,9 @@ export class TemplateConceptProvider implements ConceptProvider {
       parsed.audience
         ? `${phrase} for ${parsed.audience}`.slice(0, 100)
         : `${phrase} for Your ${routine} Routine`.slice(0, 100),
-      `Save for Later: ${phrase}`.slice(0, 100),
+      `${phrase} – Save for Later`.slice(0, 100),
     ];
-    if (new Set(titles).size < 3) titles[2] = `${g.hook}: ${phrase}`.slice(0, 100);
+    if (new Set(titles).size < 3) titles[2] = `${phrase} – ${g.hook}`.slice(0, 100);
 
     const more = related ? ` Also searched as: ${related}.` : "";
     const descriptions = [
