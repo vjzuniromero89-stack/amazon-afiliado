@@ -53,6 +53,7 @@ import {
   cleanProductName,
   detectCategory,
   insights,
+  suggestDetails,
   marketplaces,
 } from "@/lib/domain";
 import type { Creative, Photo, Product, Settings, Snapshot } from "@/lib/types";
@@ -2275,6 +2276,12 @@ function ProductForm({
   const [picked, setPicked] = useState<string[]>([]);
   const [reading, setReading] = useState(false);
   const [notes, setNotes] = useState("");
+  // Details fill themselves from the name until you type your own.
+  const [notesAuto, setNotesAuto] = useState(true);
+  const writeNotes = (v: string) => {
+    setNotes(v);
+    setNotesAuto(!v.trim());
+  };
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const fixedTitle = cleanProductName(title);
@@ -2323,7 +2330,10 @@ function ProductForm({
           minLength={3}
           maxLength={160}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            if (notesAuto) setNotes(suggestDetails(e.target.value));
+          }}
         />
         {title.trim() && fixedTitle !== title.trim() && (
           <small className="field-fix">Se guardará como: {fixedTitle}</small>
@@ -2366,7 +2376,7 @@ function ProductForm({
           <select
             aria-label="Usar detalles de antes"
             value=""
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) => writeNotes(e.target.value)}
           >
             <option value="">Usar detalles de antes…</option>
             {pastNotes.map((n) => (
@@ -2381,9 +2391,14 @@ function ProductForm({
           rows={3}
           maxLength={1000}
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Material, uso, características confirmadas…"
+          onChange={(e) => writeNotes(e.target.value)}
+          placeholder="Se llenan solos con el nombre: Waterproof, Queen Size…"
         />
+        {notesAuto && notes && (
+          <small className="field-fix">
+            Sacados del nombre del producto. Corrígelos si hace falta.
+          </small>
+        )}
       </Field>
       {library.length > 0 && (
         <LibraryPicker

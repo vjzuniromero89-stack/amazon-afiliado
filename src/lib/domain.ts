@@ -63,6 +63,38 @@ export function cleanProductName(raw: string) {
     .trim();
   return t.slice(0, 160);
 }
+// Product facts that sellers put in Amazon names; shown as chips on the Pin.
+const FEATURES = [
+  "waterproof", "water resistant", "wireless", "bluetooth", "rechargeable", "cordless",
+  "portable", "adjustable", "foldable", "non-slip", "non slip", "noiseless", "breathable",
+  "machine washable", "washable", "dishwasher safe", "stainless steel", "bpa free", "leak proof",
+  "deep pocket", "deep v", "push up", "seamless", "high waisted", "lightweight", "quick dry",
+  "unscented", "fragrance free", "vegan", "cruelty free", "gluten free", "sugar free", "non gmo",
+  "organic", "hypoallergenic", "cooling", "memory foam", "led", "usb c", "magnetic",
+  "queen size", "king size", "full size", "twin size", "travel size",
+];
+// Words that would turn a fact into a claim; never shown.
+const CLAIMS = /support|boost|relief|reliev|anti|weight|immun|sleep|joint|heal|cure|treat|detox|energy|hydrat|repair|acne|wrinkle|aging|glow|slim|burn|pain|clinically|doctor|best|#1/i;
+const titleCase = (t: string) => t.replace(/\b\w/g, (m) => m.toUpperCase()).replace(/\bBpa\b/, "BPA").replace(/\bLed\b/, "LED").replace(/\bUsb C\b/, "USB-C").replace(/\bGmo\b/, "GMO");
+// Short facts read from the product name ("Waterproof, Queen Size,
+// Noiseless") so the details field fills itself. Only what the name says.
+export function suggestDetails(title: string) {
+  const name = cleanProductName(title);
+  const low = plain(name).replace(/-/g, " ");
+  const found: string[] = [];
+  const add = (t: string) => {
+    const v = titleCase(t.trim());
+    if (v.length >= 3 && v.length <= 22 && !CLAIMS.test(v) && !found.some((f) => plain(f) === plain(v)))
+      found.push(v);
+  };
+  for (const f of FEATURES) if (new RegExp(`\\b${f}\\b`).test(low) && !found.some((x) => plain(x).includes(f))) add(f);
+  // Counts and sizes: "60 Capsules", "3 Pack", "40 oz".
+  for (const m of low.matchAll(/\b(\d+(?:\.\d+)?)\s*(capsules|softgels|gummies|tablets|servings|count|ct|pack|pcs|pieces|oz|fl oz|ml|inch|in)\b/g))
+    add(`${m[1]} ${m[2] === "ct" ? "count" : m[2] === "in" ? "inch" : m[2]}`);
+  // Short phrases after the first comma ("..., Queen Size Mattress Pad").
+  for (const part of name.split(/,|\s[-–|]\s/).slice(1)) if (part.trim().split(" ").length <= 3) add(part);
+  return found.slice(0, 4).join(", ");
+}
 // Picks one of the fixed categories from what was typed, then from the name.
 export function detectCategory(title: string, category: string) {
   const typed = plain(category.trim());

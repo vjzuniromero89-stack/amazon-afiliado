@@ -13,6 +13,7 @@ import {
   creativeInput,
   detectCategory,
   parseAmazon,
+  suggestDetails,
   settingsInput,
 } from "@/lib/domain";
 import {
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
               // category that maps to a board.
               title: cleanProductName(fields.title),
               category: detectCategory(fields.title, fields.category),
-              notes: fields.notes,
+              notes: fields.notes || suggestDetails(fields.title),
             })
             .select("*")
             .single(),
