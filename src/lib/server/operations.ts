@@ -23,6 +23,8 @@ export async function generate(
   productId: string,
   ai: boolean,
   reserved = false,
+  // How many Pins to add (to top a product up to 3); all 3 when omitted.
+  only?: number,
 ) {
   const sb = admin();
   if (
@@ -53,11 +55,24 @@ export async function generate(
   const ranked = rankBoards(p, boards, s);
   if (ranked.length > 1)
     concepts.forEach((c, i) => (c.board_id = ranked[i % ranked.length].id));
+  let chosen = concepts;
+  if (only !== undefined) {
+    // Topping up: prefer a design, board and title the product does not have yet.
+    const have = check(
+      await sb.from("creatives").select("template,board_id,title").eq("user_id", uid).eq("product_id", productId),
+    ) as Pick<Creative, "template" | "board_id" | "title">[];
+    const score = (c: (typeof concepts)[number]) =>
+      (have.some((h) => h.template === c.template) ? 0 : 2) +
+      (have.some((h) => h.board_id === c.board_id) ? 0 : 1) +
+      (have.some((h) => h.title === c.title) ? 0 : 1);
+    chosen = [...concepts].sort((a, b) => score(b) - score(a)).slice(0, Math.max(0, only));
+  }
+  if (!chosen.length) return [];
   return check(
     await sb
       .from("creatives")
       .insert(
-        concepts.map((c) => ({
+        chosen.map((c) => ({
           ...c,
           user_id: uid,
           product_id: productId,
@@ -372,7 +387,7 @@ export async function autopilot(uid: string) {
   await scheduleApproved(uid, s);
 }
 
-// New products with at least one photo and no Pins yet: 3 Pins each,
+// Products with at least one photo get 3 Pins each (topped up when some were deleted),
 // spread over the boards that fit (see generate). Five products per run at most.
 async function autoGenerate(uid: string) {
   const sb = admin();
@@ -380,13 +395,20 @@ async function autoGenerate(uid: string) {
     sb.from("products").select("*").eq("user_id", uid).order("created_at").limit(1000),
     sb.from("creatives").select("product_id").eq("user_id", uid).limit(10000),
   ]);
-  const done = new Set((check(used) as { product_id: string }[]).map((c) => c.product_id));
-  const fresh = (check(products) as Product[])
-    .filter((p) => !done.has(p.id) && (p.images?.length || 0) > 0)
+  // Pins each product has (any status; deleted ones no longer count).
+  const made = new Map<string, number>();
+  for (const c of check(used) as { product_id: string }[])
+    made.set(c.product_id, (made.get(c.product_id) || 0) + 1);
+  // Products with photos and fewer than 3 Pins: new ones first, then the
+  // ones to top up (e.g. after test Pins were deleted).
+  const todo = (check(products) as Product[])
+    .filter((p) => (made.get(p.id) || 0) < 3 && (p.images?.length || 0) > 0)
+    .sort((a, b) => (made.get(a.id) || 0) - (made.get(b.id) || 0))
     .slice(0, 5);
-  for (const p of fresh) {
+  for (const p of todo) {
     if (!check(await sb.rpc("reserve_generation", { p_user: uid, p_auto: false }))) return;
-    await generate(uid, p.id, true, true);
+    const n = made.get(p.id) || 0;
+    await generate(uid, p.id, true, true, n ? 3 - n : undefined);
   }
 }
 
