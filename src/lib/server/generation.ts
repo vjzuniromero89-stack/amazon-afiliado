@@ -160,6 +160,23 @@ function groupFor(p: Product) {
   );
 }
 
+// Boards that fit the product, best first. Used to give each of a product's
+// Pins its own board, so the 7-day same-board rule does not hold them back.
+export function rankBoards(p: Product, all: Board[], s: Settings) {
+  const boards = all.filter((b) => !b.archived);
+  const g = groupFor(p);
+  const terms = [...g.match, g.noun, ...strip(p.category || "").split(/\W+/)]
+    .filter((t) => t.length >= 3 && !["gadget", "must", "haves", "finds", "ideas", "amazon"].includes(t));
+  const scored = boards
+    .map((b) => ({ b, score: terms.filter((t) => strip(b.name).includes(t)).length }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((x) => x.b);
+  if (scored.length) return scored;
+  const fallback = pickBoard(p, all, s);
+  return fallback ? [fallback] : [];
+}
+
 // Picks the board whose name best matches the product's topic,
 // then falls back to the default board, then to the only board available.
 export function pickBoard(p: Product, all: Board[], s: Settings) {

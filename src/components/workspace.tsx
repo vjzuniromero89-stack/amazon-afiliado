@@ -1150,6 +1150,34 @@ export function Workspace({
                     Pin aprobado, volverá a necesitar revisión.
                   </p>
                 </div>
+                {draftCount > 0 && (
+                  <div className="approve-all">
+                    <div>
+                      <b>
+                        {draftCount} {draftCount === 1 ? "Pin listo" : "Pins listos"} para revisar
+                      </b>
+                      <small>
+                        Al aprobar, se publican solos: 1 por producto al día,
+                        máximo {data.settings.daily_limit} al día, entre 9 am y
+                        9 pm (Nueva York), sin repetir producto en el mismo board
+                        antes de 7 días.
+                      </small>
+                    </div>
+                    <button
+                      disabled={pending}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `¿Aprobar los ${draftCount} Pins y dejar que se publiquen solos con estas reglas?`,
+                          )
+                        )
+                          run({ action: "approveAll" }, "Pins aprobados y programados. Míralos en Scheduler.");
+                      }}
+                    >
+                      <CheckCheck size={18} /> Aprobar todo
+                    </button>
+                  </div>
+                )}
                 {cards(
                   data.creatives.filter((c) =>
                     ["draft", "approved", "rejected"].includes(c.status),
@@ -2838,8 +2866,11 @@ function SettingsPanel({
                 <div>
                   <b>Activar Autopilot</b>
                   <small>
-                    Procesa un producto nuevo al día: 3 conceptos; con revisión
-                    desactivada, programa uno.
+                    Cada producto nuevo con fotos recibe 3 Pins (otra foto,
+                    diseño y board en cada uno). Se publican solos: 1 por
+                    producto al día, máximo por día y entre 9 am y 9 pm
+                    (Nueva York). Con revisión activada, tú los apruebas con
+                    "Aprobar todo".
                   </small>
                 </div>
                 <input

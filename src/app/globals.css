@@ -2541,3 +2541,34 @@ td.wrap.meta {
 .gallery-thumbs .thumb-button.on .table-thumb {
   border: 3px solid var(--orange-press);
 }
+.approve-all {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 20px;
+  margin-bottom: 22px;
+  background: var(--paper);
+  border: 1.5px solid var(--orange-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.approve-all > div {
+  flex: 1;
+}
+.approve-all b {
+  display: block;
+  font-size: 18px;
+  color: var(--navy-ink);
+}
+.approve-all small {
+  display: block;
+  color: var(--ink-2);
+  font-size: 15px;
+  margin-top: 2px;
+}
+@media (max-width: 720px) {
+  .approve-all {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

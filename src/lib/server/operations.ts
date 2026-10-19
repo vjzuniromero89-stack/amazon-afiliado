@@ -1,7 +1,7 @@
 import "server-only";
 import { admin, AppError, check, owned } from "./db";
 import { getSettings } from "./data";
-import { conceptProvider, pickBoard } from "./generation";
+import { conceptProvider, pickBoard, rankBoards } from "./generation";
 import {
   affiliateUrl,
   creativeInput,
@@ -16,7 +16,7 @@ import {
   PinterestError,
   token,
 } from "./pinterest";
-import type { Board, Creative, Product } from "../types";
+import type { Board, Creative, Product, Settings } from "../types";
 
 export async function generate(
   uid: string,
@@ -323,37 +323,184 @@ export async function syncAnalytics(uid: string, limit = 20) {
   return count;
 }
 
+// ---------- Autopilot ----------
+// Products with photos get 3 Pins (each its own design, photo and, when
+// possible, board). Approved Pins are then scheduled by these rules:
+// at most one Pin per product per day, the daily limit, the minimum
+// interval, 9 am to 9 pm New York time, and never the same product on the
+// same board within 7 days (that Pin waits).
+const OPEN_HOUR = 9,
+  CLOSE_HOUR = 21,
+  NY = "America/New_York";
+function nyHour(t: number) {
+  return Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: NY, hour: "numeric", hourCycle: "h23" }).format(t),
+  );
+}
+function nyDay(t: number) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: NY }).format(t);
+}
+// Next moment inside the posting window, in 15-minute steps.
+function inWindow(t: number) {
+  for (let i = 0; i < 200 && (nyHour(t) < OPEN_HOUR || nyHour(t) >= CLOSE_HOUR); i++)
+    t += 15 * 60000;
+  return t;
+}
+// Start of the posting window on the next New York day.
+function nextDayOpen(t: number) {
+  const day = nyDay(t);
+  let x = t;
+  for (let i = 0; i < 200 && nyDay(x) === day; i++) x += 15 * 60000;
+  return inWindow(x);
+}
+
 export async function autopilot(uid: string) {
   const s = await getSettings(uid);
-  if (s.mode !== "autopilot" || !s.autopilot_enabled) return;
+  if (s.mode === "autopilot" && s.autopilot_enabled) {
+    await autoGenerate(uid);
+    // With review on, only Pins you approved are scheduled; with it off,
+    // the new drafts are approved here first.
+    if (!s.require_approval) await approveDrafts(uid);
+  }
+  // Approved Pins that had to wait (same board within 7 days, full days)
+  // are placed as soon as the rules allow, in every mode.
+  await scheduleApproved(uid, s);
+}
+
+// New products with at least one photo and no Pins yet: 3 Pins each,
+// spread over the boards that fit. Five products per run at most.
+async function autoGenerate(uid: string) {
   const sb = admin();
-  const products = check(
-    await sb
-      .from("products")
+  const [products, used, boards, s] = await Promise.all([
+    sb.from("products").select("*").eq("user_id", uid).order("created_at").limit(1000),
+    sb.from("creatives").select("product_id").eq("user_id", uid).limit(10000),
+    sb.from("boards").select("*").eq("user_id", uid),
+    getSettings(uid),
+  ]);
+  const done = new Set((check(used) as { product_id: string }[]).map((c) => c.product_id));
+  const fresh = (check(products) as Product[])
+    .filter((p) => !done.has(p.id) && (p.images?.length || 0) > 0)
+    .slice(0, 5);
+  for (const p of fresh) {
+    if (!check(await sb.rpc("reserve_generation", { p_user: uid, p_auto: false }))) return;
+    const made = await generate(uid, p.id, true, true);
+    const ranked = rankBoards(p, (check(boards) as Board[]) || [], s);
+    for (const [i, c] of made.entries()) {
+      const board = ranked[i % Math.max(ranked.length, 1)];
+      if (board && board.id !== c.board_id)
+        check(
+          await sb
+            .from("creatives")
+            .update({ board_id: board.id })
+            .eq("id", c.id)
+            .eq("user_id", uid)
+            .eq("status", "draft")
+            .select("id"),
+        );
+    }
+  }
+}
+
+async function approveDrafts(uid: string) {
+  const drafts = check(
+    await admin()
+      .from("creatives")
       .select("id")
       .eq("user_id", uid)
+      .eq("status", "draft")
       .order("created_at")
-      .limit(1000),
-  );
-  const used = check(
-    await sb
-      .from("creatives")
-      .select("product_id")
-      .eq("user_id", uid)
-      .limit(10000),
-  );
-  const candidate = products.find(
-    (p) => !used.some((c) => c.product_id === p.id),
-  );
-  if (!candidate) return;
-  if (!check(await sb.rpc("reserve_generation", { p_user: uid, p_auto: true })))
-    return;
-  const generated = await generate(uid, candidate.id, true, true);
-  if (s.require_approval) return;
-  const c = generated.find((x) => x.board_id);
-  if (!c) return;
-  await approve(uid, c.id);
-  await enqueue(uid, c.id, await earliestSlot(uid));
+      .limit(60),
+  ) as { id: string }[];
+  let approved = 0;
+  for (const d of drafts) {
+    try {
+      await approve(uid, d.id);
+      approved++;
+    } catch {
+      /* A Pin that cannot be approved (e.g. no board) stays in review. */
+    }
+  }
+  return approved;
+}
+
+// "Aprobar todo": approve every Pin in review and plan them right away.
+export async function approveAll(uid: string) {
+  const approved = await approveDrafts(uid);
+  const scheduled = await scheduleApproved(uid, await getSettings(uid));
+  return { approved, scheduled };
+}
+
+type Slot = { at: number; product: string; board: string | null; live: boolean };
+export async function scheduleApproved(uid: string, s: Settings) {
+  const sb = admin();
+  const since = new Date(Date.now() - 8 * 86400000).toISOString();
+  const [approvedRes, queueRes, pubsRes] = await Promise.all([
+    sb.from("creatives").select("id,product_id,board_id,created_at").eq("user_id", uid).eq("status", "approved").order("created_at").limit(60),
+    sb.from("publication_queue").select("scheduled_at,started_at,status,creative_id").eq("user_id", uid).in("status", ["pending", "processing", "published", "uncertain"]).gte("scheduled_at", since),
+    sb.from("publications").select("product_id,board_id,published_at").eq("user_id", uid).gte("published_at", since),
+  ]);
+  const approved = check(approvedRes) as Pick<Creative, "id" | "product_id" | "board_id">[];
+  if (!approved.length) return 0;
+  const queue = check(queueRes) as { scheduled_at: string; started_at: string | null; status: string; creative_id: string }[];
+  const pubs = check(pubsRes) as { product_id: string; board_id: string; published_at: string }[];
+  const ids = [...new Set(queue.map((q) => q.creative_id))];
+  const owners = ids.length
+    ? (check(await sb.from("creatives").select("id,product_id,board_id").in("id", ids)) as { id: string; product_id: string; board_id: string | null }[])
+    : [];
+  const slots: Slot[] = queue.map((q) => {
+    const o = owners.find((x) => x.id === q.creative_id);
+    return {
+      at: Date.parse(q.started_at || q.scheduled_at),
+      product: o?.product_id || "",
+      board: o?.board_id || null,
+      live: q.status !== "published",
+    };
+  });
+  const gap = s.min_interval_minutes * 60000;
+  const week = 7 * 86400000;
+  let scheduled = 0;
+  for (const c of approved) {
+    if (!c.board_id) continue;
+    // Same product on the same board: one at a time, then a 7-day pause.
+    const sameBoard = (x: { product: string; board: string | null }) =>
+      x.product === c.product_id && x.board === c.board_id;
+    if (slots.some((x) => sameBoard(x) && x.live)) continue;
+    if (pubs.some((x) => x.product_id === c.product_id && x.board_id === c.board_id && Date.parse(x.published_at) > Date.now() - week))
+      continue;
+    let t = inWindow(Date.now() + 2 * 60000);
+    let found: number | null = null;
+    for (let i = 0; i < 500 && t < Date.now() + 60 * 86400000; i++) {
+      t = inWindow(t);
+      const clash = slots.find((x) => Math.abs(x.at - t) < gap);
+      if (clash) {
+        t = clash.at + gap + 60000;
+        continue;
+      }
+      const utc = new Date(t).toISOString().slice(0, 10);
+      if (slots.filter((x) => new Date(x.at).toISOString().slice(0, 10) === utc).length >= s.daily_limit) {
+        const d = new Date(t);
+        d.setUTCDate(d.getUTCDate() + 1);
+        d.setUTCHours(0, 5, 0, 0);
+        t = d.getTime();
+        continue;
+      }
+      if (slots.some((x) => x.product === c.product_id && nyDay(x.at) === nyDay(t))) {
+        t = nextDayOpen(t);
+        continue;
+      }
+      found = t;
+      break;
+    }
+    if (found === null) continue;
+    try {
+      await enqueue(uid, c.id, new Date(found).toISOString());
+      slots.push({ at: found, product: c.product_id, board: c.board_id, live: true });
+      scheduled++;
+    } catch {
+      /* Rejected by a database rule; the next run tries again. */
+    }
+  }
+  return scheduled;
 }
 
 export async function reconcile(uid: string, jobId: string, pinId: string) {

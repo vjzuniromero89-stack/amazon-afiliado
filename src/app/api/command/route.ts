@@ -10,6 +10,7 @@ import {
 } from "@/lib/server/db";
 import { creativeInput, parseAmazon, settingsInput } from "@/lib/domain";
 import {
+  approveAll,
   approveAndPublish,
   enqueue,
   generate,
@@ -191,6 +192,9 @@ export async function POST(req: Request) {
       }
       case "approve":
         result = await approveAndPublish(uid, uuid.parse(body.id));
+        break;
+      case "approveAll":
+        result = await approveAll(uid);
         break;
       case "reject": {
         const rows = check(
