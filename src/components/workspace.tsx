@@ -422,7 +422,10 @@ export function Workspace({
       <div className="panel-heading">
         <h2>Siguiente Pin</h2>
         <span className="subtle-pill">
-          HOY · {todayJobs.length} DE {data.settings.daily_limit}
+          HOY · {todayJobs.filter((q) => q.status === "published").length}{" "}
+          PUBLICADOS ·{" "}
+          {todayJobs.filter((q) => q.status !== "published").length} EN COLA ·
+          MÁXIMO {data.settings.daily_limit}
         </span>
       </div>
       {nextJob && nextCreative ? (
