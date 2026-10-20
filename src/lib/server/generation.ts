@@ -253,6 +253,9 @@ function fitTitle(build: (name: string) => string, parsed: Parsed) {
 // on the words at the start of the title and description, so these go first.
 // Plain product names only: no benefits or health claims.
 const SEARCH_TERMS: { match: RegExp; phrase: string; related: string[] }[] = [
+  { match: /hair (?:mask|oil|serum|treatment|essence)|leave-?(?:on|in)|pantene|olaplex|moroccanoil/, phrase: "Hair Treatment", related: ["hair care routine", "leave in treatment", "hair care products"] },
+  { match: /shampoo|conditioner/, phrase: "Shampoo and Conditioner", related: ["hair care routine", "hair care products", "shower essentials"] },
+  { match: /lip liner|lip pencil/, phrase: "Lip Liner", related: ["nude lip liner", "lip combo", "makeup must haves"] },
   { match: /toner pad/, phrase: "Toner Pads", related: ["exfoliating toner pads", "korean skincare", "skincare routine"] },
   { match: /toner/, phrase: "Face Toner", related: ["toner for face", "korean skincare", "skincare routine"] },
   { match: /cleanser|face wash/, phrase: "Face Cleanser", related: ["face wash", "skincare routine", "skincare products"] },
@@ -283,7 +286,7 @@ const SEARCH_TERMS: { match: RegExp; phrase: string; related: string[] }[] = [
 // Ingredients like hyaluronic acid or collagen are in creams too: a cream,
 // serum or lotion never gets a supplement phrase ("Hyaluronic Acid Supplement"
 // on a face moisturizer). Only a real pill, capsule or powder does.
-const SKIN_FORM = /moisturiz|cream|lotion|serum|cleanser|toner|sunscreen|spf|mask|balm|face wash|eye patch/;
+const SKIN_FORM = /moisturiz|cream|lotion|serum|cleanser|toner|sunscreen|spf|mask|balm|face wash|eye patch|hair|shampoo|conditioner|pantene|leave-?(?:on|in)|lip/;
 const PILL_FORM = /capsul|softgel|tablet|pills?|gumm|supplement|suplement|powder/;
 const SUPPLEMENT_PHRASE = /supplement|multivitamin|fish oil|protein powder|vitamin gummies/i;
 export function searchTerms(p: Product, parsed: Parsed) {

@@ -5,6 +5,7 @@ import {
   affiliateUrl,
   breakdown,
   creativeInput,
+  detectCategory,
   insights,
   parseAmazon,
   parseStoreLink,
@@ -176,4 +177,10 @@ test("a video named after its product finds that product, and only a clear one",
   assert.equal(matchProductByName("OEAK bra final.MOV", products), "o");
   assert.equal(matchProductByName("IMG_1234.mov", products), null);
   assert.equal(matchProductByName("vital-vitamins.mp4", products), null);
+});
+
+test("hair care and makeup are Beauty & Makeup, not supplements or gifts", () => {
+  assert.equal(detectCategory("Pantene Pro-Vitamin Essence.", ""), "Beauty & Makeup");
+  assert.equal(detectCategory("L'Oreal Paris Colour Riche Lip Liner Pencil.", ""), "Beauty & Makeup");
+  assert.equal(detectCategory("Vital Vitamins Multi Collagen Complex", ""), "Supplements & Wellness");
 });

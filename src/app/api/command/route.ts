@@ -9,6 +9,7 @@ import {
   userId,
 } from "@/lib/server/db";
 import {
+  CATEGORIES,
   cleanProductName,
   creativeInput,
   detectCategory,
@@ -335,6 +336,15 @@ export async function POST(req: Request) {
       }
       case "setAutoPhotos": {
         result = await setAutoPhotos(uid, z.boolean().parse(body.on));
+        break;
+      }
+      case "setCategory": {
+        // The owner fixes a product's topic (it sets the shop color and boards).
+        const id = uuid.parse(body.product_id);
+        await owned("products", id, uid);
+        const category = z.enum(CATEGORIES).parse(body.category);
+        check(await sb.from("products").update({ category }).eq("id", id).eq("user_id", uid).select("id"));
+        result = category;
         break;
       }
       case "cancelPosts": {

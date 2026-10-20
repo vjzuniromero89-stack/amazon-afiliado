@@ -56,3 +56,8 @@ test("short label facts still make the details", async () => {
   const out = await new TemplateConceptProvider().generate(p, [], defaults);
   assert.ok(/Key details: Waterproof, Queen Size, Noiseless, Deep Pocket\./.test(out[0].description), out[0].description);
 });
+
+test("hair care and lip liner get their own phrase, never a vitamin one", () => {
+  assert.equal(phrase("Pantene Pro-Vitamin Essence."), "Hair Treatment");
+  assert.equal(phrase("L'Oreal Paris Colour Riche Lip Liner Pencil."), "Lip Liner");
+});
