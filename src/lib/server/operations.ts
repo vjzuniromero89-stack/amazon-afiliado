@@ -317,12 +317,19 @@ export async function syncAnalytics(uid: string, limit = 20) {
   const end = new Date().toISOString().slice(0, 10),
     start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   let count = 0;
+  // How Pinterest labeled each day (READY, ESTIMATE, PROCESSING...), so a
+  // sync that brings no numbers says why.
+  const statuses: Record<string, number> = {};
   for (const p of publications) {
     try {
       const response = await pinterest<PinterestAnalytics>(
         uid,
         `/pins/${encodeURIComponent(p.pinterest_id)}/analytics?start_date=${start}&end_date=${end}&metric_types=IMPRESSION,SAVE,OUTBOUND_CLICK`,
       );
+      for (const d of response.all?.daily_metrics || []) {
+        const k = d.data_status || "none";
+        statuses[k] = (statuses[k] || 0) + 1;
+      }
       const rows = pinDailyMetrics(response.all?.daily_metrics || [], start, end).map((r) => ({
         ...r,
         user_id: uid,
@@ -332,8 +339,10 @@ export async function syncAnalytics(uid: string, limit = 20) {
       if (rows.length)
         check(await sb.from("analytics_metrics").upsert(rows, { onConflict: "publication_id,date" }));
       count += rows.length;
-    } catch {
+    } catch (e) {
       // One Pin's failure must not stop the others.
+      const k = `error: ${e instanceof Error ? e.message.slice(0, 80) : "unknown"}`;
+      statuses[k] = (statuses[k] || 0) + 1;
     }
     // Always marked, so a Pin without data never holds the queue.
     check(
@@ -343,7 +352,7 @@ export async function syncAnalytics(uid: string, limit = 20) {
         .eq("id", p.id),
     );
   }
-  return count;
+  return { rows: count, statuses };
 }
 
 // ---------- Autopilot ----------
