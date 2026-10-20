@@ -377,16 +377,29 @@
   background: var(--deep);
 }
 
-/* A lone find on a phone becomes one wide chip. */
-@media (max-width: 719px) {
+/* A lone find becomes one wide chip: photo beside the small print. */
+.solo .chip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.solo .photo {
+  aspect-ratio: auto;
+  min-height: 100%;
+}
+@media (min-width: 720px) {
   .solo .chip {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-column: span 2;
   }
-  .solo .photo {
-    aspect-ratio: auto;
-    min-height: 100%;
+  .solo .body {
+    padding: 18px 18px 0;
+  }
+  .solo .go {
+    margin-inline: -18px;
+    padding-inline: 18px;
+  }
+  .solo .chip h3 {
+    font-size: 26px;
   }
 }
 @media (min-width: 720px) {
