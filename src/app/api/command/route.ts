@@ -337,6 +337,16 @@ export async function POST(req: Request) {
         result = await setAutoPhotos(uid, z.boolean().parse(body.on));
         break;
       }
+      case "cancelPosts": {
+        // The owner's stop: nothing of this product goes out on Instagram or
+        // Facebook unless it has started already.
+        const id = uuid.parse(body.product_id);
+        await owned("products", id, uid);
+        const ig = await sb.from("instagram_posts").delete().eq("user_id", uid).eq("product_id", id).eq("status", "pending").select("id");
+        const fb = await sb.from("facebook_posts").delete().eq("user_id", uid).eq("product_id", id).eq("status", "pending").select("id");
+        result = { instagram: ig.data?.length || 0, facebook: fb.data?.length || 0 };
+        break;
+      }
       case "queueReel": {
         // The owner's own tap: post this product's video as a Reel.
         const id = uuid.parse(body.product_id),
