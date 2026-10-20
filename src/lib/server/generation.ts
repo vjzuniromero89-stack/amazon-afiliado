@@ -9,6 +9,7 @@ import {
   readsWrong,
   storeOf,
   stripClaims,
+  suggestDetails,
 } from "../domain";
 import type { Board, Product, Settings } from "../types";
 import { AppError } from "./db";
@@ -175,9 +176,15 @@ function groupFor(p: Product) {
 // and up to two short facts from the details you verified ("Deep Pocket",
 // "60 Capsules"). Only label facts, never benefits or health claims.
 export function pinExtras(p: Product) {
-  const perks = (p.notes || "")
+  const parts = (p.notes || "")
     .split(/[,;\n]|\.\s|\s[-–]\s/)
-    .map((t) => clean(t).replace(/^(key details|features?)\s*:\s*/i, "").replace(/\.$/, ""))
+    .map((t) => clean(t).replace(/^(key details|features?)\s*:\s*/i, "").replace(/\.$/, ""));
+  // Details pasted as marketing sentences ("…upright, round, and perfectly
+  // shaped") give broken chips; then the facts come from the name instead.
+  const sentences = parts.some((t) => t.split(" ").length > 9);
+  const source =
+    sentences || !parts.some(Boolean) ? suggestDetails(p.title).split(", ") : parts;
+  const perks = source
     .filter(
       (t) =>
         t.length >= 3 &&

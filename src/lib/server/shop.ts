@@ -2,7 +2,7 @@ import "server-only";
 import { admin, check } from "./db";
 import { getSettings } from "./data";
 import { pinExtras } from "./generation";
-import { cleanProductName, pinLink, STORES, storeOf } from "../domain";
+import { cleanProductName, detectCategory, pinLink, STORES, storeOf } from "../domain";
 import type { Product } from "../types";
 
 // The public "finds" page: every product with a photo, its facts and the
@@ -46,7 +46,8 @@ export async function shopItems(): Promise<ShopItem[]> {
     items.push({
       id: p.id,
       title: cleanProductName(p.title),
-      category: p.category || "Gift Ideas",
+      // Older products keep free-text categories; show the fixed topic.
+      category: detectCategory(p.title, p.category || ""),
       facts: pinExtras(p).perks,
       store: STORES[storeOf(p)],
       link,
