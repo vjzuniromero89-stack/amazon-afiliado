@@ -1,0 +1,1235 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-20T11:52:02.670Z",
+  "title": "Design System: Amazon Afiliado / Ivethskin Finds",
+  "scopes": {
+    "private-app": "Everything except src/app/finds. Tokens without a prefix. Source: src/app/globals.css.",
+    "public-shop": "src/app/finds only (ivethskin.com). Tokens prefixed finds-, scoped under the .page wrapper in finds.module.css; families in ui.tsx."
+  },
+  "extensions": {
+    "colorMeta": {
+      "navy": {
+        "role": "secondary",
+        "scope": "private-app",
+        "displayName": "Sidebar Navy",
+        "canonical": "#13284a",
+        "tonalRamp": [
+          "#0e131f",
+          "#101a2d",
+          "#11213c",
+          "#13284a",
+          "#5a6980",
+          "#959eae",
+          "#c4c9d2",
+          "#e7eaed"
+        ]
+      },
+      "navy-2": {
+        "role": "secondary",
+        "scope": "private-app",
+        "displayName": "Top Bar Navy",
+        "canonical": "#1c3863",
+        "tonalRamp": [
+          "#101725",
+          "#14223a",
+          "#182d4e",
+          "#1c3863",
+          "#607492",
+          "#99a5b9",
+          "#c6cdd8",
+          "#e8ebef"
+        ]
+      },
+      "navy-ink": {
+        "role": "secondary",
+        "scope": "private-app",
+        "displayName": "Heading Navy Ink",
+        "canonical": "#0f1f38",
+        "tonalRamp": [
+          "#0d111a",
+          "#0e1624",
+          "#0e1a2e",
+          "#0f1f38",
+          "#576274",
+          "#939aa5",
+          "#c3c7cd",
+          "#e7e9eb"
+        ]
+      },
+      "orange": {
+        "role": "primary",
+        "scope": "private-app",
+        "displayName": "Action Orange",
+        "canonical": "#f59a23",
+        "tonalRamp": [
+          "#463015",
+          "#81531a",
+          "#bb771e",
+          "#f59a23",
+          "#f8b865",
+          "#fbd29c",
+          "#fde6c8",
+          "#fef5e9"
+        ]
+      },
+      "orange-hover": {
+        "role": "primary",
+        "scope": "private-app",
+        "displayName": "Action Orange Hover",
+        "canonical": "#e2840a",
+        "tonalRamp": [
+          "#422a0f",
+          "#77480d",
+          "#ad660c",
+          "#e2840a",
+          "#eba954",
+          "#f2c891",
+          "#f8e0c2",
+          "#fcf3e7"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "scope": "private-app",
+        "displayName": "Page Mist",
+        "canonical": "#e9edf3",
+        "tonalRamp": [
+          "#434449",
+          "#7b7d82",
+          "#b2b5ba",
+          "#e9edf3",
+          "#f0f2f7",
+          "#f5f7fa",
+          "#fafbfc",
+          "#fdfdfe"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "scope": "private-app",
+        "displayName": "Card Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#49494c",
+          "#868688",
+          "#c2c2c3",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "paper-2": {
+        "role": "neutral",
+        "scope": "private-app",
+        "displayName": "Header Band Paper",
+        "canonical": "#f4f6fa",
+        "tonalRamp": [
+          "#46474b",
+          "#808185",
+          "#babcc0",
+          "#f4f6fa",
+          "#f7f9fc",
+          "#fafbfd",
+          "#fcfdfe",
+          "#fefeff"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "scope": "private-app",
+        "displayName": "Body Ink",
+        "canonical": "#14233a",
+        "tonalRamp": [
+          "#0e121b",
+          "#101825",
+          "#121d30",
+          "#14233a",
+          "#5b6575",
+          "#959ca6",
+          "#c4c8ce",
+          "#e8e9eb"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "scope": "private-app",
+        "displayName": "Secondary Ink",
+        "canonical": "#3b4a60",
+        "tonalRamp": [
+          "#181c24",
+          "#242b38",
+          "#2f3b4c",
+          "#3b4a60",
+          "#768090",
+          "#a7aeb7",
+          "#ced2d7",
+          "#ebedef"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "scope": "private-app",
+        "displayName": "Muted Ink",
+        "canonical": "#56667d",
+        "tonalRamp": [
+          "#1f232b",
+          "#313947",
+          "#445062",
+          "#56667d",
+          "#8994a4",
+          "#b3bac5",
+          "#d5d9df",
+          "#eef0f2"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "scope": "private-app",
+        "displayName": "Card Line",
+        "canonical": "#c3cddb",
+        "tonalRamp": [
+          "#3a3c43",
+          "#686d76",
+          "#959da8",
+          "#c3cddb",
+          "#d5dce6",
+          "#e4e9ef",
+          "#f0f3f6",
+          "#f9fafb"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "scope": "private-app",
+        "displayName": "Input Line",
+        "canonical": "#7b8ca4",
+        "tonalRamp": [
+          "#282c35",
+          "#444c5a",
+          "#5f6c7f",
+          "#7b8ca4",
+          "#a3afbf",
+          "#c4cbd6",
+          "#dee2e8",
+          "#f2f4f6"
+        ]
+      },
+      "focus": {
+        "role": "neutral",
+        "scope": "private-app",
+        "displayName": "Focus Blue",
+        "canonical": "#2563eb",
+        "tonalRamp": [
+          "#122247",
+          "#19387e",
+          "#1f4db4",
+          "#2563eb",
+          "#6692f1",
+          "#9db9f6",
+          "#c9d8fa",
+          "#e9effd"
+        ]
+      },
+      "finds-ink": {
+        "role": "primary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Rack Ink",
+        "canonical": "#16161b",
+        "tonalRamp": [
+          "#0f0f13",
+          "#111116",
+          "#141418",
+          "#16161b",
+          "#5c5c5f",
+          "#969698",
+          "#c5c5c6",
+          "#e8e8e8"
+        ]
+      },
+      "finds-ink-2": {
+        "role": "neutral",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Soft Ink",
+        "canonical": "#4a4a55",
+        "tonalRamp": [
+          "#1c1c21",
+          "#2b2b33",
+          "#3b3b44",
+          "#4a4a55",
+          "#808088",
+          "#aeaeb3",
+          "#d2d2d5",
+          "#ededee"
+        ]
+      },
+      "finds-wall": {
+        "role": "neutral",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "White Wall",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#49494c",
+          "#868688",
+          "#c2c2c3",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "finds-rule": {
+        "role": "neutral",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Rack Rule",
+        "canonical": "#e6e4ea",
+        "tonalRamp": [
+          "#434247",
+          "#79787d",
+          "#b0aeb4",
+          "#e6e4ea",
+          "#eeecf0",
+          "#f4f3f6",
+          "#f9f8fa",
+          "#fdfcfd"
+        ]
+      },
+      "finds-foot-text": {
+        "role": "neutral",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Footer Grey",
+        "canonical": "#d9d8de",
+        "tonalRamp": [
+          "#3f3f44",
+          "#737277",
+          "#a6a5ab",
+          "#d9d8de",
+          "#e4e4e8",
+          "#eeedf0",
+          "#f6f5f7",
+          "#fbfbfc"
+        ]
+      },
+      "finds-skincare-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Rose Pale",
+        "canonical": "#fde4e6",
+        "tonalRamp": [
+          "#484246",
+          "#85787b",
+          "#c1aeb1",
+          "#fde4e6",
+          "#feecee",
+          "#fef3f4",
+          "#fff8f9",
+          "#fffcfd"
+        ],
+        "familyShades": [
+          "#741c30",
+          "#f4adb6",
+          "#fde4e6"
+        ]
+      },
+      "finds-skincare-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Rose Tone",
+        "canonical": "#f4adb6",
+        "tonalRamp": [
+          "#46343a",
+          "#805d63",
+          "#ba858d",
+          "#f4adb6",
+          "#f7c6cc",
+          "#fadade",
+          "#fcebed",
+          "#fef7f8"
+        ],
+        "familyShades": [
+          "#741c30",
+          "#f4adb6",
+          "#fde4e6"
+        ]
+      },
+      "finds-skincare-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Rose Deep",
+        "canonical": "#741c30",
+        "tonalRamp": [
+          "#261018",
+          "#401420",
+          "#5a1828",
+          "#741c30",
+          "#9e606e",
+          "#c099a2",
+          "#dcc6cb",
+          "#f1e8ea"
+        ],
+        "familyShades": [
+          "#741c30",
+          "#f4adb6",
+          "#fde4e6"
+        ]
+      },
+      "finds-beauty-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Orchid Pale",
+        "canonical": "#fbe0f1",
+        "tonalRamp": [
+          "#484148",
+          "#847681",
+          "#bfabb9",
+          "#fbe0f1",
+          "#fce9f5",
+          "#fdf1f9",
+          "#fef7fc",
+          "#fffcfe"
+        ],
+        "familyShades": [
+          "#6a1048",
+          "#ec9fd0",
+          "#fbe0f1"
+        ]
+      },
+      "finds-beauty-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Orchid Tone",
+        "canonical": "#ec9fd0",
+        "tonalRamp": [
+          "#443140",
+          "#7c5670",
+          "#b47aa0",
+          "#ec9fd0",
+          "#f2bcde",
+          "#f6d4ea",
+          "#fae7f3",
+          "#fdf5fa"
+        ],
+        "familyShades": [
+          "#6a1048",
+          "#ec9fd0",
+          "#fbe0f1"
+        ]
+      },
+      "finds-beauty-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Orchid Deep",
+        "canonical": "#6a1048",
+        "tonalRamp": [
+          "#240d1e",
+          "#3b0e2c",
+          "#530f3a",
+          "#6a1048",
+          "#97587f",
+          "#bc93ad",
+          "#dac3d1",
+          "#f0e7ed"
+        ],
+        "familyShades": [
+          "#6a1048",
+          "#ec9fd0",
+          "#fbe0f1"
+        ]
+      },
+      "finds-wellness-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Sage Pale",
+        "canonical": "#e2f0de",
+        "tonalRamp": [
+          "#424544",
+          "#777e77",
+          "#adb7ab",
+          "#e2f0de",
+          "#ebf5e8",
+          "#f2f8f0",
+          "#f8fbf7",
+          "#fcfefc"
+        ],
+        "familyShades": [
+          "#1c4526",
+          "#9fcd95",
+          "#e2f0de"
+        ]
+      },
+      "finds-wellness-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Sage Tone",
+        "canonical": "#9fcd95",
+        "tonalRamp": [
+          "#313c31",
+          "#566d53",
+          "#7a9d74",
+          "#9fcd95",
+          "#bcdcb5",
+          "#d4e9cf",
+          "#e7f3e5",
+          "#f5faf4"
+        ],
+        "familyShades": [
+          "#1c4526",
+          "#9fcd95",
+          "#e2f0de"
+        ]
+      },
+      "finds-wellness-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Sage Deep",
+        "canonical": "#1c4526",
+        "tonalRamp": [
+          "#101a16",
+          "#14291b",
+          "#183721",
+          "#1c4526",
+          "#607d67",
+          "#99ab9d",
+          "#c6d1c9",
+          "#e8ece9"
+        ],
+        "familyShades": [
+          "#1c4526",
+          "#9fcd95",
+          "#e2f0de"
+        ]
+      },
+      "finds-home-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Mustard Pale",
+        "canonical": "#fbf0c9",
+        "tonalRamp": [
+          "#48453e",
+          "#847e6d",
+          "#bfb79b",
+          "#fbf0c9",
+          "#fcf5d9",
+          "#fdf8e7",
+          "#fefbf2",
+          "#fffefa"
+        ],
+        "familyShades": [
+          "#4f3a04",
+          "#f2cd55",
+          "#fbf0c9"
+        ]
+      },
+      "finds-home-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Mustard Tone",
+        "canonical": "#f2cd55",
+        "tonalRamp": [
+          "#463c21",
+          "#7f6d33",
+          "#b99d44",
+          "#f2cd55",
+          "#f6dc88",
+          "#f9e9b3",
+          "#fcf3d5",
+          "#fefaee"
+        ],
+        "familyShades": [
+          "#4f3a04",
+          "#f2cd55",
+          "#fbf0c9"
+        ]
+      },
+      "finds-home-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Mustard Deep",
+        "canonical": "#4f3a04",
+        "tonalRamp": [
+          "#1d180d",
+          "#2e230a",
+          "#3e2f07",
+          "#4f3a04",
+          "#84754f",
+          "#b0a68e",
+          "#d3cec0",
+          "#edebe6"
+        ],
+        "familyShades": [
+          "#4f3a04",
+          "#f2cd55",
+          "#fbf0c9"
+        ]
+      },
+      "finds-kitchen-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Apricot Pale",
+        "canonical": "#fde3d6",
+        "tonalRamp": [
+          "#484242",
+          "#857873",
+          "#c1ada5",
+          "#fde3d6",
+          "#feebe2",
+          "#fef2ed",
+          "#fff8f5",
+          "#fffcfb"
+        ],
+        "familyShades": [
+          "#6b2410",
+          "#f6a582",
+          "#fde3d6"
+        ]
+      },
+      "finds-kitchen-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Apricot Tone",
+        "canonical": "#f6a582",
+        "tonalRamp": [
+          "#47322d",
+          "#815949",
+          "#bc7f66",
+          "#f6a582",
+          "#f9c0a8",
+          "#fbd7c7",
+          "#fde9e0",
+          "#fef6f3"
+        ],
+        "familyShades": [
+          "#6b2410",
+          "#f6a582",
+          "#fde3d6"
+        ]
+      },
+      "finds-kitchen-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Apricot Deep",
+        "canonical": "#6b2410",
+        "tonalRamp": [
+          "#241210",
+          "#3c1810",
+          "#531e10",
+          "#6b2410",
+          "#976658",
+          "#bc9c93",
+          "#dac8c3",
+          "#f0e9e7"
+        ],
+        "familyShades": [
+          "#6b2410",
+          "#f6a582",
+          "#fde3d6"
+        ]
+      },
+      "finds-fashion-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Lavender Pale",
+        "canonical": "#ece5fb",
+        "tonalRamp": [
+          "#44424b",
+          "#7c7986",
+          "#b4afc0",
+          "#ece5fb",
+          "#f2edfc",
+          "#f6f3fd",
+          "#faf9fe",
+          "#fdfcff"
+        ],
+        "familyShades": [
+          "#33206a",
+          "#b9a3ef",
+          "#ece5fb"
+        ]
+      },
+      "finds-fashion-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Lavender Tone",
+        "canonical": "#b9a3ef",
+        "tonalRamp": [
+          "#373248",
+          "#635880",
+          "#8e7db7",
+          "#b9a3ef",
+          "#cebff4",
+          "#e0d6f8",
+          "#eee8fb",
+          "#f8f6fd"
+        ],
+        "familyShades": [
+          "#33206a",
+          "#b9a3ef",
+          "#ece5fb"
+        ]
+      },
+      "finds-fashion-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Lavender Deep",
+        "canonical": "#33206a",
+        "tonalRamp": [
+          "#161127",
+          "#20163d",
+          "#291b54",
+          "#33206a",
+          "#706397",
+          "#a39bbc",
+          "#ccc7da",
+          "#ebe9f0"
+        ],
+        "familyShades": [
+          "#33206a",
+          "#b9a3ef",
+          "#ece5fb"
+        ]
+      },
+      "finds-fitness-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Mint Pale",
+        "canonical": "#d8f3ec",
+        "tonalRamp": [
+          "#3f4647",
+          "#72807e",
+          "#a5b9b5",
+          "#d8f3ec",
+          "#e4f7f2",
+          "#edfaf6",
+          "#f5fcfa",
+          "#fbfefd"
+        ],
+        "familyShades": [
+          "#0c4339",
+          "#74d3bf",
+          "#d8f3ec"
+        ]
+      },
+      "finds-fitness-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Mint Tone",
+        "canonical": "#74d3bf",
+        "tonalRamp": [
+          "#263e3c",
+          "#407068",
+          "#5aa193",
+          "#74d3bf",
+          "#9ee0d2",
+          "#c0ebe2",
+          "#dcf4ef",
+          "#f1fbf9"
+        ],
+        "familyShades": [
+          "#0c4339",
+          "#74d3bf",
+          "#d8f3ec"
+        ]
+      },
+      "finds-fitness-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Mint Deep",
+        "canonical": "#0c4339",
+        "tonalRamp": [
+          "#0c1a1a",
+          "#0c2825",
+          "#0c352f",
+          "#0c4339",
+          "#557b74",
+          "#92aaa6",
+          "#c2d0ce",
+          "#e7eceb"
+        ],
+        "familyShades": [
+          "#0c4339",
+          "#74d3bf",
+          "#d8f3ec"
+        ]
+      },
+      "finds-tech-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Cornflower Pale",
+        "canonical": "#e0e8fd",
+        "tonalRamp": [
+          "#41434b",
+          "#767a87",
+          "#abb1c2",
+          "#e0e8fd",
+          "#e9effe",
+          "#f1f5fe",
+          "#f7f9ff",
+          "#fcfdff"
+        ],
+        "familyShades": [
+          "#152f6b",
+          "#93b1f4",
+          "#e0e8fd"
+        ]
+      },
+      "finds-tech-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Cornflower Tone",
+        "canonical": "#93b1f4",
+        "tonalRamp": [
+          "#2e3549",
+          "#505f82",
+          "#7188bb",
+          "#93b1f4",
+          "#b3c8f7",
+          "#cedcfa",
+          "#e4ecfc",
+          "#f4f7fe"
+        ],
+        "familyShades": [
+          "#152f6b",
+          "#93b1f4",
+          "#e0e8fd"
+        ]
+      },
+      "finds-tech-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Cornflower Deep",
+        "canonical": "#152f6b",
+        "tonalRamp": [
+          "#0e1527",
+          "#111e3e",
+          "#132654",
+          "#152f6b",
+          "#5b6d97",
+          "#96a1bc",
+          "#c5cbda",
+          "#e8eaf0"
+        ],
+        "familyShades": [
+          "#152f6b",
+          "#93b1f4",
+          "#e0e8fd"
+        ]
+      },
+      "finds-baby-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Peach Pale",
+        "canonical": "#ffead8",
+        "tonalRamp": [
+          "#494442",
+          "#867b74",
+          "#c2b3a6",
+          "#ffead8",
+          "#fff0e4",
+          "#fff6ed",
+          "#fffaf5",
+          "#fffdfb"
+        ],
+        "familyShades": [
+          "#653608",
+          "#ffc28f",
+          "#ffead8"
+        ]
+      },
+      "finds-baby-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Peach Tone",
+        "canonical": "#ffc28f",
+        "tonalRamp": [
+          "#493a30",
+          "#866750",
+          "#c2956f",
+          "#ffc28f",
+          "#ffd4b1",
+          "#ffe4cd",
+          "#fff0e3",
+          "#fff9f4"
+        ],
+        "familyShades": [
+          "#653608",
+          "#ffc28f",
+          "#ffead8"
+        ]
+      },
+      "finds-baby-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Peach Deep",
+        "canonical": "#653608",
+        "tonalRamp": [
+          "#22170e",
+          "#39210c",
+          "#4f2c0a",
+          "#653608",
+          "#937252",
+          "#baa590",
+          "#d9cdc1",
+          "#f0ebe6"
+        ],
+        "familyShades": [
+          "#653608",
+          "#ffc28f",
+          "#ffead8"
+        ]
+      },
+      "finds-pets-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Camel Pale",
+        "canonical": "#f3e7dc",
+        "tonalRamp": [
+          "#464343",
+          "#807a76",
+          "#b9b0a9",
+          "#f3e7dc",
+          "#f7eee7",
+          "#faf4ef",
+          "#fcf9f6",
+          "#fefdfc"
+        ],
+        "familyShades": [
+          "#4a2b12",
+          "#d5aa83",
+          "#f3e7dc"
+        ]
+      },
+      "finds-pets-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Camel Tone",
+        "canonical": "#d5aa83",
+        "tonalRamp": [
+          "#3e342d",
+          "#715b4a",
+          "#a38366",
+          "#d5aa83",
+          "#e2c4a8",
+          "#ecd9c7",
+          "#f5eae0",
+          "#fbf7f3"
+        ],
+        "familyShades": [
+          "#4a2b12",
+          "#d5aa83",
+          "#f3e7dc"
+        ]
+      },
+      "finds-pets-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Camel Deep",
+        "canonical": "#4a2b12",
+        "tonalRamp": [
+          "#1c1411",
+          "#2b1c11",
+          "#3b2312",
+          "#4a2b12",
+          "#806b59",
+          "#aea094",
+          "#d2cac4",
+          "#edeae7"
+        ],
+        "familyShades": [
+          "#4a2b12",
+          "#d5aa83",
+          "#f3e7dc"
+        ]
+      },
+      "finds-gifts-pale": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Coral Pale",
+        "canonical": "#ffe1df",
+        "tonalRamp": [
+          "#494144",
+          "#867778",
+          "#c2acab",
+          "#ffe1df",
+          "#ffeae9",
+          "#fff2f1",
+          "#fff8f7",
+          "#fffcfc"
+        ],
+        "familyShades": [
+          "#741515",
+          "#ff978c",
+          "#ffe1df"
+        ]
+      },
+      "finds-gifts-tone": {
+        "role": "secondary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Coral Tone",
+        "canonical": "#ff978c",
+        "tonalRamp": [
+          "#492f2f",
+          "#86524e",
+          "#c2746d",
+          "#ff978c",
+          "#ffb6af",
+          "#ffd0cb",
+          "#ffe5e2",
+          "#fff5f4"
+        ],
+        "familyShades": [
+          "#741515",
+          "#ff978c",
+          "#ffe1df"
+        ]
+      },
+      "finds-gifts-deep": {
+        "role": "tertiary",
+        "scope": "public-shop (src/app/finds)",
+        "displayName": "Coral Deep",
+        "canonical": "#741515",
+        "tonalRamp": [
+          "#260e11",
+          "#401113",
+          "#5a1314",
+          "#741515",
+          "#9e5b5b",
+          "#c09696",
+          "#dcc5c5",
+          "#f1e8e8"
+        ],
+        "familyShades": [
+          "#741515",
+          "#ff978c",
+          "#ffe1df"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Private App Body",
+        "scope": "private-app",
+        "purpose": "Atkinson Hyperlegible Next for everything in the private app; h1 32px, h2 22px, h3 18px at 700-800."
+      },
+      "finds-display": {
+        "displayName": "Rack Headline",
+        "scope": "public-shop",
+        "purpose": "The single home headline, balanced, max 12ch."
+      },
+      "finds-headline": {
+        "displayName": "Band Name",
+        "scope": "public-shop",
+        "purpose": "Category band names; product name at clamp(32px, 5vw, 52px)."
+      },
+      "finds-title": {
+        "displayName": "Chip Name",
+        "scope": "public-shop",
+        "purpose": "Product names on chips and category names on rack strips."
+      },
+      "finds-body": {
+        "displayName": "Small Print",
+        "scope": "public-shop",
+        "purpose": "Lede, facts, descriptions, disclosure."
+      },
+      "finds-label": {
+        "displayName": "Chip Number",
+        "scope": "public-shop",
+        "purpose": "IF 001 chip numbers in tabular figures, after the name."
+      }
+    },
+    "shadows": [
+      {
+        "name": "panel",
+        "scope": "private-app",
+        "value": "0 1px 2px #0f1f380f, 0 6px 16px #0f1f380d",
+        "purpose": "Soft shadow on white panels."
+      },
+      {
+        "name": "finds-lift",
+        "scope": "public-shop",
+        "value": "0 1px 2px rgb(22 22 27 / 0.08), 0 10px 22px -14px rgb(22 22 27 / 0.35)",
+        "purpose": "Resting chips and rack strips."
+      },
+      {
+        "name": "finds-pulled",
+        "scope": "public-shop",
+        "value": "0 2px 4px rgb(22 22 27 / 0.1), 0 24px 32px -16px rgb(22 22 27 / 0.4)",
+        "purpose": "Rack strip on hover, with a 10px rise."
+      }
+    ],
+    "motion": [
+      {
+        "name": "finds-ease",
+        "scope": "public-shop",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Strip pull (0.45s) and photo zoom to 1.04 (0.6s); removed under reduced motion."
+      },
+      {
+        "name": "finds-quick",
+        "scope": "public-shop",
+        "value": "0.2s",
+        "purpose": "CTA background and tab border changes."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "private-mobile",
+        "scope": "private-app",
+        "value": "720px"
+      },
+      {
+        "name": "finds-shelf",
+        "scope": "public-shop",
+        "value": "720px"
+      },
+      {
+        "name": "finds-product-split",
+        "scope": "public-shop",
+        "value": "860px"
+      },
+      {
+        "name": "finds-grid-4",
+        "scope": "public-shop",
+        "value": "1080px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Finds CTA Bar",
+      "kind": "button",
+      "refersTo": "finds-cta",
+      "scope": "public-shop",
+      "description": "Ink bar at the foot of every chip; fills with the family deep on hover.",
+      "html": "<a class=\"ds-finds-go\" href=\"#\" style=\"--deep:#741c30\">See it on Amazon <svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M3 8h10M8.5 3.5 13 8l-4.5 4.5\"/></svg></a>",
+      "css": ".ds-finds-go{display:flex;justify-content:space-between;align-items:center;gap:8px;width:260px;background:#16161b;color:#fff;text-decoration:none;font:700 14px/1.5 \"Hanken Grotesk\",system-ui,sans-serif;padding:13px 12px;transition:background .2s}.ds-finds-go svg{width:16px;height:16px}.ds-finds-go:hover{background:var(--deep)}.ds-finds-go:focus-visible{outline:3px solid #16161b;outline-offset:3px}"
+    },
+    {
+      "name": "Finds Chip",
+      "kind": "card",
+      "refersTo": "finds-chip",
+      "scope": "public-shop",
+      "description": "Photo, tone body, name, chip number, facts, ink CTA bar.",
+      "html": "<article class=\"ds-finds-chip\" style=\"--tone:#f4adb6;--deep:#741c30\"><div class=\"ds-finds-photo\"></div><div class=\"ds-finds-body\"><h3>Toner Pads Zero Pore 2.0</h3><span class=\"ds-finds-no\">IF 004</span><ul><li>Exfoliating</li><li>Toning</li></ul><a class=\"ds-finds-cta\" href=\"#\">See it on Amazon &#8594;</a></div></article>",
+      "css": ".ds-finds-chip{width:240px;display:flex;flex-direction:column;background:var(--tone);border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgb(22 22 27/.08),0 10px 22px -14px rgb(22 22 27/.35);font-family:\"Hanken Grotesk\",system-ui,sans-serif}.ds-finds-photo{aspect-ratio:1/1;background:#fff}.ds-finds-body{padding:12px 12px 0;color:var(--deep)}.ds-finds-body h3{font:700 19px/1.12 \"Bricolage Grotesque\",system-ui,sans-serif;letter-spacing:-.015em;margin:0 0 3px}.ds-finds-no{display:block;margin-bottom:8px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em}.ds-finds-body ul{list-style:none;margin:0 0 12px;padding:0;font-size:14px}.ds-finds-body li::before{content:\"\";display:inline-block;width:6px;height:6px;border-radius:1px;background:var(--deep);margin:0 7px 2px 0}.ds-finds-cta{display:block;margin:0 -12px;background:#16161b;color:#fff;font-weight:700;font-size:14px;padding:13px 12px;text-decoration:none;transition:background .2s}.ds-finds-cta:hover{background:var(--deep)}.ds-finds-cta:focus-visible{outline:3px solid #16161b;outline-offset:3px}"
+    },
+    {
+      "name": "Finds Rack Strip",
+      "kind": "custom",
+      "refersTo": "finds-chip",
+      "scope": "public-shop",
+      "description": "Three-shade category strip that jumps to its section; pulls up on hover.",
+      "html": "<a class=\"ds-finds-strip\" href=\"#\" style=\"--pale:#e2f0de;--tone:#9fcd95;--deep:#1c4526\"><span class=\"ds-s1\">Supplements &amp; Wellness</span><span class=\"ds-s2\">Hyaluronic Acid · Multi Collagen</span><span class=\"ds-s3\">2 finds <b>&#8595;</b></span></a>",
+      "css": ".ds-finds-strip{display:flex;flex-direction:column;width:200px;border-radius:6px;overflow:hidden;text-decoration:none;font-family:\"Hanken Grotesk\",system-ui,sans-serif;box-shadow:0 1px 2px rgb(22 22 27/.08),0 10px 22px -14px rgb(22 22 27/.35);transition:transform .45s cubic-bezier(.16,1,.3,1),box-shadow .45s cubic-bezier(.16,1,.3,1)}.ds-finds-strip:hover{transform:translateY(-10px);box-shadow:0 2px 4px rgb(22 22 27/.1),0 24px 32px -16px rgb(22 22 27/.4)}.ds-finds-strip:focus-visible{outline:3px solid #16161b;outline-offset:3px}.ds-finds-strip span{display:block;padding:10px 12px}.ds-s1{background:var(--pale);color:var(--deep);font:700 19px/1.1 \"Bricolage Grotesque\",system-ui,sans-serif;min-height:150px}.ds-s2{background:var(--tone);color:var(--deep);font-size:13px;font-weight:600;min-height:58px}.ds-s3{background:var(--deep);color:#fff;font-size:13px;font-weight:600;min-height:96px;display:flex!important;justify-content:space-between;align-items:flex-end}"
+    },
+    {
+      "name": "Finds Tabs",
+      "kind": "nav",
+      "refersTo": "finds-tab",
+      "scope": "public-shop",
+      "description": "Sticky outlined pills with a tone swatch; only the current tab is filled with its deep.",
+      "html": "<nav class=\"ds-finds-tabs\"><a href=\"#\">All</a><a href=\"#\" aria-current=\"true\" style=\"--tone:#f4adb6;--deep:#741c30\"><i></i>Skincare</a><a href=\"#\" style=\"--tone:#f2cd55;--deep:#4f3a04\"><i></i>Home</a></nav>",
+      "css": ".ds-finds-tabs{display:flex;gap:8px;padding:10px 0;font-family:\"Hanken Grotesk\",system-ui,sans-serif;border-bottom:1px solid #e6e4ea;background:rgb(255 255 255/.96)}.ds-finds-tabs a{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:#16161b;text-decoration:none;padding:7px 12px 7px 9px;border-radius:999px;border:1px solid #e6e4ea;transition:border-color .2s}.ds-finds-tabs a:hover{border-color:#16161b}.ds-finds-tabs a:focus-visible{outline:3px solid #16161b;outline-offset:3px}.ds-finds-tabs i{width:12px;height:12px;border-radius:3px;background:var(--tone)}.ds-finds-tabs a[aria-current=\"true\"]{background:var(--deep);color:#fff;border-color:var(--deep)}.ds-finds-tabs a[aria-current=\"true\"] i{box-shadow:0 0 0 2px #fff}"
+    },
+    {
+      "name": "Finds Label Call-out",
+      "kind": "custom",
+      "refersTo": "finds-chip",
+      "scope": "public-shop",
+      "description": "Square pale box with a 2px deep border and two corner blocks, holding the label facts.",
+      "html": "<div class=\"ds-finds-callout\" style=\"--pale:#fde4e6;--deep:#741c30\"><h2>On the label</h2><ul><li>Exfoliating</li><li>Toning</li></ul></div>",
+      "css": ".ds-finds-callout{position:relative;width:260px;border:2px solid var(--deep);background:var(--pale);color:var(--deep);padding:14px 16px 12px;font-family:\"Hanken Grotesk\",system-ui,sans-serif}.ds-finds-callout::before,.ds-finds-callout::after{content:\"\";position:absolute;width:12px;height:12px;background:var(--deep)}.ds-finds-callout::before{top:-2px;left:-2px}.ds-finds-callout::after{bottom:-2px;right:-2px}.ds-finds-callout h2{margin:0 0 6px;font:700 14px/1.2 inherit}.ds-finds-callout ul{list-style:none;margin:0;padding:0;font-size:16px}"
+    },
+    {
+      "name": "Finds Disclosure Bar",
+      "kind": "custom",
+      "refersTo": "finds-ad-bar",
+      "scope": "public-shop",
+      "description": "First thing on every public page.",
+      "html": "<p class=\"ds-finds-ad\"><b>#ad</b> · Affiliate links: I may earn a commission.</p>",
+      "css": ".ds-finds-ad{margin:0;background:#16161b;color:#fff;font:13px/1.4 \"Hanken Grotesk\",system-ui,sans-serif;padding:8px 16px;text-align:center}"
+    },
+    {
+      "name": "Private Primary Button",
+      "kind": "button",
+      "refersTo": "orange",
+      "scope": "private-app",
+      "description": "Orange fill, navy text, 46px tall. Never white text on orange.",
+      "html": "<button class=\"ds-app-btn\">Save</button>",
+      "css": ".ds-app-btn{min-height:46px;padding:10px 20px;background:#f59a23;color:#0f1f38;border:1px solid #e2840a;border-radius:9px;font:700 16px \"Atkinson Hyperlegible Next\",\"Segoe UI\",Arial,sans-serif;cursor:pointer}.ds-app-btn:hover{background:#e2840a}.ds-app-btn:focus-visible{outline:3px solid #2563eb;outline-offset:2px}"
+    },
+    {
+      "name": "Private Input",
+      "kind": "input",
+      "refersTo": "line-strong",
+      "scope": "private-app",
+      "description": "48px tall, 1.5px border, blue focus ring.",
+      "html": "<input class=\"ds-app-input\" placeholder=\"Search\">",
+      "css": ".ds-app-input{min-height:48px;padding:11px 13px;border:1.5px solid #7b8ca4;border-radius:9px;background:#fff;color:#14233a;font:16px \"Atkinson Hyperlegible Next\",\"Segoe UI\",Arial,sans-serif}.ds-app-input:hover{border-color:#2a4b7d}.ds-app-input:focus-visible{outline:3px solid #2563eb;outline-offset:1px;border-color:#1c3863}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Paint-Chip Rack",
+    "northStarScope": "public-shop",
+    "overview": "Each kind of find is a color family, and each product is a numbered chip pulled from that family's strip. The page is a white wall with near-black ink. Color carries the navigation: you pick a color first, then a product. Categories are laid down at full strength in three shades and never tinted down or mixed. One heavy grotesque names things and one plain grotesque prints the small print. Photos sit on top of every chip, and every chip ends with an ink bar that goes to the store.",
+    "privateAppOverview": "Navy and orange, built to be read. Chosen by the user on 2026-10-16 to replace the pale green-on-white look that was hard to read. All tokens live at the top of src/app/globals.css.",
+    "keyCharacteristics": [
+      "White wall (`finds-wall`), near-black ink (`finds-ink`), and eleven three-shade category families (pale, tone, deep).",
+      "One chip module repeated across the page as the unit of measure: square photo, tone body, short name, chip number, facts, ink CTA bar.",
+      "Every product carries a chip number in tabular figures (`IF 001`).",
+      "The disclosure bar is always the first thing on the page, and the disclosure repeats in the footer."
+    ],
+    "rules": [
+      {
+        "name": "The Three-Shade Rule",
+        "section": "colors",
+        "scope": "public-shop",
+        "body": "A category uses only its own pale, tone and deep, at full strength. Text on pale or tone is always that family's deep. Text on deep is always white. Adding a category means adding a whole family (all three shades, with the deep passing contrast on both lighter shades) to `ui.tsx`, never one loose color."
+      },
+      {
+        "name": "The One Reserved Accent Rule",
+        "section": "colors",
+        "scope": "public-shop",
+        "body": "Among the tabs, only the strip on screen gets filled: deep background, white text. \"All\" holds that fill above the first section. No other control gets that filled-tab look."
+      },
+      {
+        "name": "The Ink Basin Rule",
+        "section": "colors",
+        "scope": "public-shop",
+        "body": "The newest finds (at most two, for 21 days) wear their family's deep shade as the chip body, with a tone-colored \"New\" flag. Every other chip uses the tone."
+      },
+      {
+        "name": "The Numbered Chip Rule",
+        "section": "typography",
+        "scope": "public-shop",
+        "body": "Every product shows its chip number (`IF` plus three digits, tabular figures) directly after its name, never above it."
+      },
+      {
+        "name": "The Pulled Chip Rule",
+        "section": "elevation",
+        "scope": "public-shop",
+        "body": "Depth means \"this can be pulled from the rack.\" Bands, panels, tabs and the call-out stay flat. Motion uses `cubic-bezier(0.16, 1, 0.3, 1)` (0.45s for strips, 0.6s for the 1.04 photo zoom on hover), and both are removed under reduced motion."
+      }
+    ],
+    "dos": [
+      "**Do** set every category element's colors through `--pale`, `--tone` and `--deep` from the `ui.tsx` families.",
+      "**Do** keep the disclosure bar first on every page and repeat it in the footer.",
+      "**Do** end every chip with the ink CTA bar and show its chip number in tabular figures.",
+      "**Do** keep focus visible: 3px ink outline, 3px offset.",
+      "**Do** keep finds styles scoped under the `.page` wrapper so they never leak into the private app, and keep neutralizing the private app's global nav, main, footer and heading styles there."
+    ],
+    "donts": [
+      "**Don't** use the private app's navy, orange or Atkinson Hyperlegible anywhere in the public shop, and don't use finds tokens in the private app.",
+      "**Don't** tint, blend or gradient a family, or put a second family's color inside a category.",
+      "**Don't** fill any control other than the current tab with the deep accent.",
+      "**Don't** add prices, sale badges or red deal styling. The only flag is \"New\".",
+      "**Don't** put labels or chip numbers above headings."
+    ],
+    "privateAppRules": [
+      "Never white text on orange (fails contrast).",
+      "No eyebrow labels above headings, no thick colored edge borders on rounded cards, no glow decorations.",
+      "Mobile (≤720px): sidebar becomes a drawer, grids collapse to one column."
+    ]
+  }
+}
