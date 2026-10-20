@@ -15,6 +15,43 @@
   font: 16px/1.5 var(--text), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+/*
+  The private app's globals.css styles bare nav, main, footer and headings.
+  Undo them here with class-level weight (:where keeps it at one class), so
+  every rule below still wins by order.
+*/
+.page :where(nav a, nav a:hover) {
+  display: revert;
+  gap: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 0;
+  min-height: 0;
+  margin: 0;
+  border-radius: 0;
+  background: none;
+  transition: none;
+}
+.page :where(main) {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+.page :where(footer) {
+  display: block;
+  padding: 0;
+  gap: 0;
+  font-size: inherit;
+  color: inherit;
+}
+.page :where(footer b) {
+  font-weight: 700;
+  margin: 0;
+}
+.page :where(h1, h2, h3) {
+  color: inherit;
+}
 .page ::selection {
   background: var(--ink);
   color: #fff;
@@ -181,6 +218,12 @@
 }
 .tabs a:hover {
   border-color: var(--ink);
+  color: var(--ink);
+  background: transparent;
+}
+.strip:hover {
+  background: none;
+  color: inherit;
 }
 .tabs a i {
   width: 12px;
@@ -188,7 +231,8 @@
   border-radius: 3px;
   background: var(--tone);
 }
-.tabs a.all {
+.tabs a.all,
+.tabs a.all:hover {
   background: var(--ink);
   color: #fff;
   border-color: var(--ink);
