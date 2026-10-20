@@ -1,6 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+// Public shop domains show only the finds page, never the private app.
+const SHOP_HOSTS = (process.env.SHOP_HOSTS || "ivethskin.vercel.app")
+  .split(",")
+  .map((h) => h.trim().toLowerCase())
+  .filter(Boolean);
 export async function proxy(request: NextRequest) {
+  const host = (request.headers.get("host") || "").toLowerCase();
+  if (SHOP_HOSTS.includes(host))
+    return NextResponse.rewrite(new URL("/finds", request.url));
   let response = NextResponse.next({ request });
   // Same rule as db.ts: the original database only as a complete set.
   const original =
@@ -32,6 +40,6 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/cron|api/artwork|api/product-image).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/cron|api/artwork|api/product-image|finds).*)",
   ],
 };
