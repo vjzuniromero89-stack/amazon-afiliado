@@ -67,6 +67,7 @@ export async function snapshot(): Promise<Snapshot> {
     settings: defaults,
     connected: false,
     instagram: null,
+    clicks: { total: 0, byProduct: {}, bySource: {} },
     reels: [],
     configured: configured(),
     email: null,
@@ -89,7 +90,7 @@ export async function snapshot(): Promise<Snapshot> {
     "analytics_metrics",
     "campaigns",
   ] as const;
-  const [rows, auditRes, photos, connectionRes, settings, igRes, reelsRes, videos] = await Promise.all([
+  const [rows, auditRes, photos, connectionRes, settings, igRes, reelsRes, videos, clicksRes] = await Promise.all([
     Promise.all(tables.map((table) => allRows(table, user.id))),
     admin()
       .from("audit_logs")
@@ -114,7 +115,21 @@ export async function snapshot(): Promise<Snapshot> {
     admin().from("instagram_connections").select("username").eq("user_id", user.id).maybeSingle(),
     admin().from("instagram_posts").select("product_id,status,permalink,error,scheduled_at").eq("user_id", user.id).limit(500),
     listVideos(user.id).catch(() => []),
+    admin()
+      .from("shop_clicks")
+      .select("product_id,source")
+      .eq("user_id", user.id)
+      .gt("created_at", new Date(Date.now() - 30 * 864e5).toISOString())
+      .limit(20000),
   ]);
+  // Missing table (before its migration) simply counts nothing.
+  const clicks = { total: 0, byProduct: {} as Record<string, number>, bySource: {} as Record<string, number> };
+  for (const c of (clicksRes.error ? [] : clicksRes.data) as { product_id: string; source: string }[]) {
+    clicks.total++;
+    clicks.byProduct[c.product_id] = (clicks.byProduct[c.product_id] || 0) + 1;
+    const src = sourceName(c.source);
+    clicks.bySource[src] = (clicks.bySource[src] || 0) + 1;
+  }
   const audit = check(auditRes);
   const connection = check(connectionRes);
   return {
@@ -134,5 +149,17 @@ export async function snapshot(): Promise<Snapshot> {
     connected: !!connection,
     instagram: igRes.error || !igRes.data ? null : { username: igRes.data.username },
     reels: reelsRes.error ? [] : reelsRes.data,
+    clicks,
   } as Snapshot;
+}
+
+// "pin.it", "www.pinterest.com" -> "Pinterest"; empty -> "Directo".
+function sourceName(host: string) {
+  if (!host) return "Directo";
+  if (/pinterest|pin\.it/.test(host)) return "Pinterest";
+  if (/tiktok/.test(host)) return "TikTok";
+  if (/instagram/.test(host)) return "Instagram";
+  if (/facebook|fb\./.test(host)) return "Facebook";
+  if (/google/.test(host)) return "Google";
+  return host;
 }

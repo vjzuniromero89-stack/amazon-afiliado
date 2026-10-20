@@ -132,6 +132,8 @@ export type Snapshot = {
   settings: Settings;
   connected: boolean;
   instagram: { username: string } | null;
+  // Taps on ivethskin.com store buttons in the last 30 days.
+  clicks: { total: number; byProduct: Record<string, number>; bySource: Record<string, number> };
   reels: { product_id: string; status: string; permalink: string | null; error: string | null; scheduled_at: string }[];
   configured: boolean;
   email: string | null;

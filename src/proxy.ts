@@ -5,13 +5,24 @@ const SHOP_HOSTS = (process.env.SHOP_HOSTS || "ivethskin.com,www.ivethskin.com,i
   .split(",")
   .map((h) => h.trim().toLowerCase())
   .filter(Boolean);
+// The shop's own pages; anything else on a shop domain shows the finds page.
+const SHOP_PAGES: Record<string, string> = {
+  "": "/finds",
+  "/about": "/finds/about",
+  "/privacy": "/finds/privacy",
+  "/contact": "/finds/contact",
+  "/sitemap.xml": "/finds/sitemap.xml",
+  "/robots.txt": "/finds/robots.txt",
+};
 export async function proxy(request: NextRequest) {
   const host = (request.headers.get("host") || "").toLowerCase();
   // A find's own page: ivethskin.com/p/<id>. The private app has no /p.
   const find = request.nextUrl.pathname.match(/^\/p\/([0-9a-f-]{36})\/?$/i);
   if (find) return NextResponse.rewrite(new URL(`/finds/p/${find[1]}`, request.url));
-  if (SHOP_HOSTS.includes(host))
-    return NextResponse.rewrite(new URL("/finds", request.url));
+  if (SHOP_HOSTS.includes(host)) {
+    const page = SHOP_PAGES[request.nextUrl.pathname.replace(/\/$/, "")] ?? "/finds";
+    return NextResponse.rewrite(new URL(page, request.url));
+  }
   let response = NextResponse.next({ request });
   // Same rule as db.ts: the original database only as a complete set.
   const original =

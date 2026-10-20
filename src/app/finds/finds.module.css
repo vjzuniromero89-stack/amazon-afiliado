@@ -666,3 +666,43 @@
     transform: none;
   }
 }
+
+/* Footer: the site's own pages, quieter than the social links. */
+.footIn nav.footPages a {
+  font-weight: 600;
+  color: #d9d8de;
+}
+
+/* Text pages (About, Contact, Privacy): one readable column on the wall. */
+.prose {
+  max-width: 68ch;
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+.prose h1 {
+  font: 800 clamp(36px, 6vw, 56px) / 1 var(--display);
+  letter-spacing: -0.03em;
+  margin: 18px 0 18px;
+}
+.prose h2 {
+  font: 700 22px/1.2 var(--display);
+  margin: 30px 0 8px;
+}
+.prose p,
+.prose li {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.prose ul {
+  padding-left: 20px;
+}
+.prose a {
+  color: var(--ink);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+.updated {
+  font-size: 14px;
+  color: var(--ink-2);
+}

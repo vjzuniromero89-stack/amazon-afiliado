@@ -1117,6 +1117,11 @@ export function Workspace({
                   </div>
                   <span className="muted">
                     {data.products.length} productos
+                    {data.clicks.total > 0 &&
+                      ` · ${data.clicks.total} clics a la tienda en 30 días (${Object.entries(data.clicks.bySource)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([k, v]) => `${k} ${v}`)
+                        .join(", ")})`}
                     {(() => {
                       // Every product gets at least one video for TikTok and Instagram.
                       const missing = data.products.filter((p) => !p.video_path).length;
@@ -1167,7 +1172,12 @@ export function Workspace({
                                   )}
                                   <div>
                                     <b>{p.title}</b>
-                                    <small>{p.asin}</small>
+                                    <small>
+                                      {p.asin}
+                                      {data.clicks.byProduct[p.id]
+                                        ? ` · ${data.clicks.byProduct[p.id]} clics a la tienda (30 días)`
+                                        : ""}
+                                    </small>
                                   </div>
                                 </div>
                               </td>

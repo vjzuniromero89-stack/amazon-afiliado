@@ -85,7 +85,7 @@ export function Chip({ item, isNew }: { item: ShopItem; isNew?: boolean }) {
             ))}
           </ul>
         )}
-        <a className={styles.go} href={item.link} {...STORE_LINK}>
+        <a className={styles.go} href={item.link} data-go={item.id} {...STORE_LINK}>
           See it on {item.store} <Arrow />
         </a>
       </div>
@@ -115,6 +115,11 @@ export function Footer({ categories }: { categories: string[] }) {
             </a>
           ))}
         </nav>
+        <nav aria-label="About this site" className={styles.footPages}>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+        </nav>
         <p>
           <b>#ad</b> · Affiliate links: I may earn a commission from purchases at no extra cost to
           you. As an Amazon Associate I earn from qualifying purchases. Photos are my own. Prices and
@@ -134,5 +139,22 @@ export function newIds(items: ShopItem[]) {
       .slice(0, 2)
       .filter((i) => Date.parse(i.added) > cutoff)
       .map((i) => i.id),
+  );
+}
+
+// About, Contact and Privacy share the shop's header and footer.
+export function TextPage({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <AdBar />
+      <div className={`${styles.wrap} ${styles.bar}`}>
+        <Mark categories={[]} />
+        <a className={styles.back} href="/">
+          <Arrow /> All finds
+        </a>
+      </div>
+      <main className={`${styles.wrap} ${styles.prose}`}>{children}</main>
+      <Footer categories={[]} />
+    </>
   );
 }

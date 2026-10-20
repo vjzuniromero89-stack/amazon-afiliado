@@ -91,7 +91,7 @@ export default async function FindPage({ params }: Props) {
                 </ul>
               </div>
             )}
-            <a className={`${styles.go} ${styles.big}`} href={item.link} {...STORE_LINK}>
+            <a className={`${styles.go} ${styles.big}`} href={item.link} data-go={item.id} {...STORE_LINK}>
               See it on {item.store} <Arrow />
             </a>
             <p className={styles.note}>
