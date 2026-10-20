@@ -131,7 +131,7 @@ const GROUPS: Group[] = [
     keywords: ["fashion finds", "outfit ideas", "style inspiration", "amazon fashion"],
   },
   {
-    match: ["fitness", "gym", "workout", "ejercicio", "sport", "deporte", "yoga", "running", "dumbbell"],
+    match: ["fitness", "gym", "workout", "ejercicio", "sport", "deporte", "yoga", "running", "dumbbell", "boxing", "boxeo", "kickboxing", "punching", "jump rope"],
     noun: "fitness",
     hook: "Fitness Find",
     keywords: ["fitness gear", "home workout", "workout essentials", "active lifestyle"],
@@ -256,6 +256,14 @@ function fitTitle(build: (name: string) => string, parsed: Parsed) {
 // on the words at the start of the title and description, so these go first.
 // Plain product names only: no benefits or health claims.
 const SEARCH_TERMS: { match: RegExp; phrase: string; related: string[] }[] = [
+  // Boxing gear: gloves first, so a "gloves with hand wraps" set reads as gloves.
+  { match: /(?:boxing|kickboxing|muay thai|sparring|\bmma\b).*\bgloves?\b|\bgloves?\b.*(?:boxing|kickboxing|muay thai|sparring|\bmma\b)/, phrase: "Boxing Gloves", related: ["boxing gloves for women", "boxing workout", "home gym"] },
+  { match: /hand wraps?/, phrase: "Boxing Hand Wraps", related: ["hand wraps for boxing", "boxing gear", "boxing workout"] },
+  { match: /punching bag|heavy bag|speed bag|boxing bag/, phrase: "Punching Bag", related: ["punching bag for home", "home gym", "boxing workout"] },
+  { match: /mouth ?guard/, phrase: "Boxing Mouth Guard", related: ["mouth guard for sports", "boxing gear", "boxing workout"] },
+  { match: /headgear|head guard/, phrase: "Boxing Headgear", related: ["sparring headgear", "boxing gear", "boxing workout"] },
+  { match: /jump rope|skipping rope/, phrase: "Jump Rope", related: ["jump rope workout", "home workout", "cardio workout"] },
+  { match: /boxing|kickboxing/, phrase: "Boxing Gear", related: ["boxing workout", "home gym", "workout essentials"] },
   { match: /hair (?:mask|oil|serum|treatment|essence)|leave-?(?:on|in)|pantene|olaplex|moroccanoil/, phrase: "Hair Treatment", related: ["hair care routine", "leave in treatment", "hair care products"] },
   { match: /shampoo|conditioner/, phrase: "Shampoo and Conditioner", related: ["hair care routine", "hair care products", "shower essentials"] },
   { match: /lip liner|lip pencil/, phrase: "Lip Liner", related: ["nude lip liner", "lip combo", "makeup must haves"] },

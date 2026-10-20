@@ -91,3 +91,20 @@ test("Karen's personal boards are never chosen for product Pins", async () => {
   assert.ok(!ranked.includes("auburn hair color") && !ranked.includes("Birthday photoshoot"), ranked.join(","));
   assert.notEqual(pickBoard(p, boards, defaults)?.name, "auburn hair color");
 });
+
+test("boxing gear is Fitness & Workout and gets boxing search phrases", async () => {
+  const { detectCategory } = await import("../../src/lib/domain");
+  for (const t of [
+    "Boxing Gloves for Men & Women, Kickboxing Muay Thai Sparring Gloves",
+    "Kids Boxing Gloves for Youth Punching Bag Training",
+    "Heavy Punching Bag Set for Adults, Unfilled Boxing Bag",
+    "Boxing Hand Wraps 180 Inch, Elastic MMA Wraps",
+    "Speed Jump Rope for Fitness, Tangle-Free",
+  ])
+    assert.equal(detectCategory(t, ""), "Fitness & Workout", t);
+  assert.equal(phrase("Boxing Gloves for Men & Women, Kickboxing Muay Thai Sparring Gloves"), "Boxing Gloves");
+  assert.equal(phrase("Boxing Gloves with Hand Wraps Set"), "Boxing Gloves");
+  assert.equal(phrase("Boxing Hand Wraps 180 Inch, Elastic MMA Wraps"), "Boxing Hand Wraps");
+  assert.equal(phrase("Heavy Punching Bag Set for Adults, Unfilled"), "Punching Bag");
+  assert.equal(phrase("Speed Jump Rope for Fitness, Tangle-Free"), "Jump Rope");
+});

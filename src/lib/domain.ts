@@ -31,6 +31,9 @@ export const CATEGORIES = [
 ] as const;
 // First match wins, so the more specific topics come first.
 const CATEGORY_RULES: [string, RegExp][] = [
+  // Boxing gear first: "Boxing Gloves for Kids" is not a baby product and a
+  // "punching bag" is not a handbag.
+  ["Fitness & Workout", /boxing|boxeo|kickboxing|muay thai|\bmma\b|punching bag|heavy bag|speed bag|hand wraps?|sparring|jump rope|skipping rope|mouth ?guard|headgear/],
   // Words only skincare uses go before supplements ("Vitamin C Serum");
   // plain "skin" goes after them ("Collagen for Hair, Skin and Nails").
   ["Skincare", /serum|toner|cleanser|face wash|moisturi|(?<!ice )cream|lotion|sunscreen|\bspf\b|face mask|sheet mask|eye cream|eye patch|retinol|niacinamide/],
