@@ -16,6 +16,15 @@ export type Product = {
   video_path?: string | null;
   created_at: string;
 };
+// A video in the "Fotos" > "Videos" library; url plays it for an hour.
+export type Video = {
+  id: string;
+  path: string;
+  name: string;
+  product_id: string | null;
+  created_at: string;
+  url: string | null;
+};
 // A photo in the "Fotos" library, reusable across products.
 export type Photo = {
   id: string;
@@ -112,6 +121,7 @@ export type Audit = {
 export type Snapshot = {
   products: Product[];
   photos: Photo[];
+  videos: Video[];
   creatives: Creative[];
   boards: Board[];
   queue: QueueItem[];

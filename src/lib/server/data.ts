@@ -1,4 +1,5 @@
 import "server-only";
+import { listVideos } from "./videos";
 import { admin, check, configured, session } from "./db";
 import { defaults, type Snapshot } from "../types";
 export async function getSettings(uid: string) {
@@ -55,6 +56,7 @@ export async function snapshot(): Promise<Snapshot> {
   const empty: Snapshot = {
     products: [],
     photos: [],
+    videos: [],
     creatives: [],
     boards: [],
     queue: [],
@@ -87,7 +89,7 @@ export async function snapshot(): Promise<Snapshot> {
     "analytics_metrics",
     "campaigns",
   ] as const;
-  const [rows, auditRes, photos, connectionRes, settings, igRes, reelsRes] = await Promise.all([
+  const [rows, auditRes, photos, connectionRes, settings, igRes, reelsRes, videos] = await Promise.all([
     Promise.all(tables.map((table) => allRows(table, user.id))),
     admin()
       .from("audit_logs")
@@ -111,6 +113,7 @@ export async function snapshot(): Promise<Snapshot> {
     // Both tolerate a database without the Instagram migration.
     admin().from("instagram_connections").select("username").eq("user_id", user.id).maybeSingle(),
     admin().from("instagram_posts").select("product_id,status,permalink,error").eq("user_id", user.id).limit(500),
+    listVideos(user.id).catch(() => []),
   ]);
   const audit = check(auditRes);
   const connection = check(connectionRes);
@@ -118,6 +121,7 @@ export async function snapshot(): Promise<Snapshot> {
     ...empty,
     products: rows[0],
     photos: photos.error ? [] : photos.data,
+    videos,
     creatives: rows[1],
     boards: rows[2],
     queue: rows[3],

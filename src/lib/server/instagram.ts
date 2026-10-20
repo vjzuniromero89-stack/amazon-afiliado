@@ -254,25 +254,3 @@ export async function publishReels(uid: string) {
   }
   return { status: done.length ? "worked" : "waiting", done };
 }
-
-// Direct upload from the browser: videos are too big for the API body.
-export async function videoUploadUrl(uid: string, productId: string, type: string) {
-  await owned("products", productId, uid);
-  if (!/^video\/(mp4|quicktime)$/.test(type)) throw new AppError("Sube un video MP4 o MOV.");
-  const path = `${uid}/${productId}/${Date.now()}.${type === "video/mp4" ? "mp4" : "mov"}`;
-  const { data, error } = await admin().storage.from(VIDEO_BUCKET).createSignedUploadUrl(path);
-  if (error || !data) throw new AppError("No se pudo preparar la subida. ¿Ya corriste el SQL de Instagram?");
-  return { url: data.signedUrl, path };
-}
-
-export async function setProductVideo(uid: string, productId: string, path: string) {
-  const p = (await owned("products", productId, uid)) as Product;
-  if (!path.startsWith(`${uid}/${productId}/`)) throw new AppError("Video no válido.");
-  const sb = admin();
-  const name = path.split("/").pop()!;
-  const { data } = await sb.storage.from(VIDEO_BUCKET).list(`${uid}/${productId}`, { search: name });
-  if (!data?.some((f) => f.name === name)) throw new AppError("El video no terminó de subir.");
-  if (p.video_path && p.video_path !== path) await sb.storage.from(VIDEO_BUCKET).remove([p.video_path]);
-  check(await sb.from("products").update({ video_path: path }).eq("id", productId).eq("user_id", uid).select("id"));
-  return true;
-}

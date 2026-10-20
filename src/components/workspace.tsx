@@ -63,6 +63,7 @@ import {
   type StoreId,
 } from "@/lib/domain";
 import type { Creative, Photo, Product, Settings, Snapshot } from "@/lib/types";
+type Upload = (productId: string | null, file: File) => Promise<boolean>;
 
 export const sections = [
   "dashboard",
@@ -359,19 +360,22 @@ export function Workspace({
     }
   };
   // Videos go straight to storage with a signed link (too big for the API).
-  const uploadVideo = async (productId: string, file: File) => {
+  // With a product the video is also assigned to it; without one it only
+  // joins the library ("Fotos" > "Videos").
+  const uploadVideo: Upload = async (productId, file) => {
     if (file.size > 100 * 1024 * 1024) {
-      setNotice({ text: "El video debe pesar menos de 100 MB.", error: true });
-      return;
+      setNotice({ text: `«${file.name}» pesa más de 100 MB.`, error: true });
+      return false;
     }
     setPending(true);
-    setNotice({ text: "Subiendo el video…", error: false });
+    setNotice({ text: `Subiendo «${file.name}»…`, error: false });
+    const product = productId ? { product_id: productId } : {};
     let path = "";
     try {
       const r = await fetch("/api/command", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "videoUploadUrl", product_id: productId, type: file.type }),
+        body: JSON.stringify({ action: "videoUploadUrl", type: file.type, ...product }),
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error);
@@ -384,15 +388,17 @@ export function Workspace({
       path = j.result.path;
     } catch (e) {
       setNotice({ text: e instanceof Error ? e.message : "No se pudo subir el video.", error: true });
-      return;
+      return false;
     } finally {
       setPending(false);
     }
-    await run(
-      { action: "setProductVideo", product_id: productId, path },
-      data.instagram
-        ? "Video guardado. Sale como Reel en Instagram cuando salga el primer Pin del producto."
-        : "Video guardado. Conecta Instagram en Settings para publicarlo como Reel.",
+    return run(
+      { action: "addVideo", path, name: file.name, ...product },
+      !productId
+        ? "Video guardado en tu biblioteca. Asígnalo a su producto."
+        : data.instagram
+          ? "Video guardado. Sale como Reel en Instagram cuando salga el primer Pin del producto."
+          : "Video guardado. Conecta Instagram en Settings para publicarlo como Reel.",
     );
   };
   const auth = async (
@@ -1333,7 +1339,7 @@ export function Workspace({
             )}
 
             {section === "fotos" && (
-              <PhotoLibrary photos={data.photos} run={run} pending={pending} />
+              <MediaLibrary data={data} run={run} pending={pending} uploadVideo={uploadVideo} />
             )}
 
             {section === "discover" && (
@@ -1996,6 +2002,194 @@ function CategoryChips({
         </button>
       ))}
     </div>
+  );
+}
+// "Fotos" holds two libraries kept apart: photos and videos.
+function MediaLibrary({
+  data,
+  run,
+  pending,
+  uploadVideo,
+}: {
+  data: Snapshot;
+  run: Run;
+  pending: boolean;
+  uploadVideo: Upload;
+}) {
+  const [tab, setTab] = useState<"fotos" | "videos">("fotos");
+  useEffect(() => {
+    if (window.location.hash === "#videos") setTab("videos");
+  }, []);
+  const pick = (t: "fotos" | "videos") => {
+    setTab(t);
+    window.history.replaceState(null, "", `#${t}`);
+  };
+  return (
+    <>
+      <div className="media-tabs" role="tablist" aria-label="Biblioteca">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "fotos"}
+          className={tab === "fotos" ? "on" : ""}
+          onClick={() => pick("fotos")}
+        >
+          <Images size={18} /> Fotos <span>{data.photos.length}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "videos"}
+          className={tab === "videos" ? "on" : ""}
+          onClick={() => pick("videos")}
+        >
+          <Film size={18} /> Videos <span>{data.videos.length}</span>
+        </button>
+      </div>
+      {tab === "fotos" ? (
+        <PhotoLibrary photos={data.photos} run={run} pending={pending} />
+      ) : (
+        <VideoLibrary data={data} run={run} pending={pending} uploadVideo={uploadVideo} />
+      )}
+    </>
+  );
+}
+function VideoLibrary({
+  data,
+  run,
+  pending,
+  uploadVideo,
+}: {
+  data: Snapshot;
+  run: Run;
+  pending: boolean;
+  uploadVideo: Upload;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const add = async (list: File[]) => {
+    const files = list.filter((f) => /^video\/(mp4|quicktime)$/.test(f.type));
+    if (!files.length || busy) return;
+    setBusy(true);
+    try {
+      for (const f of files) if (!(await uploadVideo(null, f))) break;
+    } finally {
+      setBusy(false);
+    }
+  };
+  const choose = (
+    <button disabled={pending || busy} onClick={() => input.current?.click()}>
+      <Film size={18} /> {busy ? "Subiendo videos…" : "Subir videos"}
+    </button>
+  );
+  return (
+    <section
+      className={`panel photo-drop ${dragging ? "dragging" : ""}`}
+      onDragOver={(e) => {
+        if (!Array.from(e.dataTransfer.types).includes("Files")) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        add(Array.from(e.dataTransfer.files));
+      }}
+    >
+      <div className="toolbar">
+        <p className="video-note">
+          Videos MP4 o MOV de hasta 100 MB. Elige el producto de cada video: sale como Reel
+          en Instagram cuando sale su primer Pin.
+        </p>
+        {choose}
+        <input
+          ref={input}
+          type="file"
+          accept="video/mp4,video/quicktime"
+          multiple
+          hidden
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+            e.target.value = "";
+            add(files);
+          }}
+        />
+      </div>
+      {data.videos.length ? (
+        <div className="photo-grid video-grid">
+          {data.videos.map((v) => {
+            const reel = v.product_id ? data.reels.find((r) => r.product_id === v.product_id) : undefined;
+            return (
+              <figure key={v.id} className="photo-tile video-tile">
+                {v.url ? (
+                  <video src={v.url} controls preload="metadata" playsInline />
+                ) : (
+                  <div className="video-missing">Sin vista previa</div>
+                )}
+                <label className="tile-product">
+                  <span>Producto</span>
+                  <select
+                    value={v.product_id || ""}
+                    disabled={pending}
+                    onChange={(e) =>
+                      run(
+                        { action: "assignVideo", id: v.id, product_id: e.target.value || null },
+                        e.target.value
+                          ? "Video asignado. Sale como Reel cuando salga el primer Pin del producto."
+                          : "Video sin producto",
+                      )
+                    }
+                  >
+                    <option value="">Sin producto</option>
+                    {data.products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title.length > 60 ? `${p.title.slice(0, 58)}…` : p.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {reel && (
+                  <span className={`reel-state ${reel.status}`}>
+                    {reel.status === "published"
+                      ? "Reel publicado"
+                      : reel.status === "failed"
+                        ? "Reel con error"
+                        : "Reel en cola"}
+                  </span>
+                )}
+                <figcaption>
+                  <span title={v.name}>{v.name}</span>
+                  <button
+                    className="icon-button danger"
+                    aria-label={`Borrar ${v.name}`}
+                    disabled={pending}
+                    onClick={() => {
+                      if (
+                        confirm(
+                          "¿Borrar este video? Se quita también de su producto. Los Reels ya publicados se quedan en Instagram.",
+                        )
+                      )
+                        run({ action: "deleteVideo", id: v.id }, "Video borrado");
+                    }}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </figcaption>
+              </figure>
+            );
+          })}
+        </div>
+      ) : (
+        <Empty icon={Film} title="Todavía no hay videos" action={choose}>
+          Sube aquí los videos de tus productos, incluidos los que te preparemos.
+          Luego eliges el producto de cada uno, sin mezclarlos con las fotos.
+        </Empty>
+      )}
+    </section>
   );
 }
 function PhotoLibrary({

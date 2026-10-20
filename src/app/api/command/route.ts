@@ -28,7 +28,8 @@ import {
   syncAnalytics,
 } from "@/lib/server/operations";
 import { describeBoards, pinterest, syncBoards } from "@/lib/server/pinterest";
-import { queueReel, setProductVideo, videoUploadUrl } from "@/lib/server/instagram";
+import { queueReel } from "@/lib/server/instagram";
+import { addVideo, assignVideo, deleteVideo, videoUploadUrl } from "@/lib/server/videos";
 import {
   addLibraryPhotos,
   addProductImages,
@@ -300,17 +301,27 @@ export async function POST(req: Request) {
       case "videoUploadUrl": {
         result = await videoUploadUrl(
           uid,
-          uuid.parse(body.product_id),
           z.string().max(40).parse(body.type),
+          body.product_id ? uuid.parse(body.product_id) : undefined,
         );
         break;
       }
-      case "setProductVideo": {
-        result = await setProductVideo(
+      case "addVideo": {
+        // From the library, or from a product row (then it is assigned too).
+        result = await addVideo(
           uid,
-          uuid.parse(body.product_id),
           z.string().max(300).parse(body.path),
+          z.string().max(200).default("Video").parse(body.name),
+          body.product_id ? uuid.parse(body.product_id) : undefined,
         );
+        break;
+      }
+      case "assignVideo": {
+        result = await assignVideo(uid, uuid.parse(body.id), body.product_id ? uuid.parse(body.product_id) : null);
+        break;
+      }
+      case "deleteVideo": {
+        result = await deleteVideo(uid, uuid.parse(body.id));
         break;
       }
       case "queueReel": {
