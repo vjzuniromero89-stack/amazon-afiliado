@@ -131,7 +131,9 @@ export type Snapshot = {
   audit: Audit[];
   settings: Settings;
   connected: boolean;
-  instagram: { username: string } | null;
+  instagram: { username: string; auto_photos: boolean } | null;
+  // Planned or recent Instagram photo posts and carousels.
+  igPosts: { kind: string; product_ids: string[]; status: string; scheduled_at: string; permalink: string | null; error: string | null }[];
   // Taps on ivethskin.com store buttons in the last 30 days.
   clicks: { total: number; byProduct: Record<string, number>; bySource: Record<string, number> };
   reels: { product_id: string; status: string; permalink: string | null; error: string | null; scheduled_at: string }[];

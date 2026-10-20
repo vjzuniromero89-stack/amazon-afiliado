@@ -67,6 +67,7 @@ export async function snapshot(): Promise<Snapshot> {
     settings: defaults,
     connected: false,
     instagram: null,
+    igPosts: [],
     clicks: { total: 0, byProduct: {}, bySource: {} },
     reels: [],
     configured: configured(),
@@ -112,8 +113,8 @@ export async function snapshot(): Promise<Snapshot> {
       .maybeSingle(),
     getSettings(user.id),
     // Both tolerate a database without the Instagram migration.
-    admin().from("instagram_connections").select("username").eq("user_id", user.id).maybeSingle(),
-    admin().from("instagram_posts").select("product_id,status,permalink,error,scheduled_at").eq("user_id", user.id).limit(500),
+    admin().from("instagram_connections").select("*").eq("user_id", user.id).maybeSingle(),
+    admin().from("instagram_posts").select("*").eq("user_id", user.id).order("scheduled_at", { ascending: false }).limit(500),
     listVideos(user.id).catch(() => []),
     admin()
       .from("shop_clicks")
@@ -147,8 +148,24 @@ export async function snapshot(): Promise<Snapshot> {
     settings,
     email: user.email,
     connected: !!connection,
-    instagram: igRes.error || !igRes.data ? null : { username: igRes.data.username },
-    reels: reelsRes.error ? [] : reelsRes.data,
+    instagram:
+      igRes.error || !igRes.data
+        ? null
+        : { username: igRes.data.username, auto_photos: igRes.data.auto_photos !== false },
+    // Rows from before the photos migration have no kind: they are Reels.
+    reels: (reelsRes.error ? [] : reelsRes.data).filter((r: { kind?: string }) => !r.kind || r.kind === "reel"),
+    igPosts: (reelsRes.error ? [] : reelsRes.data)
+      .filter((r: { kind?: string; scheduled_at: string }) =>
+        (r.kind === "photo" || r.kind === "carousel") && Date.parse(r.scheduled_at) > Date.now() - 3 * 864e5)
+      .map((r: { kind: string; product_id: string; product_ids: string[] | null; status: string; scheduled_at: string; permalink: string | null; error: string | null }) => ({
+        kind: r.kind,
+        product_ids: r.product_ids?.length ? r.product_ids : [r.product_id],
+        status: r.status,
+        scheduled_at: r.scheduled_at,
+        permalink: r.permalink,
+        error: r.error,
+      }))
+      .reverse(),
     clicks,
   } as Snapshot;
 }

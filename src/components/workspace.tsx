@@ -3465,11 +3465,11 @@ function SettingsPanel({
           <div className="integration-row">
             <span className="integration-logo instagram">IG</span>
             <div>
-              <h3>Instagram (Reels)</h3>
+              <h3>Instagram</h3>
               <p>
                 {data.instagram
-                  ? `Conectado como @${data.instagram.username} · el video de cada producto sale como Reel con su primer Pin`
-                  : "Conecta la cuenta profesional para publicar los videos como Reels"}
+                  ? `Conectado como @${data.instagram.username} · Reels con el primer Pin de cada producto`
+                  : "Conecta la cuenta profesional para publicar Reels y fotos"}
               </p>
             </div>
             <button
@@ -3481,6 +3481,63 @@ function SettingsPanel({
               <ArrowUpRight size={15} />
             </button>
           </div>
+          {data.instagram && (
+            <div className="auto-photos">
+              <label className="switch-row">
+                <input
+                  type="checkbox"
+                  checked={data.instagram.auto_photos}
+                  disabled={pending}
+                  onChange={(e) =>
+                    run(
+                      { action: "setAutoPhotos", on: e.target.checked },
+                      e.target.checked
+                        ? "Fotos automáticas activadas: una foto de producto cada día a las 7 pm y un carrusel los domingos a las 6 pm."
+                        : "Fotos automáticas pausadas.",
+                    )
+                  }
+                />
+                <span>
+                  <b>Fotos automáticas en Instagram</b>
+                  <small>Una foto de producto cada día (7 pm) y un carrusel con tus productos los domingos (6 pm).</small>
+                </span>
+              </label>
+              {data.igPosts.length > 0 && (
+                <ul className="ig-plan">
+                  {data.igPosts.map((x) => (
+                    <li key={x.kind + x.scheduled_at}>
+                      <span>
+                        {new Date(x.scheduled_at).toLocaleString("es", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </span>
+                      <span>
+                        {x.kind === "carousel"
+                          ? `Carrusel · ${x.product_ids.length} productos`
+                          : `Foto · ${data.products.find((p) => p.id === x.product_ids[0])?.title.slice(0, 40) || "Producto"}`}
+                      </span>
+                      <span className={`reel-state ${x.status}`} title={x.error || undefined}>
+                        {x.status === "published" ? (
+                          <a href={x.permalink || "https://www.instagram.com/"} target="_blank" rel="noreferrer">
+                            Publicado
+                          </a>
+                        ) : x.status === "failed" ? (
+                          "Con error"
+                        ) : (
+                          "Programado"
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           {data.connected && (
             <div className="board-tools">
               <button

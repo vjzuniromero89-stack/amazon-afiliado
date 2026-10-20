@@ -2215,6 +2215,55 @@ dialog::backdrop {
 .no-video-count {
   color: #b35f00;
 }
+.auto-photos {
+  padding: 4px 0 14px 64px;
+  border-bottom: 1px solid var(--line);
+}
+.switch-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.switch-row input {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  accent-color: var(--navy);
+}
+.switch-row span {
+  display: grid;
+  gap: 2px;
+}
+.switch-row small {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.ig-plan {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.ig-plan li {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+}
+.ig-plan .reel-state {
+  margin: 0;
+}
+@media (max-width: 720px) {
+  .auto-photos {
+    padding-left: 0;
+  }
+  .ig-plan li {
+    grid-template-columns: 1fr;
+  }
+}
 .reel-schedule {
   display: grid;
   gap: 6px;
