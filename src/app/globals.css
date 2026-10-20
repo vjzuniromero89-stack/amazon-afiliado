@@ -2195,6 +2195,18 @@ dialog::backdrop {
   min-height: 40px;
   font-size: 15px;
 }
+.row-actions .reel-slot {
+  min-width: 152px;
+  justify-content: center;
+}
+.row-actions .pins-slot {
+  min-width: 160px;
+  justify-content: center;
+}
+.row-actions .video-slot {
+  min-width: 132px;
+  justify-content: center;
+}
 .button.secondary.no-video {
   background: #fff4e0;
   border-color: #f59a23;

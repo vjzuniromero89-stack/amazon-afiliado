@@ -1187,7 +1187,7 @@ export function Workspace({
                                   // Once a product has Pins, the next step is reviewing them.
                                   return made ? (
                                     <Link
-                                      className="button secondary done-pins"
+                                      className="button secondary done-pins pins-slot"
                                       href="/approval-queue"
                                       title="Ver y revisar los Pins de este producto"
                                     >
@@ -1195,6 +1195,7 @@ export function Workspace({
                                     </Link>
                                   ) : (
                                     <button
+                                      className="pins-slot"
                                       disabled={pending}
                                       onClick={() =>
                                         run(
@@ -1220,7 +1221,7 @@ export function Workspace({
                                   <Camera size={17} /> Fotos ({p.images?.length || 0})
                                 </button>
                                 <label
-                                  className={`button secondary${pending ? " disabled" : ""}${p.video_path ? "" : " no-video"}`}
+                                  className={`button secondary video-slot${pending ? " disabled" : ""}${p.video_path ? "" : " no-video"}`}
                                   title={
                                     p.video_path
                                       ? "Cambiar el video del producto (MP4 o MOV)"
@@ -1245,7 +1246,7 @@ export function Workspace({
                                   if (reel?.status === "published")
                                     return (
                                       <a
-                                        className="button secondary"
+                                        className="button secondary reel-slot"
                                         href={reel.permalink || "https://www.instagram.com/"}
                                         target="_blank"
                                         rel="noreferrer"
@@ -1257,16 +1258,26 @@ export function Workspace({
                                   if (reel)
                                     return (
                                       <span
-                                        className="button secondary disabled"
+                                        className="button secondary disabled reel-slot"
                                         title={reel.error || "Instagram está procesando el video"}
                                       >
-                                        {reel.status === "failed" ? "Reel con error" : "Reel en cola"}
+                                        {reel.status === "failed"
+                                          ? "Reel con error"
+                                          : Date.parse(reel.scheduled_at) > Date.now() + 60e3
+                                            ? `Reel ${new Date(reel.scheduled_at).toLocaleDateString("es", { day: "numeric", month: "short" })}`
+                                            : "Reel en cola"}
                                       </span>
                                     );
-                                  if (!p.video_path || !data.instagram) return null;
+                                  // An invisible slot keeps every row's buttons in line.
+                                  if (!p.video_path || !data.instagram)
+                                    return (
+                                      <span className="button secondary reel-slot" style={{ visibility: "hidden" }} aria-hidden="true">
+                                        Reel
+                                      </span>
+                                    );
                                   return (
                                     <button
-                                      className="secondary"
+                                      className="secondary reel-slot"
                                       disabled={pending}
                                       title="Publicar el video de este producto como Reel en Instagram"
                                       onClick={() =>
