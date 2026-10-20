@@ -356,11 +356,19 @@ export class TemplateConceptProvider implements ConceptProvider {
     const sizeTxt = parsed.size ? ` (${parsed.size})` : "";
     const forTxt = parsed.audience ? ` for ${parsed.audience}` : "";
     // Facts only: parts of the details that read as claims are left out.
-    // Whole pieces only, up to ~260 characters: never "Whether you wea".
-    const facts = stripClaims(p.notes || "")
-      .split(", ")
-      .reduce((out, piece) => (`${out}, ${piece}`.length <= 262 ? (out ? `${out}, ${piece}` : piece) : out), "");
-    const details = facts ? ` Key details: ${sentence(facts)}` : "";
+    // The opening facts, read in order up to ~260 characters. Reading stops
+    // at the first promise or broken piece, so nothing reads out of context
+    // ("the rich, and deeply moisturized, dyes") or cut ("Whether you wea").
+    const facts: string[] = [];
+    for (const raw of (p.notes || "").split(/[,;\n]|\.\s/)) {
+      const piece = raw.trim().replace(/\.$/, "");
+      if (!piece) continue;
+      if (hasClaim(piece) || /^[a-z]/.test(piece)) break;
+      if ([...facts, piece].join(", ").length > 262) break;
+      facts.push(piece);
+    }
+    const factsText = stripClaims(facts.join(", "));
+    const details = factsText ? ` Key details: ${sentence(factsText)}` : "";
     const close = " Tap to see the full details, reviews and current price on Amazon.";
 
     // Search words first: "Collagen Supplement: Vital Vitamins Multi Collagen".
