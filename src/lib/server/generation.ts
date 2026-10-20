@@ -356,7 +356,10 @@ export class TemplateConceptProvider implements ConceptProvider {
     const sizeTxt = parsed.size ? ` (${parsed.size})` : "";
     const forTxt = parsed.audience ? ` for ${parsed.audience}` : "";
     // Facts only: parts of the details that read as claims are left out.
-    const facts = stripClaims((p.notes || "").slice(0, 280));
+    // Whole pieces only, up to ~260 characters: never "Whether you wea".
+    const facts = stripClaims(p.notes || "")
+      .split(", ")
+      .reduce((out, piece) => (`${out}, ${piece}`.length <= 262 ? (out ? `${out}, ${piece}` : piece) : out), "");
     const details = facts ? ` Key details: ${sentence(facts)}` : "";
     const close = " Tap to see the full details, reviews and current price on Amazon.";
 

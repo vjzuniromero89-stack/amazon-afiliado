@@ -76,7 +76,7 @@ const FEATURES = [
   "queen size", "king size", "full size", "twin size", "travel size",
 ];
 // Words that would turn a fact into a claim; never shown.
-const CLAIMS = /\b(support|boost\w*|relief|reliev\w*|anti[- ]\w+|weight loss|lose weight|immun\w*|sleep|joints?|heal(?:s|ing)?|cures?|treats? (?:acne|pain)|detox|energy|hydrat\w*|repair\w*|acne|wrinkles?|aging|glowing skin|slim\w*|fat burn\w*|pain|clinically|doctor\w*|best|#1)\b/i;
+const CLAIMS = /\b(support|boost\w*|relief|reliev\w*|anti[- ]\w+|weight loss|lose weight|immun\w*|sleep|joints?|heal(?:s|ing)?|cures?|treats? (?:acne|pain)|detox|energy|hydrat\w*|repair\w*|restor\w*|sooth\w*|acne|wrinkles?|aging|glowing skin|slim\w*|fat burn\w*|pain|clinically|doctor\w*|best|#1)\b/i;
 const titleCase = (t: string) => t.replace(/\b\w/g, (m) => m.toUpperCase()).replace(/\bBpa\b/, "BPA").replace(/\bLed\b/, "LED").replace(/\bUsb C\b/, "USB-C").replace(/\bGmo\b/, "GMO");
 // Short facts read from the product name ("Waterproof, Queen Size,
 // Noiseless") so the details field fills itself. Only what the name says.
