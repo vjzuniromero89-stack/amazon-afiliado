@@ -450,10 +450,14 @@
   .shelf .band {
     border-radius: 6px;
   }
+  /* Every band takes two title lines, so the chips under them line up
+     across the rack whether a name fits on one line or two. */
   .shelf .band > div {
     padding: 16px 14px 14px;
     flex-direction: column;
+    justify-content: space-between;
     gap: 4px;
+    min-height: calc(2 * clamp(24px, 2.3vw, 30px) + 50px);
   }
   .shelf .band h2 {
     font-size: clamp(24px, 2.3vw, 30px);
