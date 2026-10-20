@@ -22,6 +22,7 @@
 */
 .page :where(nav a, nav a:hover) {
   display: revert;
+  align-items: stretch;
   gap: 0;
   color: inherit;
   font-size: inherit;
@@ -40,6 +41,7 @@
 }
 .page :where(footer) {
   display: block;
+  text-align: start;
   padding: 0;
   gap: 0;
   font-size: inherit;
