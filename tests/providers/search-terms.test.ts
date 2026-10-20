@@ -108,3 +108,17 @@ test("boxing gear is Fitness & Workout and gets boxing search phrases", async ()
   assert.equal(phrase("Heavy Punching Bag Set for Adults, Unfilled"), "Punching Bag");
   assert.equal(phrase("Speed Jump Rope for Fitness, Tangle-Free"), "Jump Rope");
 });
+
+test("hand wraps sold as 'inner gloves' are hand wraps; names lose a trailing period", async () => {
+  assert.equal(phrase("RDX Gel Boxing Hand Wraps inner gloves."), "Boxing Hand Wraps");
+  assert.equal(phrase("Boxing Gloves with Hand Wraps Set"), "Boxing Gloves");
+  assert.equal(parseTitle("Tech Tools Punching Bag.").full.endsWith("."), false);
+  const { TemplateConceptProvider } = await import("../../src/lib/server/generation");
+  const { defaults } = await import("../../src/lib/types");
+  const p = { id: "00000000-0000-0000-0000-000000000002", title: "RDX Gel Boxing Hand Wraps inner gloves.", category: "Fitness & Workout", notes: "", images: [], url: "https://www.amazon.com/dp/B0TEST" } as unknown as Product;
+  const out = await new TemplateConceptProvider().generate(p, [], defaults);
+  for (const c of out) {
+    assert.ok(!/\.\./.test(c.title + c.description), c.title + " / " + c.description);
+    assert.ok(!/Adding a boxing hand wraps|Save this boxing hand wraps/.test(c.description), c.description);
+  }
+});

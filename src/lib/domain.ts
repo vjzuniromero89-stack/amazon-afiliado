@@ -75,7 +75,8 @@ export function cleanProductName(raw: string) {
     .replace(/\s+([,;:.!?])/g, "$1")
     .replace(/([,;:])(?=\S)/g, "$1 ")
     .replace(/([,;])\s*\1+/g, "$1")
-    .replace(/[\s,;:\-–|]+$/, "")
+    // A trailing period too ("Tech Tools Punching Bag.").
+    .replace(/[\s,;:.\-–|]+$/, "")
     .trim();
   return t.slice(0, 160);
 }

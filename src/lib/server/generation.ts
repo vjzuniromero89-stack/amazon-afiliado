@@ -75,7 +75,8 @@ type Parsed = {
 };
 
 export function parseTitle(raw: string): Parsed {
-  const title = clean(raw);
+  // Names saved with a trailing period ("Punching Bag.") read as "Bag.." in Pins.
+  const title = clean(raw).replace(/\.+$/, "");
   const head = clean(title.split(/,|\s[-–|]\s|\(|\[/)[0]) || title;
   const size = title.match(SIZE_RE)?.[1] ?? "";
   const aud = head.match(AUDIENCE_RE);
@@ -256,9 +257,11 @@ function fitTitle(build: (name: string) => string, parsed: Parsed) {
 // on the words at the start of the title and description, so these go first.
 // Plain product names only: no benefits or health claims.
 const SEARCH_TERMS: { match: RegExp; phrase: string; related: string[] }[] = [
-  // Boxing gear: gloves first, so a "gloves with hand wraps" set reads as gloves.
-  { match: /(?:boxing|kickboxing|muay thai|sparring|\bmma\b).*\bgloves?\b|\bgloves?\b.*(?:boxing|kickboxing|muay thai|sparring|\bmma\b)/, phrase: "Boxing Gloves", related: ["boxing gloves for women", "boxing workout", "home gym"] },
+  // Boxing gear. "Boxing gloves" said outright wins (a gloves + wraps set);
+  // otherwise hand wraps win over gloves ("Hand Wraps Inner Gloves").
+  { match: /(?:boxing|kickboxing|sparring|\bmma\b) gloves?/, phrase: "Boxing Gloves", related: ["boxing gloves for women", "boxing workout", "home gym"] },
   { match: /hand wraps?/, phrase: "Boxing Hand Wraps", related: ["hand wraps for boxing", "boxing gear", "boxing workout"] },
+  { match: /(?:boxing|kickboxing|muay thai|sparring|\bmma\b).*\bgloves?\b|\bgloves?\b.*(?:boxing|kickboxing|muay thai|sparring|\bmma\b)/, phrase: "Boxing Gloves", related: ["boxing gloves for women", "boxing workout", "home gym"] },
   { match: /punching bag|heavy bag|speed bag|boxing bag/, phrase: "Punching Bag", related: ["punching bag for home", "home gym", "boxing workout"] },
   { match: /mouth ?guard/, phrase: "Boxing Mouth Guard", related: ["mouth guard for sports", "boxing gear", "boxing workout"] },
   { match: /headgear|head guard/, phrase: "Boxing Headgear", related: ["sparring headgear", "boxing gear", "boxing workout"] },
@@ -400,6 +403,9 @@ export class TemplateConceptProvider implements ConceptProvider {
     const search = searchTerms(p, parsed);
     const phrase = search.phrase;
     const lower = phrase.toLowerCase();
+    // "Adding boxing gloves", "Save these hand wraps": plural phrases take no "a".
+    const plural = /[^s]s$/i.test(phrase);
+    const article = plural ? "" : /^[aeiou]/i.test(phrase) ? "an " : "a ";
     const routine = g.noun === "everyday" ? "Daily" : g.noun.replace(/^\w/, (m) => m.toUpperCase());
     // When the product name already says it ("Bamboo Cutting Board Set"), do not repeat it.
     const named = strip(parsed.short).includes(strip(phrase));
@@ -419,8 +425,8 @@ export class TemplateConceptProvider implements ConceptProvider {
       : "";
     const descriptions = [
       `${phrase} idea: ${parsed.full}${forTxt}${sizeTxt}.${details}${more}${close}`,
-      `Adding a ${lower} to your ${g.noun} routine? ${parsed.full}${sizeTxt} is worth a look${forTxt ? ` – made${forTxt.toLowerCase()}` : ""}.${details}${more}${close}`,
-      `Save this ${lower} for later: ${parsed.full}${forTxt}${sizeTxt}.${details}${more}${close}`,
+      `Adding ${article}${lower} to your ${g.noun} routine? ${parsed.full}${sizeTxt} is worth a look${forTxt ? ` – made${forTxt.toLowerCase()}` : ""}.${details}${more}${close}`,
+      `Save ${plural ? "these" : "this"} ${lower} for later: ${parsed.full}${forTxt}${sizeTxt}.${details}${more}${close}`,
     ];
     const keywords = keywordsFor(p, parsed, g);
 
