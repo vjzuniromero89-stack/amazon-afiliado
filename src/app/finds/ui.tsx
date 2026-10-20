@@ -74,10 +74,10 @@ export function Chip({ item, isNew }: { item: ShopItem; isNew?: boolean }) {
         {isNew && <span className={styles.flag}>New</span>}
       </a>
       <div className={styles.body}>
-        <span className={styles.no}>{chipNo(item.no)}</span>
         <h3>
           <a href={`/p/${item.id}`}>{item.short}</a>
         </h3>
+        <span className={styles.no}>{chipNo(item.no)}</span>
         {item.facts.length > 0 && (
           <ul className={styles.facts}>
             {item.facts.map((f) => (

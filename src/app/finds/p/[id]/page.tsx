@@ -76,10 +76,10 @@ export default async function FindPage({ params }: Props) {
           </div>
 
           <section className={styles.panel} aria-labelledby="find-name">
+            <h1 id="find-name">{item.short}</h1>
             <span className={styles.no}>
               {chipNo(item.no)} · <a href={`/#${slug(item.category)}`}>{item.category}</a>
             </span>
-            <h1 id="find-name">{item.short}</h1>
             {item.title !== item.short && <p className={styles.full}>{item.title}</p>}
             {item.facts.length > 0 && (
               <div className={styles.callout}>
