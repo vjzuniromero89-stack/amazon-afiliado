@@ -33,7 +33,7 @@ export const CATEGORIES = [
 const CATEGORY_RULES: [string, RegExp][] = [
   // Words only skincare uses go before supplements ("Vitamin C Serum");
   // plain "skin" goes after them ("Collagen for Hair, Skin and Nails").
-  ["Skincare", /serum|toner|cleanser|face wash|moisturi|sunscreen|\bspf\b|face mask|sheet mask|eye cream|eye patch|retinol|niacinamide/],
+  ["Skincare", /serum|toner|cleanser|face wash|moisturi|(?<!ice )cream|lotion|sunscreen|\bspf\b|face mask|sheet mask|eye cream|eye patch|retinol|niacinamide/],
   // Hair care and makeup words go before supplements too ("Pantene
   // Pro-Vitamin Essence" is a hair treatment, not a vitamin).
   ["Beauty & Makeup", /shampoo|conditioner|hair (?:mask|oil|serum|treatment|essence|spray)|leave-?(?:on|in)|pantene|olaplex|moroccanoil|lip liner|lip pencil|lipstick|lip gloss|eyeliner|mascara|foundation|concealer|blush|eyeshadow|makeup|maquillaje/],

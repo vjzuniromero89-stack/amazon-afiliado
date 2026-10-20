@@ -286,13 +286,24 @@ const SEARCH_TERMS: { match: RegExp; phrase: string; related: string[] }[] = [
 // Ingredients like hyaluronic acid or collagen are in creams too: a cream,
 // serum or lotion never gets a supplement phrase ("Hyaluronic Acid Supplement"
 // on a face moisturizer). Only a real pill, capsule or powder does.
-const SKIN_FORM = /moisturiz|cream|lotion|serum|cleanser|toner|sunscreen|spf|mask|balm|face wash|eye patch|hair|shampoo|conditioner|pantene|leave-?(?:on|in)|lip/;
-const PILL_FORM = /capsul|softgel|tablet|pills?|gumm|supplement|suplement|powder/;
+const SKIN_FORM = /moisturiz|cream|lotion|serum|cleanser|toner|sunscreen|\bspf\b|\bmask\b|\bbalm\b|face wash|eye patch|hair|shampoo|conditioner|pantene|leave-?(?:on|in)|\blip\b/;
+const PILL_FORM = /capsul|softgel|tablet|\bpills?\b|gumm|supplement|suplement|powder/;
 const SUPPLEMENT_PHRASE = /supplement|multivitamin|fish oil|protein powder|vitamin gummies/i;
 export function searchTerms(p: Product, parsed: Parsed) {
   const text = strip(`${p.title} ${p.category || ""} ${p.notes || ""}`);
   const skin = SKIN_FORM.test(text) && !PILL_FORM.test(text);
-  const hit = SEARCH_TERMS.find((t) => t.match.test(text) && !(skin && SUPPLEMENT_PHRASE.test(t.phrase)));
+  // The app's own check before any Pin is made: a search phrase must belong
+  // to the product's own category ("Face Moisturizer" is never used for a lip
+  // liner, "Vitamin Supplement" never for a hair treatment). A phrase that does
+  // not fit is skipped and the product's own noun is used instead.
+  const own = detectCategory(p.title, p.category || "");
+  const fits = (phrase: string) => {
+    const kind = detectCategory(phrase, "");
+    return kind === "Gift Ideas" || own === "Gift Ideas" || kind === own;
+  };
+  const hit = SEARCH_TERMS.find(
+    (t) => t.match.test(text) && !(skin && SUPPLEMENT_PHRASE.test(t.phrase)) && fits(t.phrase),
+  );
   if (hit) return { phrase: hit.phrase, related: hit.related };
   // No known type: the product noun without the brand ("Bamboo Cutting Board").
   // Cut at "with", "for" or a comma, drop sizes like "2.0", and never start

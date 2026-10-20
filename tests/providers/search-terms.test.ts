@@ -61,3 +61,22 @@ test("hair care and lip liner get their own phrase, never a vitamin one", () => 
   assert.equal(phrase("Pantene Pro-Vitamin Essence."), "Hair Treatment");
   assert.equal(phrase("L'Oreal Paris Colour Riche Lip Liner Pencil."), "Lip Liner");
 });
+
+// Every product in the shop today: the phrase must fit what the product is.
+test("the app's check: every phrase fits its own product", () => {
+  const cases: [string, string][] = [
+    ["L'Oreal Paris Colour Riche Lip Liner Pencil.", "Lip Liner"],
+    ["Pantene Pro-Vitamin Essence.", "Hair Treatment"],
+    ["Vanicream Daily Facial Moisturizer, Lightweight, Non-Greasy, 3 Fl Oz", "Face Moisturizer"],
+    ["Vital Vitamins Hyaluronic Acid", "Hyaluronic Acid Supplement"],
+    ["Vital Vitamins Multi Collagen Complex", "Collagen Supplement"],
+    ["medicube Toner Pads Zero Pore Pad 2.0 for Exfoliation and Pore Care", "Toner Pads"],
+    ["BEDLORE Waterproof Mattress Protector, Queen Size Mattress Pad Noiseless", "Waterproof Mattress Protector"],
+    ["OEAK Womens Jelly Bras Wireless Deep V Bralette Comfy Push Up Tshirt Bras", "Wireless Bra"],
+  ];
+  for (const [title, want] of cases) assert.equal(phrase(title), want, title);
+  // A moisturizing lip product is still a lip liner, never a face moisturizer.
+  assert.equal(phrase("L'Oreal Paris Colour Riche Lip Liner Pencil.", "Creamy, moisturizing formula"), "Lip Liner");
+  // No phrase from another category: a hair oil with vitamins is not a supplement.
+  assert.notEqual(phrase("Argan Hair Oil with Vitamin E"), "Vitamin Supplement");
+});
