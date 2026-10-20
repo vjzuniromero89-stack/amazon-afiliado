@@ -18,6 +18,7 @@ import {
   BarChart3,
   CalendarDays,
   Camera,
+  Film,
   Check,
   CheckCheck,
   ChevronDown,
@@ -262,6 +263,17 @@ export function Workspace({
     [scheduling, setScheduling] = useState<Creative | null>(null),
     [search, setSearch] = useState("");
   useEffect(() => {
+    const ig = new URLSearchParams(window.location.search).get("instagram");
+    if (ig)
+      setNotice({
+        text:
+          ig === "success"
+            ? "Instagram conectado. Los productos con video saldrán como Reel cuando salga su primer Pin."
+            : "No se pudo conectar Instagram. Revisa la app de Meta (Instagram tester y la URL de retorno).",
+        error: ig !== "success",
+      });
+  }, []);
+  useEffect(() => {
     const status = new URLSearchParams(window.location.search).get(
       "connection",
     );
@@ -345,6 +357,43 @@ export function Workspace({
     } finally {
       setPending(false);
     }
+  };
+  // Videos go straight to storage with a signed link (too big for the API).
+  const uploadVideo = async (productId: string, file: File) => {
+    if (file.size > 100 * 1024 * 1024) {
+      setNotice({ text: "El video debe pesar menos de 100 MB.", error: true });
+      return;
+    }
+    setPending(true);
+    setNotice({ text: "Subiendo el video…", error: false });
+    let path = "";
+    try {
+      const r = await fetch("/api/command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "videoUploadUrl", product_id: productId, type: file.type }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error);
+      const up = await fetch(j.result.url, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!up.ok) throw new Error("No se pudo subir el video. Inténtalo de nuevo.");
+      path = j.result.path;
+    } catch (e) {
+      setNotice({ text: e instanceof Error ? e.message : "No se pudo subir el video.", error: true });
+      return;
+    } finally {
+      setPending(false);
+    }
+    await run(
+      { action: "setProductVideo", product_id: productId, path },
+      data.instagram
+        ? "Video guardado. Sale como Reel en Instagram cuando salga el primer Pin del producto."
+        : "Video guardado. Conecta Instagram en Settings para publicarlo como Reel.",
+    );
   };
   const auth = async (
     action: "login" | "logout",
@@ -1157,6 +1206,63 @@ export function Workspace({
                                 >
                                   <Camera size={17} /> Fotos ({p.images?.length || 0})
                                 </button>
+                                <label
+                                  className={`button secondary${pending ? " disabled" : ""}`}
+                                  title="Subir el video del producto (MP4 o MOV) para Instagram y TikTok"
+                                >
+                                  <Film size={17} /> {p.video_path ? "Video ✓" : "Video"}
+                                  <input
+                                    type="file"
+                                    accept="video/mp4,video/quicktime"
+                                    hidden
+                                    disabled={pending}
+                                    onChange={(e) => {
+                                      const file = e.currentTarget.files?.[0];
+                                      e.currentTarget.value = "";
+                                      if (file) uploadVideo(p.id, file);
+                                    }}
+                                  />
+                                </label>
+                                {(() => {
+                                  const reel = data.reels.find((r) => r.product_id === p.id);
+                                  if (reel?.status === "published")
+                                    return (
+                                      <a
+                                        className="button secondary"
+                                        href={reel.permalink || "https://www.instagram.com/"}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        title="Ver el Reel en Instagram"
+                                      >
+                                        <Check size={17} /> Reel
+                                      </a>
+                                    );
+                                  if (reel)
+                                    return (
+                                      <span
+                                        className="button secondary disabled"
+                                        title={reel.error || "Instagram está procesando el video"}
+                                      >
+                                        {reel.status === "failed" ? "Reel con error" : "Reel en cola"}
+                                      </span>
+                                    );
+                                  if (!p.video_path || !data.instagram) return null;
+                                  return (
+                                    <button
+                                      className="secondary"
+                                      disabled={pending}
+                                      title="Publicar el video de este producto como Reel en Instagram"
+                                      onClick={() =>
+                                        run(
+                                          { action: "queueReel", product_id: p.id },
+                                          "Reel en cola. Sale en Instagram en los próximos 15 a 30 minutos.",
+                                        )
+                                      }
+                                    >
+                                      <Film size={17} /> Publicar Reel
+                                    </button>
+                                  );
+                                })()}
                                 {/* Always rendered so every row keeps the same layout. */}
                                   <button
                                     className="secondary danger icon-only"
@@ -1586,6 +1692,22 @@ export function Workspace({
                   }
                 }}
                 login={() => setModal("login")}
+                connectInstagram={async () => {
+                  setPending(true);
+                  try {
+                    const r = await fetch("/api/instagram/connect", { method: "POST" }),
+                      j = await r.json();
+                    if (!r.ok) throw new Error(j.error);
+                    window.location.assign(j.url);
+                  } catch (e) {
+                    setNotice({
+                      text: e instanceof Error ? e.message : "No se pudo conectar Instagram.",
+                      error: true,
+                    });
+                  } finally {
+                    setPending(false);
+                  }
+                }}
               />
             )}
             <footer>
@@ -3026,12 +3148,14 @@ function SettingsPanel({
   run,
   connect,
   login,
+  connectInstagram,
 }: {
   data: Snapshot;
   pending: boolean;
   run: Run;
   connect: () => void;
   login: () => void;
+  connectInstagram: () => void;
 }) {
   const [s, setS] = useState(data.settings);
   const change = <K extends keyof Settings>(key: K, value: Settings[K]) =>
@@ -3074,6 +3198,25 @@ function SettingsPanel({
               onClick={connect}
             >
               {data.connected ? "Reconectar" : "Conectar"}
+              <ArrowUpRight size={15} />
+            </button>
+          </div>
+          <div className="integration-row">
+            <span className="integration-logo instagram">IG</span>
+            <div>
+              <h3>Instagram (Reels)</h3>
+              <p>
+                {data.instagram
+                  ? `Conectado como @${data.instagram.username} · el video de cada producto sale como Reel con su primer Pin`
+                  : "Conecta la cuenta profesional para publicar los videos como Reels"}
+              </p>
+            </div>
+            <button
+              className="secondary"
+              disabled={pending || !data.email}
+              onClick={connectInstagram}
+            >
+              {data.instagram ? "Reconectar" : "Conectar"}
               <ArrowUpRight size={15} />
             </button>
           </div>

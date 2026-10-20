@@ -64,6 +64,8 @@ export async function snapshot(): Promise<Snapshot> {
     audit: [],
     settings: defaults,
     connected: false,
+    instagram: null,
+    reels: [],
     configured: configured(),
     email: null,
     aiEnabled: Boolean(process.env.OPENAI_API_KEY),
@@ -85,7 +87,7 @@ export async function snapshot(): Promise<Snapshot> {
     "analytics_metrics",
     "campaigns",
   ] as const;
-  const [rows, auditRes, photos, connectionRes, settings] = await Promise.all([
+  const [rows, auditRes, photos, connectionRes, settings, igRes, reelsRes] = await Promise.all([
     Promise.all(tables.map((table) => allRows(table, user.id))),
     admin()
       .from("audit_logs")
@@ -106,6 +108,9 @@ export async function snapshot(): Promise<Snapshot> {
       .eq("user_id", user.id)
       .maybeSingle(),
     getSettings(user.id),
+    // Both tolerate a database without the Instagram migration.
+    admin().from("instagram_connections").select("username").eq("user_id", user.id).maybeSingle(),
+    admin().from("instagram_posts").select("product_id,status,permalink,error").eq("user_id", user.id).limit(500),
   ]);
   const audit = check(auditRes);
   const connection = check(connectionRes);
@@ -123,5 +128,7 @@ export async function snapshot(): Promise<Snapshot> {
     settings,
     email: user.email,
     connected: !!connection,
+    instagram: igRes.error || !igRes.data ? null : { username: igRes.data.username },
+    reels: reelsRes.error ? [] : reelsRes.data,
   } as Snapshot;
 }

@@ -12,6 +12,7 @@ import {
   TEMPLATES,
 } from "../domain";
 import { imageProvider } from "./artwork";
+import { queueReel } from "./instagram";
 import { photoFor } from "./images";
 import {
   pinterest,
@@ -265,6 +266,8 @@ export async function publishNext(uid: string) {
         p_link: link,
       }),
     );
+    // The chain: the product's video follows as a Reel (once per product).
+    await queueReel(uid, p.id).catch(() => false);
     return { status: "published" };
   } catch (e) {
     const uncertain =

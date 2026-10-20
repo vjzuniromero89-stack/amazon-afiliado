@@ -28,6 +28,7 @@ import {
   syncAnalytics,
 } from "@/lib/server/operations";
 import { describeBoards, pinterest, syncBoards } from "@/lib/server/pinterest";
+import { queueReel, setProductVideo, videoUploadUrl } from "@/lib/server/instagram";
 import {
   addLibraryPhotos,
   addProductImages,
@@ -294,6 +295,27 @@ export async function POST(req: Request) {
             .from("affiliate_configuration")
             .upsert({ ...data, user_id: uid }),
         );
+        break;
+      }
+      case "videoUploadUrl": {
+        result = await videoUploadUrl(
+          uid,
+          uuid.parse(body.product_id),
+          z.string().max(40).parse(body.type),
+        );
+        break;
+      }
+      case "setProductVideo": {
+        result = await setProductVideo(
+          uid,
+          uuid.parse(body.product_id),
+          z.string().max(300).parse(body.path),
+        );
+        break;
+      }
+      case "queueReel": {
+        // The owner's own tap: post this product's video as a Reel.
+        result = await queueReel(uid, uuid.parse(body.product_id));
         break;
       }
       case "syncBoards":

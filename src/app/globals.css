@@ -149,10 +149,14 @@ button:active,
   background: var(--orange-press);
   transform: translateY(1px);
 }
-button:disabled {
+button:disabled,
+.button.disabled {
   cursor: not-allowed;
   opacity: 0.5;
   transform: none;
+}
+label.button.disabled {
+  pointer-events: none;
 }
 button.secondary,
 .button.secondary {
@@ -1540,6 +1544,11 @@ button.card-main {
   line-height: 1;
   padding-bottom: 4px;
   color: var(--orange);
+}
+.integration-logo.instagram {
+  background: #c13584;
+  color: #fff;
+  font-size: 17px;
 }
 .integration-logo.pinterest {
   background: #c8232c;

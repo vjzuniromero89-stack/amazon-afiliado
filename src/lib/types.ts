@@ -12,6 +12,8 @@ export type Product = {
   category: string;
   notes: string;
   images?: string[];
+  // The product's video for Reels (bucket "product-videos").
+  video_path?: string | null;
   created_at: string;
 };
 // A photo in the "Fotos" library, reusable across products.
@@ -119,6 +121,8 @@ export type Snapshot = {
   audit: Audit[];
   settings: Settings;
   connected: boolean;
+  instagram: { username: string } | null;
+  reels: { product_id: string; status: string; permalink: string | null; error: string | null }[];
   configured: boolean;
   email: string | null;
   aiEnabled: boolean;

@@ -1,6 +1,7 @@
 import { admin, check, env, errorResponse } from "@/lib/server/db";
 import { safeEqual } from "@/lib/server/crypto";
 import { autopilot, publishNext, syncAnalytics } from "@/lib/server/operations";
+import { publishReels } from "@/lib/server/instagram";
 export const maxDuration = 300;
 export async function GET(req: Request) {
   try {
@@ -32,6 +33,11 @@ export async function GET(req: Request) {
       if (Date.now() - started > 220000) break;
       try {
         await autopilot(u.user_id);
+      } catch {
+        failed++;
+      }
+      try {
+        await publishReels(u.user_id);
       } catch {
         failed++;
       }
