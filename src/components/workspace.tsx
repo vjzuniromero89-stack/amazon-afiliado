@@ -2156,13 +2156,47 @@ function VideoLibrary({
                   </select>
                 </label>
                 {reel && (
-                  <span className={`reel-state ${reel.status}`}>
+                  <span className={`reel-state ${reel.status}`} title={reel.error || undefined}>
                     {reel.status === "published"
                       ? "Reel publicado"
                       : reel.status === "failed"
                         ? "Reel con error"
-                        : "Reel en cola"}
+                        : Date.parse(reel.scheduled_at) > Date.now() + 60e3
+                          ? `Reel programado: ${new Date(reel.scheduled_at).toLocaleString("es", {
+                              weekday: "short",
+                              day: "numeric",
+                              month: "short",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}`
+                          : "Reel en cola"}
                   </span>
+                )}
+                {!reel && v.product_id && data.instagram && (
+                  <form
+                    className="reel-schedule"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const when = new FormData(e.currentTarget).get("when") as string;
+                      run(
+                        {
+                          action: "queueReel",
+                          product_id: v.product_id,
+                          ...(when ? { at: new Date(when).toISOString() } : {}),
+                        },
+                        when ? "Reel programado en Instagram." : "Reel en cola. Sale en Instagram en 15 a 30 minutos.",
+                      );
+                    }}
+                  >
+                    <label>
+                      <span>Reel en Instagram</span>
+                      <input type="datetime-local" name="when" aria-label="Fecha y hora del Reel (vacío = ahora)" />
+                    </label>
+                    <button className="secondary" disabled={pending}>
+                      Programar
+                    </button>
+                  </form>
                 )}
                 <figcaption>
                   <span title={v.name}>{v.name}</span>

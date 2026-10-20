@@ -148,13 +148,19 @@ export function reelCaption(p: Product, amazonDisclosure: string) {
 
 // The chain: the first time one of a product's Pins goes out, its video (if
 // it has one) follows as a Reel. One Reel per product.
-export async function queueReel(uid: string, productId: string) {
+// `at` schedules it (the owner's choice); without it, it goes out now.
+export async function queueReel(uid: string, productId: string, at?: string) {
   const sb = admin();
   const p = (await owned("products", productId, uid)) as Product;
   if (!p.video_path || !(await connection(uid))) return false;
+  if (at && (Date.parse(at) < Date.now() - 60e3 || Date.parse(at) > Date.now() + 90 * 864e5))
+    throw new AppError("La fecha debe estar entre ahora y 90 días.");
   const { error } = await sb
     .from("instagram_posts")
-    .upsert({ user_id: uid, product_id: productId }, { onConflict: "user_id,product_id", ignoreDuplicates: true });
+    .upsert(
+      { user_id: uid, product_id: productId, ...(at ? { scheduled_at: new Date(at).toISOString() } : {}) },
+      { onConflict: "user_id,product_id", ignoreDuplicates: true },
+    );
   return !error;
 }
 

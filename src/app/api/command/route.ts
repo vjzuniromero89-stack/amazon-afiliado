@@ -326,7 +326,11 @@ export async function POST(req: Request) {
       }
       case "queueReel": {
         // The owner's own tap: post this product's video as a Reel.
-        result = await queueReel(uid, uuid.parse(body.product_id));
+        result = await queueReel(
+          uid,
+          uuid.parse(body.product_id),
+          body.at ? z.string().datetime().parse(body.at) : undefined,
+        );
         break;
       }
       case "syncBoards":

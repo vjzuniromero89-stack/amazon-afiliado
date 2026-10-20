@@ -112,7 +112,7 @@ export async function snapshot(): Promise<Snapshot> {
     getSettings(user.id),
     // Both tolerate a database without the Instagram migration.
     admin().from("instagram_connections").select("username").eq("user_id", user.id).maybeSingle(),
-    admin().from("instagram_posts").select("product_id,status,permalink,error").eq("user_id", user.id).limit(500),
+    admin().from("instagram_posts").select("product_id,status,permalink,error,scheduled_at").eq("user_id", user.id).limit(500),
     listVideos(user.id).catch(() => []),
   ]);
   const audit = check(auditRes);

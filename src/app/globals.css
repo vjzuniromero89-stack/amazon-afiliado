@@ -2195,6 +2195,22 @@ dialog::backdrop {
   min-height: 40px;
   font-size: 15px;
 }
+.reel-schedule {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px 0;
+}
+.reel-schedule label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.reel-schedule input {
+  min-height: 40px;
+  font-size: 15px;
+}
 .reel-state {
   display: inline-block;
   margin: 8px 12px 0;

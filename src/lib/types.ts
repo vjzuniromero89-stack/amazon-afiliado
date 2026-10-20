@@ -132,7 +132,7 @@ export type Snapshot = {
   settings: Settings;
   connected: boolean;
   instagram: { username: string } | null;
-  reels: { product_id: string; status: string; permalink: string | null; error: string | null }[];
+  reels: { product_id: string; status: string; permalink: string | null; error: string | null; scheduled_at: string }[];
   configured: boolean;
   email: string | null;
   aiEnabled: boolean;
