@@ -55,7 +55,7 @@ export function Mark(_: { categories: string[] }) {
   return (
     <a className={styles.mark} href="/">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/finds/logo-96.png" alt="" width={40} height={40} />
+      <img src="/finds/logo-240.png" alt="" width={80} height={80} />
       Ivethskin Finds
     </a>
   );
