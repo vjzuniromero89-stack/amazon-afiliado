@@ -2195,6 +2195,14 @@ dialog::backdrop {
   min-height: 40px;
   font-size: 15px;
 }
+.button.secondary.no-video {
+  background: #fff4e0;
+  border-color: #f59a23;
+  color: #7a4a00;
+}
+.no-video-count {
+  color: #b35f00;
+}
 .reel-schedule {
   display: grid;
   gap: 6px;

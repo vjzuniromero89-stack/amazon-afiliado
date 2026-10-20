@@ -1117,6 +1117,11 @@ export function Workspace({
                   </div>
                   <span className="muted">
                     {data.products.length} productos
+                    {(() => {
+                      // Every product gets at least one video for TikTok and Instagram.
+                      const missing = data.products.filter((p) => !p.video_path).length;
+                      return missing ? <b className="no-video-count"> · {missing} sin video</b> : " · todos con video";
+                    })()}
                   </span>
                 </div>
                 {data.products.length ? (
@@ -1215,10 +1220,14 @@ export function Workspace({
                                   <Camera size={17} /> Fotos ({p.images?.length || 0})
                                 </button>
                                 <label
-                                  className={`button secondary${pending ? " disabled" : ""}`}
-                                  title="Subir el video del producto (MP4 o MOV) para Instagram y TikTok"
+                                  className={`button secondary${pending ? " disabled" : ""}${p.video_path ? "" : " no-video"}`}
+                                  title={
+                                    p.video_path
+                                      ? "Cambiar el video del producto (MP4 o MOV)"
+                                      : "Este producto todavía no tiene video para TikTok e Instagram"
+                                  }
                                 >
-                                  <Film size={17} /> {p.video_path ? "Video ✓" : "Video"}
+                                  <Film size={17} /> {p.video_path ? "Video ✓" : "Sin video"}
                                   <input
                                     type="file"
                                     accept="video/mp4,video/quicktime"
