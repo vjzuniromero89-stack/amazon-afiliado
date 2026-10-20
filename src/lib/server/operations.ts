@@ -508,8 +508,46 @@ export async function scheduleApproved(uid: string, s: Settings) {
   // How many Pins each product already has out: published or waiting.
   const out = new Map<string, number>();
   const bump = (product: string) => out.set(product, (out.get(product) || 0) + 1);
-  for (const x of check(allPubsRes) as { product_id: string }[]) bump(x.product_id);
+  const published = new Map<string, number>();
+  for (const x of check(allPubsRes) as { product_id: string }[]) {
+    bump(x.product_id);
+    published.set(x.product_id, (published.get(x.product_id) || 0) + 1);
+  }
   for (const x of slots) if (x.live && x.product) bump(x.product);
+
+  // New products go first: when approved Pins of products with nothing out
+  // yet are waiting, the queued 2nd and 3rd Pins of products that already
+  // have a Pin on Pinterest give up their place (they stay approved and are
+  // planned again right after). Jobs about to run are left alone.
+  const newcomers = new Set(approved.filter((c) => !out.get(c.product_id)).map((c) => c.product_id));
+  if (newcomers.size) {
+    const soon = Date.now() + 10 * 60000;
+    const movable = queue
+      .filter((q) => q.status === "pending" && !q.started_at && Date.parse(q.scheduled_at) > soon)
+      .map((q) => ({ q, o: owners.find((x) => x.id === q.creative_id) }))
+      .filter(({ o }) => o && (published.get(o.product_id) || 0) > 0)
+      .sort((a, b) => Date.parse(a.q.scheduled_at) - Date.parse(b.q.scheduled_at))
+      .slice(0, newcomers.size);
+    for (const { q, o } of movable) {
+      const moved = check(
+        await sb
+          .from("publication_queue")
+          .update({ status: "cancelled", error: "Moved back so a new product's first Pin goes first." })
+          .eq("user_id", uid)
+          .eq("creative_id", q.creative_id)
+          .eq("status", "pending")
+          .is("started_at", null)
+          .select("id"),
+      ) as { id: string }[];
+      if (!moved.length) continue;
+      check(await sb.from("creatives").update({ status: "approved" }).eq("id", q.creative_id).eq("user_id", uid).eq("status", "queued").select("id"));
+      const at = Date.parse(q.scheduled_at);
+      const i = slots.findIndex((x) => x.live && x.at === at && x.product === o!.product_id);
+      if (i >= 0) slots.splice(i, 1);
+      out.set(o!.product_id, (out.get(o!.product_id) || 1) - 1);
+      approved.push({ id: q.creative_id, product_id: o!.product_id, board_id: o!.board_id });
+    }
+  }
 
   const gap = s.min_interval_minutes * 60000;
   const week = 7 * 86400000;
