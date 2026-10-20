@@ -13,6 +13,7 @@ import {
 } from "../domain";
 import { imageProvider } from "./artwork";
 import { queueReel } from "./instagram";
+import { queueFacebookReel } from "./facebook";
 import { photoFor } from "./images";
 import {
   pinterest,
@@ -268,6 +269,7 @@ export async function publishNext(uid: string) {
     );
     // The chain: the product's video follows as a Reel (once per product).
     await queueReel(uid, p.id).catch(() => false);
+    await queueFacebookReel(uid, p.id).catch(() => false);
     return { status: "published" };
   } catch (e) {
     const uncertain =

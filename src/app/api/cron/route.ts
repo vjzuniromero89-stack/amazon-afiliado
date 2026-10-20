@@ -2,6 +2,7 @@ import { admin, check, env, errorResponse } from "@/lib/server/db";
 import { safeEqual } from "@/lib/server/crypto";
 import { autopilot, publishNext, syncAnalytics } from "@/lib/server/operations";
 import { publishReels } from "@/lib/server/instagram";
+import { publishFacebook } from "@/lib/server/facebook";
 export const maxDuration = 300;
 export async function GET(req: Request) {
   try {
@@ -38,6 +39,11 @@ export async function GET(req: Request) {
       }
       try {
         await publishReels(u.user_id);
+      } catch {
+        failed++;
+      }
+      try {
+        await publishFacebook(u.user_id);
       } catch {
         failed++;
       }

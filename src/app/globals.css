@@ -1545,6 +1545,12 @@ button.card-main {
   padding-bottom: 4px;
   color: var(--orange);
 }
+.integration-logo.facebook {
+  background: #1877f2;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+}
 .integration-logo.instagram {
   background: #c13584;
   color: #fff;

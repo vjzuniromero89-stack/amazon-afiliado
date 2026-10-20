@@ -29,6 +29,7 @@ import {
 } from "@/lib/server/operations";
 import { describeBoards, pinterest, syncBoards } from "@/lib/server/pinterest";
 import { carouselNow, queueReel, setAutoPhotos } from "@/lib/server/instagram";
+import { queueFacebookReel, setAutoFacebook } from "@/lib/server/facebook";
 import { addVideo, assignVideo, deleteVideo, videoUploadUrl } from "@/lib/server/videos";
 import {
   addLibraryPhotos,
@@ -328,17 +329,21 @@ export async function POST(req: Request) {
         result = await carouselNow(uid);
         break;
       }
+      case "setAutoFacebook": {
+        result = await setAutoFacebook(uid, z.boolean().parse(body.on));
+        break;
+      }
       case "setAutoPhotos": {
         result = await setAutoPhotos(uid, z.boolean().parse(body.on));
         break;
       }
       case "queueReel": {
         // The owner's own tap: post this product's video as a Reel.
-        result = await queueReel(
-          uid,
-          uuid.parse(body.product_id),
-          body.at ? z.string().datetime().parse(body.at) : undefined,
-        );
+        const id = uuid.parse(body.product_id),
+          at = body.at ? z.string().datetime().parse(body.at) : undefined;
+        result = await queueReel(uid, id, at);
+        // The same video goes to the Facebook Page when it is connected.
+        await queueFacebookReel(uid, id, at).catch(() => false);
         break;
       }
       case "syncBoards":

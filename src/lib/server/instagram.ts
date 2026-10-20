@@ -117,7 +117,7 @@ async function liveToken(uid: string) {
   return next;
 }
 
-const TAGS: Record<string, string> = {
+export const TAGS: Record<string, string> = {
   Skincare: "#skincareroutine #skincare",
   "Beauty & Makeup": "#makeup #beautyfinds",
   "Supplements & Wellness": "#wellnessroutine #selfcare",
@@ -183,7 +183,7 @@ export async function queueReel(uid: string, productId: string, at?: string) {
 }
 
 // New York wall time to UTC, e.g. ("2026-10-21", 19) -> 23:00Z in summer.
-function nyTime(day: string, hour: number) {
+export function nyTime(day: string, hour: number) {
   const [y, m, d] = day.split("-").map(Number);
   for (const offset of [4, 5]) {
     const t = new Date(Date.UTC(y, m - 1, d, hour + offset));
@@ -194,7 +194,7 @@ function nyTime(day: string, hour: number) {
   }
   return new Date(Date.UTC(y, m - 1, d, hour + 5));
 }
-const nyDate = (t: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(t);
+export const nyDate = (t: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(t);
 
 // Plans the photo post for today and tomorrow (7 pm) and the Sunday
 // carousel (6 pm) while automatic photos are on. The product that went

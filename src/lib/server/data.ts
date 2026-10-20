@@ -68,6 +68,8 @@ export async function snapshot(): Promise<Snapshot> {
     connected: false,
     instagram: null,
     igPosts: [],
+    facebook: null,
+    fbPosts: [],
     clicks: { total: 0, byProduct: {}, bySource: {} },
     reels: [],
     configured: configured(),
@@ -91,7 +93,7 @@ export async function snapshot(): Promise<Snapshot> {
     "analytics_metrics",
     "campaigns",
   ] as const;
-  const [rows, auditRes, photos, connectionRes, settings, igRes, reelsRes, videos, clicksRes] = await Promise.all([
+  const [rows, auditRes, photos, connectionRes, settings, igRes, reelsRes, videos, fbRes, fbPostsRes, clicksRes] = await Promise.all([
     Promise.all(tables.map((table) => allRows(table, user.id))),
     admin()
       .from("audit_logs")
@@ -116,6 +118,15 @@ export async function snapshot(): Promise<Snapshot> {
     admin().from("instagram_connections").select("*").eq("user_id", user.id).maybeSingle(),
     admin().from("instagram_posts").select("*").eq("user_id", user.id).order("scheduled_at", { ascending: false }).limit(500),
     listVideos(user.id).catch(() => []),
+    // Both tolerate a database without the Facebook migration.
+    admin().from("facebook_connections").select("*").eq("user_id", user.id).maybeSingle(),
+    admin()
+      .from("facebook_posts")
+      .select("kind,product_id,status,scheduled_at,permalink,error")
+      .eq("user_id", user.id)
+      .gt("scheduled_at", new Date(Date.now() - 3 * 864e5).toISOString())
+      .order("scheduled_at")
+      .limit(60),
     admin()
       .from("shop_clicks")
       .select("product_id,source")
@@ -166,6 +177,11 @@ export async function snapshot(): Promise<Snapshot> {
         error: r.error,
       }))
       .reverse(),
+    facebook:
+      fbRes.error || !fbRes.data
+        ? null
+        : { page_name: fbRes.data.page_name, auto_posts: fbRes.data.auto_posts !== false },
+    fbPosts: fbPostsRes.error ? [] : fbPostsRes.data,
     clicks,
   } as Snapshot;
 }

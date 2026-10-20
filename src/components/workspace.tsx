@@ -264,6 +264,17 @@ export function Workspace({
     [scheduling, setScheduling] = useState<Creative | null>(null),
     [search, setSearch] = useState("");
   useEffect(() => {
+    const fb = new URLSearchParams(window.location.search).get("facebook");
+    if (fb)
+      setNotice({
+        text:
+          fb === "success"
+            ? "Facebook conectado. Los Reels y un post diario con link salen solos en tu página."
+            : "No se pudo conectar Facebook. Revisa la app de Meta (permisos de páginas y la URL de retorno).",
+        error: fb !== "success",
+      });
+  }, []);
+  useEffect(() => {
     const ig = new URLSearchParams(window.location.search).get("instagram");
     if (ig)
       setNotice({
@@ -1730,6 +1741,22 @@ export function Workspace({
                   }
                 }}
                 login={() => setModal("login")}
+                connectFacebook={async () => {
+                  setPending(true);
+                  try {
+                    const r = await fetch("/api/facebook/connect", { method: "POST" }),
+                      j = await r.json();
+                    if (!r.ok) throw new Error(j.error);
+                    window.location.assign(j.url);
+                  } catch (e) {
+                    setNotice({
+                      text: e instanceof Error ? e.message : "No se pudo conectar Facebook.",
+                      error: true,
+                    });
+                  } finally {
+                    setPending(false);
+                  }
+                }}
                 connectInstagram={async () => {
                   setPending(true);
                   try {
@@ -3410,6 +3437,7 @@ function SettingsPanel({
   connect,
   login,
   connectInstagram,
+  connectFacebook,
 }: {
   data: Snapshot;
   pending: boolean;
@@ -3417,6 +3445,7 @@ function SettingsPanel({
   connect: () => void;
   login: () => void;
   connectInstagram: () => void;
+  connectFacebook: () => void;
 }) {
   const [s, setS] = useState(data.settings);
   const change = <K extends keyof Settings>(key: K, value: Settings[K]) =>
@@ -3540,6 +3569,79 @@ function SettingsPanel({
                           </a>
                         ) : x.status === "failed" ? (
                           "Con error"
+                        ) : (
+                          "Programado"
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          <div className="integration-row">
+            <span className="integration-logo facebook">f</span>
+            <div>
+              <h3>Facebook</h3>
+              <p>
+                {data.facebook
+                  ? `Conectado a la página ${data.facebook.page_name} · Reels y posts con link a tu tienda`
+                  : "Conecta tu página para publicar Reels y posts con link"}
+              </p>
+            </div>
+            <button className="secondary" disabled={pending || !data.email} onClick={connectFacebook}>
+              {data.facebook ? "Reconectar" : "Conectar"}
+              <ArrowUpRight size={15} />
+            </button>
+          </div>
+          {data.facebook && (
+            <div className="auto-photos">
+              <label className="switch-row">
+                <input
+                  type="checkbox"
+                  checked={data.facebook.auto_posts}
+                  disabled={pending}
+                  onChange={(e) =>
+                    run(
+                      { action: "setAutoFacebook", on: e.target.checked },
+                      e.target.checked
+                        ? "Posts automáticos en Facebook activados: uno cada día a las 12 pm con link a tu tienda."
+                        : "Posts automáticos en Facebook pausados.",
+                    )
+                  }
+                />
+                <span>
+                  <b>Posts automáticos en Facebook</b>
+                  <small>Un post con link a la página del producto cada día (12 pm). El Reel de cada producto sale con su video.</small>
+                </span>
+              </label>
+              {data.fbPosts.length > 0 && (
+                <ul className="ig-plan">
+                  {data.fbPosts.map((x) => (
+                    <li key={x.kind + x.product_id + x.scheduled_at}>
+                      <span>
+                        {new Date(x.scheduled_at).toLocaleString("es", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </span>
+                      <span>
+                        {x.kind === "reel" ? "Reel" : "Post con link"} ·{" "}
+                        {data.products.find((p) => p.id === x.product_id)?.title.slice(0, 40) || "Producto"}
+                      </span>
+                      <span className={`reel-state ${x.status}`} title={x.error || undefined}>
+                        {x.status === "published" ? (
+                          <a href={x.permalink || "https://www.facebook.com/"} target="_blank" rel="noreferrer">
+                            Publicado
+                          </a>
+                        ) : x.status === "failed" ? (
+                          "Con error"
+                        ) : x.status === "processing" ? (
+                          "Procesando"
                         ) : (
                           "Programado"
                         )}

@@ -132,6 +132,9 @@ export type Snapshot = {
   settings: Settings;
   connected: boolean;
   instagram: { username: string; auto_photos: boolean } | null;
+  facebook: { page_name: string; auto_posts: boolean } | null;
+  // Planned or recent Facebook Reels and link posts.
+  fbPosts: { kind: string; product_id: string; status: string; scheduled_at: string; permalink: string | null; error: string | null }[];
   // Planned or recent Instagram photo posts and carousels.
   igPosts: { kind: string; product_ids: string[]; status: string; scheduled_at: string; permalink: string | null; error: string | null }[];
   // Taps on ivethskin.com store buttons in the last 30 days.
