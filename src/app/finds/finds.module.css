@@ -94,14 +94,11 @@
   letter-spacing: -0.01em;
   text-decoration: none;
 }
-.mark span {
-  display: inline-flex;
-  gap: 2px;
-}
-.mark i {
-  width: 8px;
-  height: 18px;
-  border-radius: 2px;
+.mark img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex: none;
 }
 .top h1 {
   font: 800 clamp(40px, 9vw, 80px) / 0.95 var(--display);

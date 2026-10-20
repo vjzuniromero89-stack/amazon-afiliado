@@ -11,6 +11,8 @@ const text = Hanken_Grotesk({ subsets: ["latin"], variable: "--text", display: "
 // Pinterest's website claim for ivethskin.com (Karen's account).
 export const metadata: Metadata = {
   other: { "p:domain_verify": "0e10354430fba08094c5f00bbf85db54" },
+  // The round Ivethskin logo, the same one the social profiles use.
+  icons: { icon: "/finds/icon-512.png", apple: "/finds/apple-icon.png" },
 };
 
 export default function FindsLayout({ children }: { children: React.ReactNode }) {

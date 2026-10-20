@@ -50,15 +50,12 @@ export function AdBar() {
 }
 
 // The wordmark: four chips from the rack, then the name.
-export function Mark({ categories }: { categories: string[] }) {
-  const shown = [...categories, ...Object.keys(FAMILIES)].filter((c, i, a) => a.indexOf(c) === i).slice(0, 4);
+// The same round logo as the Facebook, Instagram and TikTok profiles.
+export function Mark(_: { categories: string[] }) {
   return (
     <a className={styles.mark} href="/">
-      <span aria-hidden="true">
-        {shown.map((c) => (
-          <i key={c} style={{ background: family(c).tone }} />
-        ))}
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/finds/logo-96.png" alt="" width={40} height={40} />
       Ivethskin Finds
     </a>
   );
