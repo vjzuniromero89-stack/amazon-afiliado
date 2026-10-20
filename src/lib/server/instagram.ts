@@ -342,10 +342,15 @@ export async function publishReels(uid: string) {
     try {
       if (post.status === "pending" && (post.kind === "photo" || post.kind === "carousel")) {
         const s = await getSettings(uid);
+        // The AI label goes on the post; carousel children reject it.
         const media = (fields: Record<string, string>) =>
           fetch(`${GRAPH}/${c.ig_user_id}/media`, {
             method: "POST",
-            body: new URLSearchParams({ ...fields, is_ai_generated: "true", access_token: c.access_token }),
+            body: new URLSearchParams({
+              ...fields,
+              ...(fields.is_carousel_item ? {} : { is_ai_generated: "true" }),
+              access_token: c.access_token,
+            }),
           }).then((r) => json<{ id: string }>(r));
         let made: { id: string };
         if (post.kind === "photo") {
