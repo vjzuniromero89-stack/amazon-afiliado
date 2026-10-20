@@ -457,7 +457,11 @@
     flex-direction: column;
     justify-content: space-between;
     gap: 4px;
-    min-height: calc(2 * clamp(24px, 2.3vw, 30px) + 50px);
+    height: 120px;
+  }
+  /* Names take two lines on every chip, so the rows line up too. */
+  .shelf .chip h3 {
+    min-height: calc(2 * 1.12em);
   }
   .shelf .band h2 {
     font-size: clamp(24px, 2.3vw, 30px);
