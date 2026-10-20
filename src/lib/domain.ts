@@ -336,6 +336,28 @@ export function descriptionWithDisclosure(
     : `#ad · Affiliate link. ${s.disclosure.replace(/\s*#ad\.?\s*$/i, "")}`;
   return `${lead}\n\n${c.description}\n${c.cta}`.slice(0, 800);
 }
+// One row per day from Pinterest's pin analytics. Recent days come as
+// ESTIMATE (Pinterest's live numbers, refined later) and are kept; a later
+// sync overwrites them. Days before the Pin or still processing stay null.
+export function pinDailyMetrics(
+  daily: { date: string; data_status?: string; metrics?: Record<string, number> }[],
+  start: string,
+  end: string,
+) {
+  return daily
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.date) && d.date >= start && d.date <= end)
+    .map((d) => {
+      const usable = d.data_status === "READY" || d.data_status === "ESTIMATE";
+      const value = (k: string) =>
+        usable && typeof d.metrics?.[k] === "number" && d.metrics[k] >= 0 ? Math.round(d.metrics[k]) : null;
+      return {
+        date: d.date,
+        impressions: value("IMPRESSION"),
+        saves: value("SAVE"),
+        outbound_clicks: value("OUTBOUND_CLICK"),
+      };
+    });
+}
 export function aggregate(metrics: Metric[]) {
   const sum = (key: "impressions" | "saves" | "outbound_clicks") => {
     const values = metrics

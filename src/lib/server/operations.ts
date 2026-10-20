@@ -9,6 +9,7 @@ import {
   storeOf,
   creativeInput,
   descriptionWithDisclosure,
+  pinDailyMetrics,
   TEMPLATES,
 } from "../domain";
 import { imageProvider } from "./artwork";
@@ -311,54 +312,36 @@ export async function syncAnalytics(uid: string, limit = 20) {
       .order("last_analytics_sync_at", { ascending: true, nullsFirst: true })
       .limit(limit),
   );
-  const end = new Date(Date.now() - 86400000).toISOString().slice(0, 10),
+  // Through today (UTC, Pinterest's day): today's numbers are estimates
+  // that the next syncs refine.
+  const end = new Date().toISOString().slice(0, 10),
     start = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   let count = 0;
   for (const p of publications) {
-    if (p.published_at.slice(0, 10) > end) continue;
-    const response = await pinterest<PinterestAnalytics>(
-      uid,
-      `/pins/${encodeURIComponent(p.pinterest_id)}/analytics?start_date=${start}&end_date=${end}&metric_types=IMPRESSION,SAVE,OUTBOUND_CLICK`,
-    );
-    const daily = response.all?.daily_metrics;
-    if (!daily) continue;
-    const rows = daily
-      .filter(
-        (d) =>
-          /^\d{4}-\d{2}-\d{2}$/.test(d.date) &&
-          d.date >= start &&
-          d.date <= end,
-      )
-      .map((d) => {
-        const value = (k: string) =>
-          d.data_status === "READY" &&
-          typeof d.metrics?.[k] === "number" &&
-          d.metrics[k] >= 0
-            ? Math.round(d.metrics[k])
-            : null;
-        return {
-          user_id: uid,
-          publication_id: p.id,
-          date: d.date,
-          impressions: value("IMPRESSION"),
-          saves: value("SAVE"),
-          outbound_clicks: value("OUTBOUND_CLICK"),
-          fetched_at: new Date().toISOString(),
-        };
-      });
-    if (rows.length)
-      check(
-        await sb
-          .from("analytics_metrics")
-          .upsert(rows, { onConflict: "publication_id,date" }),
+    try {
+      const response = await pinterest<PinterestAnalytics>(
+        uid,
+        `/pins/${encodeURIComponent(p.pinterest_id)}/analytics?start_date=${start}&end_date=${end}&metric_types=IMPRESSION,SAVE,OUTBOUND_CLICK`,
       );
+      const rows = pinDailyMetrics(response.all?.daily_metrics || [], start, end).map((r) => ({
+        ...r,
+        user_id: uid,
+        publication_id: p.id,
+        fetched_at: new Date().toISOString(),
+      }));
+      if (rows.length)
+        check(await sb.from("analytics_metrics").upsert(rows, { onConflict: "publication_id,date" }));
+      count += rows.length;
+    } catch {
+      // One Pin's failure must not stop the others.
+    }
+    // Always marked, so a Pin without data never holds the queue.
     check(
       await sb
         .from("publications")
         .update({ last_analytics_sync_at: new Date().toISOString() })
         .eq("id", p.id),
     );
-    count += rows.length;
   }
   return count;
 }

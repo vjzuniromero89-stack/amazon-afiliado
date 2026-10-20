@@ -179,6 +179,30 @@ test("a video named after its product finds that product, and only a clear one",
   assert.equal(matchProductByName("vital-vitamins.mp4", products), null);
 });
 
+test("Pinterest's estimated recent days count; days before the Pin stay empty", async () => {
+  const { pinDailyMetrics } = await import("../src/lib/domain");
+  const rows = pinDailyMetrics(
+    [
+      { date: "2026-10-18", data_status: "BEFORE_PIN_CREATED", metrics: { IMPRESSION: 0 } },
+      { date: "2026-10-19", data_status: "READY", metrics: { IMPRESSION: 12, SAVE: 1, OUTBOUND_CLICK: 0 } },
+      { date: "2026-10-20", data_status: "ESTIMATE", metrics: { IMPRESSION: 40.4, SAVE: 2 } },
+      { date: "2026-10-21", data_status: "PROCESSING", metrics: { IMPRESSION: 5 } },
+      { date: "2026-09-01", data_status: "READY", metrics: { IMPRESSION: 9 } },
+    ],
+    "2026-09-21",
+    "2026-10-21",
+  );
+  assert.deepEqual(
+    rows.map((r) => [r.date, r.impressions, r.saves, r.outbound_clicks]),
+    [
+      ["2026-10-18", null, null, null],
+      ["2026-10-19", 12, 1, 0],
+      ["2026-10-20", 40, 2, null],
+      ["2026-10-21", null, null, null],
+    ],
+  );
+});
+
 test("hair care and makeup are Beauty & Makeup, not supplements or gifts", () => {
   assert.equal(detectCategory("Pantene Pro-Vitamin Essence.", ""), "Beauty & Makeup");
   assert.equal(detectCategory("L'Oreal Paris Colour Riche Lip Liner Pencil.", ""), "Beauty & Makeup");
