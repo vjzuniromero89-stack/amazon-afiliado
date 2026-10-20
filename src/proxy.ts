@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 // Public shop domains show only the finds page, never the private app.
-const SHOP_HOSTS = (process.env.SHOP_HOSTS || "ivethskin.vercel.app")
+const SHOP_HOSTS = (process.env.SHOP_HOSTS || "ivethskin.com,www.ivethskin.com,ivethskin.vercel.app")
   .split(",")
   .map((h) => h.trim().toLowerCase())
   .filter(Boolean);

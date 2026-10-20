@@ -7,6 +7,8 @@ import styles from "./finds.module.css";
 export const revalidate = 600;
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ivethskin.com"),
+  alternates: { canonical: "/" },
   title: "Ivethskin Finds · Home, skincare, style & gift ideas",
   description:
     "Practical home, skincare, style and gift finds, with our own photos and the real product details.",
