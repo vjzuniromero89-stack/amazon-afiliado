@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { admin, AppError, check, owned } from "./db";
 import { VIDEO_BUCKET } from "./instagram";
+import { matchProductByName } from "../domain";
 import type { Video } from "../types";
 
 // The video library ("Fotos" > "Videos"). Files live in the private
@@ -44,8 +45,17 @@ export async function addVideo(uid: string, path: string, name: string, productI
       .upsert({ user_id: uid, path, name: name.trim().slice(0, 120) || "Video" }, { onConflict: "path" })
       .select("id"),
   ) as { id: string }[];
+  // From the library: the file name may say which product it is.
+  let assigned: string | null = null;
+  if (!productId) {
+    const products = check(
+      await admin().from("products").select("id,title").eq("user_id", uid).limit(500),
+    ) as { id: string; title: string }[];
+    productId = matchProductByName(name, products) || undefined;
+    assigned = products.find((p) => p.id === productId)?.title || null;
+  }
   if (productId) await assignVideo(uid, rows[0].id, productId);
-  return rows[0].id;
+  return { id: rows[0].id, assigned };
 }
 
 // One video per product: assigning replaces that product's video; null

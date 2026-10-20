@@ -162,3 +162,18 @@ test("Target and Walmart links must be tracked, on the store and point at a prod
   ] as const)
     assert.throws(() => parseStoreLink(store, url), url);
 });
+
+test("a video named after its product finds that product, and only a clear one", async () => {
+  const { matchProductByName } = await import("../src/lib/domain");
+  const products = [
+    { id: "c", title: "Vital Vitamins Multi Collagen Complex" },
+    { id: "h", title: "Vital Vitamins Hyaluronic Acid" },
+    { id: "t", title: "Clean Skin Club Clean Towels XL" },
+    { id: "o", title: "OEAK Womens Jelly Bras Wireless Deep V" },
+  ];
+  assert.equal(matchProductByName("collagen-ad.mp4", products), "c");
+  assert.equal(matchProductByName("towels-ad.mp4", products), "t");
+  assert.equal(matchProductByName("OEAK bra final.MOV", products), "o");
+  assert.equal(matchProductByName("IMG_1234.mov", products), null);
+  assert.equal(matchProductByName("vital-vitamins.mp4", products), null);
+});

@@ -316,6 +316,8 @@ export function Workspace({
             : json.result?.status === "idle"
               ? "No hay Pins listos para publicar. Revisa la fecha y los límites."
               : "El trabajo requiere atención. Consulta Scheduler.";
+      if (body.action === "addVideo" && !body.product_id && json.result?.assigned)
+        text = `Video guardado y asignado a «${json.result.assigned}». Sale como Reel cuando salga su primer Pin.`;
       if (body.action === "approveOne")
         text = json.result?.scheduled_at
           ? `Pin aprobado. Saldrá el ${new Date(json.result.scheduled_at).toLocaleString("es", {
@@ -395,7 +397,7 @@ export function Workspace({
     return run(
       { action: "addVideo", path, name: file.name, ...product },
       !productId
-        ? "Video guardado en tu biblioteca. Asígnalo a su producto."
+        ? "Video guardado. No encontré su producto por el nombre del archivo: elígelo abajo."
         : data.instagram
           ? "Video guardado. Sale como Reel en Instagram cuando salga el primer Pin del producto."
           : "Video guardado. Conecta Instagram en Settings para publicarlo como Reel.",

@@ -404,3 +404,31 @@ export function insights(
     );
   return advice;
 }
+
+// A video file named after its product ("collagen-ad.mp4") finds that
+// product by itself. Only a clear single winner counts; a tie or a name
+// like "IMG_1234.mov" finds nothing and the owner picks.
+const VIDEO_NOISE = new Set(
+  "ad ads video videos final raw kling edit edited reel reels tiktok instagram img dsc mov mp4 copy new the and for with estilo version clip".split(" "),
+);
+const words = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3 && !/^\d+$/.test(w));
+export function matchProductByName(fileName: string, products: { id: string; title: string }[]) {
+  const name = words(fileName.replace(/\.[a-z0-9]+$/i, "")).filter((w) => !VIDEO_NOISE.has(w));
+  if (!name.length) return null;
+  const scored = products
+    .map((p) => {
+      const title = words(p.title);
+      const score = name.filter((w) => title.some((t) => t === w || (w.length >= 4 && t.startsWith(w)))).length;
+      return { id: p.id, score };
+    })
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score);
+  if (!scored.length || (scored[1] && scored[1].score === scored[0].score)) return null;
+  return scored[0].id;
+}
