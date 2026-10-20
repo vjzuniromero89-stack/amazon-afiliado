@@ -2128,7 +2128,8 @@ function VideoLibrary({
             return (
               <figure key={v.id} className="photo-tile video-tile">
                 {v.url ? (
-                  <video src={v.url} controls preload="metadata" playsInline />
+                  // "#t=1.5" shows a frame past the opening fade instead of black.
+                  <video src={`${v.url}#t=1.5`} controls preload="metadata" playsInline />
                 ) : (
                   <div className="video-missing">Sin vista previa</div>
                 )}
