@@ -280,9 +280,16 @@ const SEARCH_TERMS: { match: RegExp; phrase: string; related: string[] }[] = [
   { match: /gumm/, phrase: "Vitamin Gummies", related: ["gummy vitamins", "daily vitamins", "wellness routine"] },
   { match: /vitamin/, phrase: "Vitamin Supplement", related: ["daily vitamins", "vitamins for women", "wellness routine"] },
 ];
-function searchTerms(p: Product, parsed: Parsed) {
+// Ingredients like hyaluronic acid or collagen are in creams too: a cream,
+// serum or lotion never gets a supplement phrase ("Hyaluronic Acid Supplement"
+// on a face moisturizer). Only a real pill, capsule or powder does.
+const SKIN_FORM = /moisturiz|cream|lotion|serum|cleanser|toner|sunscreen|spf|mask|balm|face wash|eye patch/;
+const PILL_FORM = /capsul|softgel|tablet|pills?|gumm|supplement|suplement|powder/;
+const SUPPLEMENT_PHRASE = /supplement|multivitamin|fish oil|protein powder|vitamin gummies/i;
+export function searchTerms(p: Product, parsed: Parsed) {
   const text = strip(`${p.title} ${p.category || ""} ${p.notes || ""}`);
-  const hit = SEARCH_TERMS.find((t) => t.match.test(text));
+  const skin = SKIN_FORM.test(text) && !PILL_FORM.test(text);
+  const hit = SEARCH_TERMS.find((t) => t.match.test(text) && !(skin && SUPPLEMENT_PHRASE.test(t.phrase)));
   if (hit) return { phrase: hit.phrase, related: hit.related };
   // No known type: the product noun without the brand ("Bamboo Cutting Board").
   // Cut at "with", "for" or a comma, drop sizes like "2.0", and never start
