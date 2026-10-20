@@ -278,6 +278,27 @@ export async function setAutoPhotos(uid: string, on: boolean) {
   return on;
 }
 
+// The owner's tap: a carousel of the newest finds (up to 10), now.
+export async function carouselNow(uid: string) {
+  if (!(await connection(uid))) throw new AppError("Conecta Instagram en Settings.");
+  const sb = admin();
+  const picked = (
+    check(
+      await sb.from("products").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(200),
+    ) as Product[]
+  )
+    .filter((p) => (p.images || []).length)
+    .slice(0, 10);
+  if (picked.length < 2) throw new AppError("El carrusel necesita al menos 2 productos con foto.");
+  check(
+    await sb
+      .from("instagram_posts")
+      .insert({ user_id: uid, product_id: picked[0].id, product_ids: picked.map((p) => p.id), kind: "carousel" })
+      .select("id"),
+  );
+  return picked.length;
+}
+
 // A product photo as the JPEG Instagram needs, served by the shop.
 const photoUrl = (id: string) => `https://ivethskin.com/finds/jpg/${id}`;
 

@@ -3502,6 +3502,18 @@ function SettingsPanel({
                   <small>Una foto de producto cada día (7 pm) y un carrusel con tus productos los domingos (6 pm).</small>
                 </span>
               </label>
+              <button
+                className="secondary carousel-now"
+                disabled={pending}
+                onClick={() =>
+                  run(
+                    { action: "carouselNow" },
+                    "Carrusel en cola: sale en Instagram en 15 a 30 minutos con tus productos más nuevos.",
+                  )
+                }
+              >
+                <Images size={17} /> Publicar carrusel ahora
+              </button>
               {data.igPosts.length > 0 && (
                 <ul className="ig-plan">
                   {data.igPosts.map((x) => (

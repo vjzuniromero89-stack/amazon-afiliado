@@ -28,7 +28,7 @@ import {
   syncAnalytics,
 } from "@/lib/server/operations";
 import { describeBoards, pinterest, syncBoards } from "@/lib/server/pinterest";
-import { queueReel, setAutoPhotos } from "@/lib/server/instagram";
+import { carouselNow, queueReel, setAutoPhotos } from "@/lib/server/instagram";
 import { addVideo, assignVideo, deleteVideo, videoUploadUrl } from "@/lib/server/videos";
 import {
   addLibraryPhotos,
@@ -322,6 +322,10 @@ export async function POST(req: Request) {
       }
       case "deleteVideo": {
         result = await deleteVideo(uid, uuid.parse(body.id));
+        break;
+      }
+      case "carouselNow": {
+        result = await carouselNow(uid);
         break;
       }
       case "setAutoPhotos": {

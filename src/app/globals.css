@@ -2239,6 +2239,9 @@ dialog::backdrop {
   color: var(--ink-2);
   font-size: 14px;
 }
+.carousel-now {
+  margin-top: 10px;
+}
 .ig-plan {
   list-style: none;
   margin: 10px 0 0;
