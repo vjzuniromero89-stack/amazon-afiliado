@@ -16,8 +16,9 @@ const shopLink = (id: string) => `https://ivethskin.com/p/${id}`;
 
 export function authorizeUrl(state: string) {
   const url = new URL("https://www.facebook.com/v26.0/dialog/oauth");
-  // Facebook Login for Business takes a configuration id instead of scopes.
-  const config = process.env.FACEBOOK_LOGIN_CONFIG_ID;
+  // Facebook Login for Business takes a configuration id instead of scopes:
+  // "Publicar en la pagina" in the Meta app asks for the Page permissions.
+  const config = process.env.FACEBOOK_LOGIN_CONFIG_ID || "1129158039561235";
   url.search = new URLSearchParams({
     client_id: appId(),
     redirect_uri: redirectUri(),
