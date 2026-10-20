@@ -7,6 +7,9 @@ const SHOP_HOSTS = (process.env.SHOP_HOSTS || "ivethskin.com,www.ivethskin.com,i
   .filter(Boolean);
 export async function proxy(request: NextRequest) {
   const host = (request.headers.get("host") || "").toLowerCase();
+  // A find's own page: ivethskin.com/p/<id>. The private app has no /p.
+  const find = request.nextUrl.pathname.match(/^\/p\/([0-9a-f-]{36})\/?$/i);
+  if (find) return NextResponse.rewrite(new URL(`/finds/p/${find[1]}`, request.url));
   if (SHOP_HOSTS.includes(host))
     return NextResponse.rewrite(new URL("/finds", request.url));
   let response = NextResponse.next({ request });

@@ -1,151 +1,541 @@
+/*
+  Ivethskin Finds: a paint-chip rack. White wall, near-black ink, and one
+  three-shade family per category (--pale, --tone, --deep, set inline).
+*/
 .page {
+  --ink: #16161b;
+  --ink-2: #4a4a55;
+  --wall: #ffffff;
+  --rule: #e6e4ea;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --lift: 0 1px 2px rgb(22 22 27 / 0.08), 0 10px 22px -14px rgb(22 22 27 / 0.35);
   min-height: 100vh;
-  background: #fbf7f1;
-  color: #1c2a44;
-  padding: 0 16px 48px;
+  background: var(--wall);
+  color: var(--ink);
+  font: 16px/1.5 var(--text), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
-.header {
-  max-width: 1100px;
+.page ::selection {
+  background: var(--ink);
+  color: #fff;
+}
+.page a {
+  color: inherit;
+}
+.page a:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+.wrap {
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 40px 0 16px;
+  padding-inline: 16px;
+}
+
+/* Disclosure, first thing on every page. */
+.ad {
+  margin: 0;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 8px 16px;
   text-align: center;
 }
-.brand {
-  margin: 0;
-  font-weight: 700;
-  letter-spacing: 6px;
-  text-transform: uppercase;
-  color: #b4533a;
-  font-size: 14px;
+
+.top {
+  padding-top: 28px;
+  padding-bottom: 18px;
 }
-.header h1 {
-  margin: 10px 0 12px;
-  font-size: clamp(28px, 5vw, 44px);
-  line-height: 1.1;
-  color: #13284a;
-}
-.disclosure {
-  margin: 0 auto;
-  max-width: 640px;
-  font-size: 14px;
-  color: #4a5568;
-}
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 20px;
-}
-.chips a {
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: #fff;
-  border: 1px solid #e3d9cc;
-  color: #13284a;
-  font-weight: 700;
-  font-size: 14px;
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: 800 16px/1 var(--display);
+  letter-spacing: -0.01em;
   text-decoration: none;
 }
-.empty {
-  text-align: center;
-  margin-top: 40px;
+.mark span {
+  display: inline-flex;
+  gap: 2px;
 }
-.section {
-  max-width: 1100px;
-  margin: 32px auto 0;
+.mark i {
+  width: 8px;
+  height: 18px;
+  border-radius: 2px;
 }
-.section h2 {
-  font-size: 22px;
-  margin: 0 0 14px;
-  color: #13284a;
+.top h1 {
+  font: 800 clamp(40px, 9vw, 80px) / 0.95 var(--display);
+  letter-spacing: -0.035em;
+  margin: 26px 0 14px;
+  max-width: 12ch;
+  text-wrap: balance;
+}
+.lede {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 17px;
+  max-width: 44ch;
+}
+
+/* The rack: one strip per category, pulled up on hover. */
+.rack {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+  padding-top: 22px;
+  padding-bottom: 26px;
+  scrollbar-width: none;
+}
+.rack::-webkit-scrollbar {
+  display: none;
+}
+.strip {
+  flex: 1 0 140px;
+  max-width: 300px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: var(--lift);
+  transition:
+    transform 0.45s var(--ease),
+    box-shadow 0.45s var(--ease);
+}
+.strip:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 2px 4px rgb(22 22 27 / 0.1), 0 24px 32px -16px rgb(22 22 27 / 0.4);
+}
+.strip > span {
+  display: block;
+  padding: 10px 12px;
+}
+.s1 {
+  background: var(--pale);
+  color: var(--deep);
+  font: 700 17px/1.1 var(--display);
+  min-height: 92px;
+}
+.s2 {
+  background: var(--tone);
+  color: var(--deep);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  min-height: 58px;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.s3 {
+  background: var(--deep);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 58px;
+  display: flex !important;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.s3 svg,
+.go svg,
+.back svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* Sticky color tabs for the long scroll. */
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgb(255 255 255 / 0.96);
+  border-bottom: 1px solid var(--rule);
+}
+.tabs > div {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  scrollbar-width: none;
+}
+.tabs a {
+  flex: none;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 12px 7px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: border-color 0.2s;
+}
+.tabs a:hover {
+  border-color: var(--ink);
+}
+.tabs a i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--tone);
+}
+.tabs a.all {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  padding-left: 12px;
+}
+
+/* A category section: a full-width band in its tone. */
+.sec {
+  padding-top: 34px;
+  scroll-margin-top: 58px;
+}
+.band {
+  background: var(--tone);
+  color: var(--deep);
+}
+.band > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 22px;
+  padding-bottom: 20px;
+}
+.band h2 {
+  margin: 0;
+  font: 800 clamp(28px, 6vw, 46px) / 1 var(--display);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.band p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 18px;
 }
-.card {
+
+/* The chip: photo, number, name, small print, store bar. */
+.chip {
   display: flex;
   flex-direction: column;
+  background: var(--pale);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: var(--lift);
+}
+.chip.fresh {
+  background: var(--tone);
+}
+.photo {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
   background: #fff;
-  border: 1px solid #ece3d6;
-  border-radius: 16px;
   overflow: hidden;
 }
-.card img {
-  display: block;
+.photo img {
   width: 100%;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  object-fit: contain;
-  background: #fff;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s var(--ease);
 }
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 1;
-  padding: 14px 16px 16px;
+.chip:hover .photo img {
+  transform: scale(1.04);
 }
-.body h3 {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.3;
-}
-.facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.facts li {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #eef3fb;
+.flag {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  background: var(--deep);
+  color: #fff;
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
-.button {
-  margin-top: auto;
-  display: block;
-  text-align: center;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #f59a23;
-  color: #13284a;
-  font-weight: 700;
+.body {
+  padding: 12px 12px 0;
+  color: var(--deep);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.no {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.chip h3 {
+  font: 700 clamp(17px, 2.2vw, 20px) / 1.12 var(--display);
+  letter-spacing: -0.015em;
+  margin: 4px 0 8px;
+}
+.chip h3 a {
   text-decoration: none;
 }
-.footer {
-  max-width: 1100px;
-  margin: 48px auto 0;
-  text-align: center;
-  font-size: 13px;
-  color: #4a5568;
+.chip h3 a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.footer nav {
+.facts {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  font-size: 14px;
+  display: grid;
+  gap: 2px;
+}
+.facts li::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--deep);
+  margin: 0 7px 2px 0;
+}
+.go {
+  margin: auto -12px 0;
   display: flex;
-  justify-content: center;
-  gap: 18px;
-  margin-bottom: 12px;
-}
-.footer nav a {
-  color: #13284a;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: var(--ink);
+  color: #fff !important;
+  text-decoration: none;
   font-weight: 700;
+  font-size: 14px;
+  padding: 13px 12px;
+  transition: background 0.2s;
 }
-@media (max-width: 480px) {
+.go:hover {
+  background: var(--deep);
+}
+
+/* A lone find on a phone becomes one wide chip. */
+@media (max-width: 719px) {
+  .solo .chip {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .solo .photo {
+    aspect-ratio: auto;
+    min-height: 100%;
+  }
+}
+@media (min-width: 720px) {
   .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
   }
-  .body {
-    padding: 10px;
+  .rack {
+    padding-top: 30px;
   }
-  .body h3 {
-    font-size: 14px;
+}
+@media (min-width: 1080px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.empty {
+  padding: 48px 0;
+  font-size: 18px;
+}
+
+/* Product page */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.back svg {
+  transform: rotate(180deg);
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+.item {
+  display: grid;
+  gap: 0;
+  padding-bottom: 8px;
+}
+.shots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.shots img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  border-radius: 6px;
+  background: #f4f4f6;
+}
+.shots img:first-child {
+  grid-column: 1 / -1;
+}
+.panel {
+  background: var(--tone);
+  color: var(--deep);
+  border-radius: 6px;
+  padding: 20px 18px 18px;
+  margin-top: 12px;
+  align-self: start;
+}
+.panel .no a {
+  text-decoration: none;
+}
+.panel .no a:hover {
+  text-decoration: underline;
+}
+.panel h1 {
+  font: 800 clamp(32px, 5vw, 52px) / 1 var(--display);
+  letter-spacing: -0.03em;
+  margin: 8px 0 10px;
+  text-wrap: balance;
+}
+.full {
+  margin: 0 0 18px;
+  font-size: 15px;
+  max-width: 60ch;
+}
+/* The label call-out: a cornered box, like a 1:1 parts call-out. */
+.callout {
+  position: relative;
+  border: 2px solid var(--deep);
+  background: var(--pale);
+  padding: 14px 16px 12px;
+  margin: 0 0 18px;
+}
+.callout::before,
+.callout::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--deep);
+}
+.callout::before {
+  top: -2px;
+  left: -2px;
+}
+.callout::after {
+  bottom: -2px;
+  right: -2px;
+}
+.callout h2 {
+  margin: 0 0 6px;
+  font: 700 14px/1.2 var(--text);
+}
+.callout .facts {
+  margin: 0;
+  font-size: 16px;
+}
+.big {
+  margin: 0 !important;
+  border-radius: 6px;
+  font-size: 17px !important;
+  padding: 16px 18px !important;
+}
+.note {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+.more {
+  padding-top: 40px;
+}
+.more h2 {
+  font: 800 clamp(26px, 4.5vw, 36px) / 1 var(--display);
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+@media (min-width: 860px) {
+  .item {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 28px;
+  }
+  .panel {
+    margin-top: 0;
+    position: sticky;
+    top: 20px;
+    padding: 28px 26px 24px;
+  }
+}
+
+.footer {
+  margin-top: 64px;
+  background: var(--ink);
+  color: #d9d8de;
+}
+.footRack {
+  display: flex;
+  height: 10px;
+}
+.footRack i {
+  flex: 1;
+}
+.footIn {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 36px 16px 44px;
+}
+.footIn nav {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.footIn nav a {
+  color: #fff;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+.footIn p {
+  margin: 0;
+  font-size: 14px;
+  max-width: 62ch;
+}
+.footIn b {
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strip,
+  .photo img {
+    transition: none;
+  }
+  .strip:hover,
+  .chip:hover .photo img {
+    transform: none;
   }
 }

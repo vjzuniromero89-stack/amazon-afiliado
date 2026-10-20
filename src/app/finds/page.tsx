@@ -1,97 +1,108 @@
 import type { Metadata } from "next";
 import { shopItems } from "@/lib/server/shop";
 import styles from "./finds.module.css";
+import { AdBar, Arrow, Chip, colors, family, Footer, Mark, newIds, slug } from "./ui";
 
 // Public page for the bio links (TikTok, Instagram, Facebook, Pinterest) and
 // for ads: our own page first, then the store. Rebuilt every 10 minutes.
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://ivethskin.com"),
-  alternates: { canonical: "/" },
-  title: "Ivethskin Finds · Home, skincare, style & gift ideas",
-  description:
-    "Practical home, skincare, style and gift finds, with our own photos and the real product details.",
-};
+const TITLE = "Ivethskin Finds · Home, skincare, style & gift ideas";
+const DESCRIPTION =
+  "Everyday home, skincare, style and gift finds, sorted by color, with my own photos and the real label details.";
 
-const SOCIAL = [
-  ["Pinterest", "https://www.pinterest.com/karenivette_29/"],
-  ["Instagram", "https://www.instagram.com/ivethskin_/"],
-  ["TikTok", "https://www.tiktok.com/@user64820562"],
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const first = (await shopItems())[0];
+  return {
+    metadataBase: new URL("https://ivethskin.com"),
+    alternates: { canonical: "/" },
+    title: TITLE,
+    description: DESCRIPTION,
+    openGraph: {
+      title: TITLE,
+      description: DESCRIPTION,
+      url: "/",
+      siteName: "Ivethskin Finds",
+      type: "website",
+      images: first ? [`/finds/img/${first.id}`] : [],
+    },
+  };
+}
 
 export default async function Finds() {
   const items = await shopItems();
   const categories = [...new Set(items.map((i) => i.category))];
-  const slug = (c: string) => c.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const fresh = newIds(items);
   return (
-    <main className={styles.page} lang="en">
-      <header className={styles.header}>
-        <p className={styles.brand}>Ivethskin Finds</p>
-        <h1>Home, skincare, style &amp; gift finds I love</h1>
-        <p className={styles.disclosure}>
-          #ad · Affiliate links: I may earn a commission from purchases. As an
-          Amazon Associate I earn from qualifying purchases.
+    <>
+      <AdBar />
+      <header className={`${styles.wrap} ${styles.top}`} id="top">
+        <Mark categories={categories} />
+        <h1>Everyday finds, sorted by color.</h1>
+        <p className={styles.lede}>
+          My own photos, the real label details and a link to the store. Pick a color to start.
         </p>
-        {categories.length > 1 && (
-          <nav className={styles.chips} aria-label="Categories">
-            {categories.map((c) => (
-              <a key={c} href={`#${slug(c)}`}>
-                {c}
-              </a>
-            ))}
-          </nav>
-        )}
       </header>
 
-      {items.length === 0 && <p className={styles.empty}>New finds are coming soon.</p>}
+      {items.length === 0 && <p className={`${styles.wrap} ${styles.empty}`}>New finds are coming soon.</p>}
 
-      {categories.map((c) => (
-        <section key={c} id={slug(c)} className={styles.section}>
-          <h2>{c}</h2>
-          <div className={styles.grid}>
-            {items
-              .filter((i) => i.category === c)
-              .map((i) => (
-                <article key={i.id} className={styles.card}>
-                  <a href={i.link} target="_blank" rel="sponsored nofollow noopener noreferrer">
-                    {/* Our own product photo, served by this site. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/finds/img/${i.id}`} alt={i.title} loading="lazy" width={600} height={600} />
-                  </a>
-                  <div className={styles.body}>
-                    <h3>{i.title.length > 80 ? i.title.slice(0, 78).trimEnd() + "…" : i.title}</h3>
-                    {i.facts.length > 0 && (
-                      <ul className={styles.facts}>
-                        {i.facts.map((f) => (
-                          <li key={f}>{f}</li>
-                        ))}
-                      </ul>
-                    )}
-                    <a className={styles.button} href={i.link} target="_blank" rel="sponsored nofollow noopener noreferrer">
-                      See it on {i.store}
-                    </a>
-                  </div>
-                </article>
-              ))}
-          </div>
-        </section>
-      ))}
-
-      <footer className={styles.footer}>
-        <nav aria-label="Social">
-          {SOCIAL.map(([name, url]) => (
-            <a key={name} href={url} target="_blank" rel="noopener noreferrer">
-              {name}
-            </a>
-          ))}
+      {categories.length > 0 && (
+        <nav className={`${styles.wrap} ${styles.rack}`} aria-label="Categories">
+          {categories.map((c) => {
+            const mine = items.filter((i) => i.category === c);
+            return (
+              <a key={c} className={styles.strip} href={`#${slug(c)}`} style={colors(c)}>
+                <span className={styles.s1}>{c}</span>
+                <span className={styles.s2}>{mine.map((i) => i.short).join(" · ")}</span>
+                <span className={styles.s3}>
+                  {mine.length} {mine.length === 1 ? "find" : "finds"} <Arrow down />
+                </span>
+              </a>
+            );
+          })}
         </nav>
-        <p>
-          #ad · Affiliate links: I may earn a commission from purchases at no
-          extra cost to you. As an Amazon Associate I earn from qualifying
-          purchases. Prices and availability are shown on the store&apos;s site.
-        </p>
-      </footer>
-    </main>
+      )}
+
+      {categories.length > 1 && (
+        <nav className={styles.tabs} aria-label="Jump to a category">
+          <div className={styles.wrap}>
+            <a className={styles.all} href="#top">
+              All
+            </a>
+            {categories.map((c) => (
+              <a key={c} href={`#${slug(c)}`} style={colors(c)}>
+                <i aria-hidden="true" />
+                {family(c).tab}
+              </a>
+            ))}
+          </div>
+        </nav>
+      )}
+
+      <main>
+        {categories.map((c) => {
+          const mine = items.filter((i) => i.category === c);
+          return (
+            <section key={c} id={slug(c)} className={styles.sec} style={colors(c)} aria-labelledby={`h-${slug(c)}`}>
+              <div className={styles.band}>
+                <div className={styles.wrap}>
+                  <h2 id={`h-${slug(c)}`}>{c}</h2>
+                  <p>
+                    {mine.length} {mine.length === 1 ? "find" : "finds"}
+                  </p>
+                </div>
+              </div>
+              <div className={`${styles.wrap} ${styles.grid} ${mine.length === 1 ? styles.solo : ""}`}>
+                {mine.map((i) => (
+                  <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </main>
+
+      <Footer categories={categories} />
+    </>
   );
 }
