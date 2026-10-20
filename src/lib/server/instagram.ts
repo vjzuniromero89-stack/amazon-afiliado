@@ -140,7 +140,8 @@ export function reelCaption(p: Product, amazonDisclosure: string) {
   return [
     `#ad ${name}${facts.length ? ` · ${facts.join(" · ")}` : ""}`,
     "Shop it at ivethskin.com (link in bio)",
-    disclosure,
+    // The API cannot set Instagram's AI label, so the caption says it.
+    `${disclosure} Video made with AI.`,
     `#amazonfinds ${TAGS[category] || ""}`.trim(),
   ].join("\n\n");
 }
