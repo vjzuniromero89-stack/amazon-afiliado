@@ -80,3 +80,14 @@ test("the app's check: every phrase fits its own product", () => {
   // No phrase from another category: a hair oil with vitamins is not a supplement.
   assert.notEqual(phrase("Argan Hair Oil with Vitamin E"), "Vitamin Supplement");
 });
+
+test("Karen's personal boards are never chosen for product Pins", async () => {
+  const { rankBoards, pickBoard } = await import("../../src/lib/server/generation");
+  const { defaults } = await import("../../src/lib/types");
+  const board = (id: string, name: string) => ({ id, name, archived: false }) as unknown as import("../../src/lib/types").Board;
+  const boards = [board("1", "auburn hair color"), board("2", "Birthday photoshoot"), board("3", "Beauty Must Haves")];
+  const p = { id: "x", title: "Pantene Pro-Vitamin Essence. hair", category: "Beauty & Makeup", notes: "" } as unknown as import("../../src/lib/types").Product;
+  const ranked = rankBoards(p, boards, defaults).map((b) => b.name);
+  assert.ok(!ranked.includes("auburn hair color") && !ranked.includes("Birthday photoshoot"), ranked.join(","));
+  assert.notEqual(pickBoard(p, boards, defaults)?.name, "auburn hair color");
+});

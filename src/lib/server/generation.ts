@@ -199,8 +199,11 @@ export function pinExtras(p: Product) {
 
 // Boards that fit the product, best first. Used to give each of a product's
 // Pins its own board, so the 7-day same-board rule does not hold them back.
+// Karen's own boards from before the shop (a hair color idea, a birthday
+// shoot) are never used for product Pins, even when a word matches.
+const PERSONAL_BOARD = /photoshoot|photo shoot|birthday|cumplea|wedding|boda|hair colou?r|auburn/;
 export function rankBoards(p: Product, all: Board[], s: Settings) {
-  const boards = all.filter((b) => !b.archived);
+  const boards = all.filter((b) => !b.archived && !PERSONAL_BOARD.test(strip(b.name)));
   const g = groupFor(p);
   const terms = [...g.match, g.noun, ...strip(p.category || "").split(/\W+/)]
     .filter((t) => t.length >= 3 && !["gadget", "must", "haves", "finds", "ideas", "amazon"].includes(t));
@@ -220,7 +223,7 @@ export function rankBoards(p: Product, all: Board[], s: Settings) {
 // Picks the board whose name best matches the product's topic,
 // then falls back to the default board, then to the only board available.
 export function pickBoard(p: Product, all: Board[], s: Settings) {
-  const boards = all.filter((b) => !b.archived);
+  const boards = all.filter((b) => !b.archived && !PERSONAL_BOARD.test(strip(b.name)));
   if (!boards.length) return null;
   const g = groupFor(p);
   const terms = [...g.match, g.noun, ...strip(p.category || "").split(/\W+/)]
