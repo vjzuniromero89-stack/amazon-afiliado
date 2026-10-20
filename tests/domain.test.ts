@@ -208,3 +208,11 @@ test("hair care and makeup are Beauty & Makeup, not supplements or gifts", () =>
   assert.equal(detectCategory("L'Oreal Paris Colour Riche Lip Liner Pencil.", ""), "Beauty & Makeup");
   assert.equal(detectCategory("Vital Vitamins Multi Collagen Complex", ""), "Supplements & Wellness");
 });
+
+test("home goods and deodorant are not read as beauty, baby, fashion or gifts", () => {
+  assert.equal(detectCategory("Levoit Air Purifier for Home Pets Hair Allergens in Bedroom Quiet Purifiers", ""), "Home Decor & Organization");
+  assert.equal(detectCategory("LEGO Botanicals Orchid - Artificial, Fake Indoor Flowers Building Set for Home", "Toys & Games"), "Home Decor & Organization");
+  assert.equal(detectCategory("Bare Home Microplush Wearable Blanket with Side Pockets - Adult & Kid Sizes", "Clothing"), "Home Decor & Organization");
+  assert.equal(detectCategory("medicube Deodorant with Kojic Acid Turmeric, Sweet Vanilla Scent, 2.92 oz", ""), "Beauty & Makeup");
+  assert.equal(detectCategory("Tech Tools Punching Bag with Stand Adjustable Boxing Speed Bag", ""), "Fitness & Workout");
+});

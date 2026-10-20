@@ -29,11 +29,19 @@ export const CATEGORIES = [
   "Pets & Dogs",
   "Gift Ideas",
 ] as const;
+// What the product IS, read from its name before Amazon's own category:
+// "Boxing Gloves for Kids" is not a baby product, a "punching bag" is not a
+// handbag, an air purifier "for pet hair" is not beauty, a LEGO flower set
+// listed under "Toys & Games" is home decor, a "wearable" blanket listed
+// under clothing is still a blanket.
+const PRODUCT_RULES: [string, RegExp][] = [
+  ["Fitness & Workout", /boxing|boxeo|kickboxing|muay thai|\bmma\b|punching bag|heavy bag|speed bag|hand wraps?|sparring|jump rope|skipping rope|mouth ?guard|headgear/],
+  ["Home Decor & Organization", /air purifier|humidifier|dehumidifier|blanket|throw pillow|artificial (?:flowers?|plants?)|fake (?:flowers?|plants?)|faux (?:flowers?|plants?)|lego botanicals?/],
+  ["Beauty & Makeup", /deodorant|body wash|body spray|body mist/],
+];
 // First match wins, so the more specific topics come first.
 const CATEGORY_RULES: [string, RegExp][] = [
-  // Boxing gear first: "Boxing Gloves for Kids" is not a baby product and a
-  // "punching bag" is not a handbag.
-  ["Fitness & Workout", /boxing|boxeo|kickboxing|muay thai|\bmma\b|punching bag|heavy bag|speed bag|hand wraps?|sparring|jump rope|skipping rope|mouth ?guard|headgear/],
+  ...PRODUCT_RULES,
   // Words only skincare uses go before supplements ("Vitamin C Serum");
   // plain "skin" goes after them ("Collagen for Hair, Skin and Nails").
   ["Skincare", /serum|toner|cleanser|face wash|moisturi|(?<!ice )cream|lotion|sunscreen|\bspf\b|face mask|sheet mask|eye cream|eye patch|retinol|niacinamide/],
@@ -161,6 +169,8 @@ export function detectCategory(title: string, category: string) {
   const typed = plain(category.trim());
   const exact = CATEGORIES.find((c) => plain(c) === typed);
   if (exact) return exact;
+  const named = PRODUCT_RULES.find(([, re]) => re.test(plain(title)));
+  if (named) return named[0];
   for (const text of [typed, plain(title)]) {
     if (!text) continue;
     const hit = CATEGORY_RULES.find(([, re]) => re.test(text));
