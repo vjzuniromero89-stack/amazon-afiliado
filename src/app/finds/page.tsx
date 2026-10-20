@@ -11,6 +11,8 @@ export const revalidate = 600;
 const TITLE = "Ivethskin Finds · Home, skincare, style & gift ideas";
 const DESCRIPTION =
   "Everyday home, skincare, style and gift finds, sorted by color, with my own photos and the real label details.";
+// The home page shows the newest finds; each color has its own page.
+const NEWEST = 8;
 
 export async function generateMetadata(): Promise<Metadata> {
   const first = (await shopItems())[0];
@@ -34,6 +36,7 @@ export default async function Finds() {
   const items = await shopItems();
   const categories = [...new Set(items.map((i) => i.category))];
   const fresh = newIds(items);
+  const newest = [...items].sort((a, b) => b.added.localeCompare(a.added)).slice(0, NEWEST);
   return (
     <>
       <AdBar />
@@ -52,13 +55,13 @@ export default async function Finds() {
           {categories.map((c) => {
             const mine = items.filter((i) => i.category === c);
             return (
-              <a key={c} className={styles.strip} href={`#${slug(c)}`} style={colors(c)}>
+              <a key={c} className={styles.strip} href={`/c/${slug(c)}`} style={colors(c)}>
                 <span className={styles.s1}>{c}</span>
                 <span className={styles.s2}>
                   <em>{mine.map((i) => i.short).join(" · ")}</em>
                 </span>
                 <span className={styles.s3}>
-                  {mine.length} {mine.length === 1 ? "find" : "finds"} <Arrow down />
+                  {mine.length} {mine.length === 1 ? "find" : "finds"} <Arrow />
                 </span>
               </a>
             );
@@ -68,38 +71,31 @@ export default async function Finds() {
 
       {categories.length > 1 && (
         <Tabs
+          current=""
           categories={categories.map((c) => ({ id: slug(c), label: family(c).tab, ...family(c) }))}
         />
       )}
 
-      <main className={styles.shelf}>
-        {categories.map((c) => {
-          const mine = items.filter((i) => i.category === c);
-          return (
-            <section
-              key={c}
-              id={slug(c)}
-              className={`${styles.sec} ${mine.length >= 4 ? styles.wide : ""}`}
-              style={colors(c)}
-              aria-labelledby={`h-${slug(c)}`}
-            >
-              <div className={styles.band}>
-                <div className={styles.wrap}>
-                  <h2 id={`h-${slug(c)}`}>{c}</h2>
-                  <p>
-                    {mine.length} {mine.length === 1 ? "find" : "finds"}
-                  </p>
-                </div>
-              </div>
-              <div className={styles.stack}>
-                {mine.map((i) => (
-                  <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
-      </main>
+      {newest.length > 0 && (
+        <main className={`${styles.wrap} ${styles.room}`} aria-labelledby="h-newest">
+          <div className={styles.band} style={{ "--tone": "#16161b", "--deep": "#ffffff" } as React.CSSProperties}>
+            <div>
+              <h2 id="h-newest">Newest finds</h2>
+              <p>
+                {items.length} {items.length === 1 ? "find" : "finds"} in all
+              </p>
+            </div>
+          </div>
+          <div className={styles.rows}>
+            {newest.map((i) => (
+              <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />
+            ))}
+          </div>
+          {items.length > newest.length && (
+            <p className={styles.more}>Pick a color above to see every find in it.</p>
+          )}
+        </main>
+      )}
 
       <Footer categories={categories} />
     </>

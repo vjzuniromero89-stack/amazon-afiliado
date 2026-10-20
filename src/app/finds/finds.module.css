@@ -237,13 +237,13 @@
   padding-left: 12px;
 }
 /* The one reserved accent: the strip you are looking at. */
-.tabs a[aria-current="true"],
-.tabs a[aria-current="true"]:hover {
+.tabs a[aria-current],
+.tabs a[aria-current]:hover {
   background: var(--deep, var(--ink));
   color: #fff;
   border-color: var(--deep, var(--ink));
 }
-.tabs a[aria-current="true"] i {
+.tabs a[aria-current] i {
   box-shadow: 0 0 0 2px #fff;
 }
 
@@ -712,4 +712,53 @@
     width: 64px;
     height: 64px;
   }
+}
+
+/* Rows of chips: every page lays its finds left to right in even rows,
+   2 on a phone, 3 on a tablet, 4 on a computer. */
+.room {
+  padding-top: 28px;
+  scroll-margin-top: 70px;
+}
+.room .band {
+  border-radius: 6px;
+}
+.room .band > div {
+  padding: 18px 18px 16px;
+}
+.rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 16px;
+}
+.rows .chip h3 {
+  min-height: calc(2 * 1.12em);
+}
+.more {
+  margin: 18px 0 0;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.more a {
+  color: var(--ink);
+  font-weight: 700;
+}
+@media (min-width: 720px) {
+  .rows {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+  }
+}
+@media (min-width: 1080px) {
+  .rows {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+/* The category name is the page title, set like a section band. */
+.band .catTitle {
+  margin: 0;
+  font: 800 clamp(30px, 6vw, 52px) / 1 var(--display);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }

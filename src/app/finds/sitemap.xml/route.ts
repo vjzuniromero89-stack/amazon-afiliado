@@ -1,6 +1,7 @@
 import { shopItems } from "@/lib/server/shop";
+import { slug } from "../ui";
 
-// ivethskin.com/sitemap.xml: the home page, every find and the text pages.
+// ivethskin.com/sitemap.xml: the home page, each color, every find and the text pages.
 export const revalidate = 3600;
 const BASE = "https://ivethskin.com";
 
@@ -9,6 +10,7 @@ export async function GET() {
   const today = new Date().toISOString().slice(0, 10);
   const urls = [
     { loc: `${BASE}/`, lastmod: today },
+    ...[...new Set(items.map((i) => i.category))].map((c) => ({ loc: `${BASE}/c/${slug(c)}`, lastmod: today })),
     ...items.map((i) => ({ loc: `${BASE}/p/${i.id}`, lastmod: i.added.slice(0, 10) })),
     ...["about", "contact", "privacy"].map((p) => ({ loc: `${BASE}/${p}`, lastmod: "2026-10-20" })),
   ];

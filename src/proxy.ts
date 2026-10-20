@@ -19,6 +19,9 @@ export async function proxy(request: NextRequest) {
   // A find's own page: ivethskin.com/p/<id>. The private app has no /p.
   const find = request.nextUrl.pathname.match(/^\/p\/([0-9a-f-]{36})\/?$/i);
   if (find) return NextResponse.rewrite(new URL(`/finds/p/${find[1]}`, request.url));
+  // A color's own page: ivethskin.com/c/skincare. The private app has no /c.
+  const color = request.nextUrl.pathname.match(/^\/c\/([a-z0-9-]{1,60})\/?$/);
+  if (color) return NextResponse.rewrite(new URL(`/finds/c/${color[1]}`, request.url));
   if (SHOP_HOSTS.includes(host)) {
     const page = SHOP_PAGES[request.nextUrl.pathname.replace(/\/$/, "")] ?? "/finds";
     return NextResponse.rewrite(new URL(page, request.url));
