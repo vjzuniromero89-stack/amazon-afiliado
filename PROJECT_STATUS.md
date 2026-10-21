@@ -74,7 +74,7 @@ Antes, los dos proyectos publicaban en GitHub un estado con el mismo nombre ("Ve
 **Migraciones:**
 1. `20261021120000_social_post_claims.sql` — **aplicada** por el dueño (2026-10-21).
 2. `20261021150000_cron_lease.sql` — **aplicada** por el dueño (2026-10-21, "Success"). El código de producción actual no la usa todavía; entra en uso con el merge.
-3. `20261021160000_plan_once.sql` — **pendiente** (ver la revisión de abajo). La corre el dueño **antes** del merge. Compatible con el código actual: agrega dos índices y reemplaza las dos funciones de reserva.
+3. `20261021160000_plan_once.sql` — **aplicada** por el dueño (2026-10-21, "Success"). Agrega dos índices y reemplaza las dos funciones de reserva; el código de producción actual sigue funcionando con ella.
 
 ## Revisión contra publicaciones duplicadas (2026-10-21)
 
@@ -183,7 +183,7 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 ## Siguiente tarea
 
 Antes de cualquier merge: revisión del usuario. Después:
-1. El dueño corre `20261021160000_plan_once.sql` en Supabase (las dos anteriores ya están aplicadas).
+1. ✅ Las tres migraciones están aplicadas (2026-10-21).
 2. Merge del PR #1 cuando el dueño lo apruebe; revisar la primera pasada de Instagram y Facebook y la de las 12:00 UTC (una debe decir "skipped").
 3. Configurar los tracking IDs por canal.
 4. Importar el reporte de Associates.
