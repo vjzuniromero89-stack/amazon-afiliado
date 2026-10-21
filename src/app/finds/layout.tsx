@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
+import "../globals.css";
 import styles from "./finds.module.css";
 import { channelTags } from "@/lib/channels";
 import { Tracker } from "./tracker";
@@ -18,11 +19,17 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
+// The shop is its own root layout, so its pages say they are in English;
+// the private panel's root layout, in (panel), says Spanish.
 export default function FindsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div lang="en" className={`${display.variable} ${text.variable} ${styles.page}`}>
-      {children}
-      <Tracker tags={channelTags(process.env.AMAZON_CHANNEL_TAGS)} />
-    </div>
+    <html lang="en">
+      <body>
+        <div className={`${display.variable} ${text.variable} ${styles.page}`}>
+          {children}
+          <Tracker tags={channelTags(process.env.AMAZON_CHANNEL_TAGS)} />
+        </div>
+      </body>
+    </html>
   );
 }
