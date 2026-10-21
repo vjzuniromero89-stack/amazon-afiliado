@@ -49,6 +49,8 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 - `tests/social-outcome.test.ts`: un timeout después de publicar genera `MaybeSent` (una sola llamada); un 4xx se puede reintentar; reconciliación de Instagram y Facebook.
 - **Límite:** PGlite atiende una consulta a la vez. La prueba demuestra que la reserva cambia el estado y que otra pasada ya no encuentra el post. El bloqueo en paralelo lo da `FOR UPDATE SKIP LOCKED` de Postgres en Supabase.
 
+**Migración aplicada:** el dueño corrió `20261021120000_social_post_claims.sql` en Supabase el 2026-10-21 ("Success"). Claude no puede leer esa base, así que no lo comprobó directamente. El código actual de producción sigue funcionando con ella: solo se agregaron estados, columnas y funciones.
+
 **Orden obligatorio para publicar:**
 1. Correr en Supabase (SQL Editor del proyecto `tkyqretgmnyeuqnihipl`) la migración `supabase/migrations/20261021120000_social_post_claims.sql`. Es compatible con el código actual: solo agrega estados, columnas y funciones.
 2. Después, hacer merge. Si se hace merge sin la migración, las colas de Instagram y Facebook no encuentran las funciones y no publican, pero tampoco duplican.
@@ -75,7 +77,7 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 | Cron | **Cada 15 min** (cron-job.org) + diario de Vercel (12:00 UTC) | Registros de `/api/cron` en edvickar: "cron run: 1 ok" a :00/:15/:30/:45. ChatGPT supuso "diario" porque no vio los registros |
 | Pasadas que se cruzan | ⚠️ A las 12:00 hubo **dos pasadas a 34 s** (cron-job.org 12:00:15 y Vercel 12:00:49) | Mismos registros |
 | Cola de Pins | Reclamo atómico (`claim_pin`): 1 Pin vencido por cuenta y pasada; límites de 5/día, 60 min, 9 am–9 pm NY | `publishNext`, `scheduleApproved` |
-| Colas de Instagram y Facebook | ✅ **En esta rama:** reserva atómica por pasada y estado `uncertain` (ver arriba). **Hay que correr la migración `20261021120000_social_post_claims.sql` antes del merge** | `publishReels`, `publishFacebook`, `claim_instagram_posts`, `claim_facebook_posts` y pruebas `social-claims` / `social-outcome` |
+| Colas de Instagram y Facebook | ✅ **En esta rama:** reserva atómica por pasada y estado `uncertain` (ver arriba). Migración `20261021120000_social_post_claims.sql` **aplicada** (2026-10-21, la reportó el dueño); el código nuevo entra con el merge | `publishReels`, `publishFacebook`, `claim_instagram_posts`, `claim_facebook_posts` y pruebas `social-claims` / `social-outcome` |
 | Métricas de Pinterest | Impresiones, guardados y clics salientes por día (READY + ESTIMATE) | `syncAnalytics` |
 | Clics en la tienda | Toques en "See it on Amazon" por producto y fuente normalizada (sin IP, cookies ni rutas) | `shop_clicks` y `traffic-source.ts` |
 | Pedidos y comisiones de Amazon | ❌ No se importan | — |
@@ -106,7 +108,7 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 
 ## Pendientes y riesgos
 
-1. **Migración `20261021120000_social_post_claims.sql`:** debe correrla el dueño en Supabase **antes** del merge. La corrección de duplicados ya está en el código de esta rama.
+1. ✅ **Migración `20261021120000_social_post_claims.sql`:** aplicada por el dueño (2026-10-21). Después del merge, comprobar en los registros de `/api/cron` y en el panel que Instagram y Facebook siguen publicando (estados "Publicando" y "Revisar").
 2. **karvic88:** usa la misma base (mismos UUID). Falta confirmar si su cron corre (sin acceso). Decidir si sigue conectado; si no, desconectar el repositorio o quitarle `CRON_SECRET`.
 3. **"Not found" con código 200:** lleva `noindex`, pero lo ideal es un 404 real. Pasa por el streaming de `loading.tsx`, lo mismo que hoy en producción.
 4. **Medición:**
@@ -138,7 +140,7 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 ## Siguiente tarea
 
 Antes de cualquier merge: revisión del usuario. Después:
-1. Correr la migración de reservas en Supabase y luego hacer merge del PR #1.
+1. Merge del PR #1 cuando el dueño lo apruebe (la migración ya está aplicada) y revisar la primera pasada de Instagram y Facebook.
 2. Confirmar el cron de karvic88 y decidir si sigue conectado.
 3. Configurar los tracking IDs por canal.
 4. Importar el reporte de Associates.
