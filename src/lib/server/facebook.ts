@@ -5,7 +5,7 @@ import { pinExtras, parseTitle } from "./generation";
 import { cleanProductName, detectCategory, storeDisclosure, storeOf } from "../domain";
 import { nyDate, nyTime, TAGS, VIDEO_BUCKET } from "./instagram";
 import type { Product } from "../types";
-import { ageSinceDue, facebookReelNext, type FbVideoStatus, MaybeSent, releaseFields, sendOnce, uncertainFields } from "../social-outcome";
+import { ageSinceDue, facebookReelNext, failureFields, type FbVideoStatus, sendOnce } from "../social-outcome";
 
 // Facebook Page through the same Meta app: each product's video as a Reel
 // and a daily post whose link card opens the product page on ivethskin.com.
@@ -265,7 +265,9 @@ export async function publishFacebook(uid: string) {
       if (!rows.length) throw new AppError("This run no longer holds the post.");
     };
     const save = (fields: Record<string, unknown>) => write({ ...fields, claim_token: null });
-    const release = (msg: string) => save(releaseFields(from, row.attempts, msg));
+    // Set once Facebook accepted the post or the Reel's finish: from then
+    // on, never re-queue.
+    let sent = false;
     try {
       if (from === "pending" && row.kind === "link") {
         const p = (await owned("products", row.product_id, uid)) as Product;
@@ -279,6 +281,7 @@ export async function publishFacebook(uid: string) {
             ),
           (r) => Boolean(r?.id),
         );
+        sent = true;
         await save({
           status: "published",
           post_id: made.id,
@@ -349,6 +352,7 @@ export async function publishFacebook(uid: string) {
             ),
           (r) => r?.success !== false,
         );
+        sent = true;
         await save({ status: "processing", video_id: videoId, error: null });
         done.push(`${row.id}:started`);
         continue;
@@ -388,8 +392,7 @@ export async function publishFacebook(uid: string) {
       });
       done.push(`${row.id}:published`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Error de Facebook";
-      await (e instanceof MaybeSent ? save(uncertainFields(msg)) : release(msg)).catch(() => undefined);
+      await save(failureFields(e, sent, from, row.attempts)).catch(() => undefined);
     }
   }
   return { status: done.length ? "worked" : "waiting", done };

@@ -87,9 +87,18 @@ Revisión completa del código de reservas, del cron y de las migraciones. Halla
 | 3 | Un post `uncertain` cuya revisión siempre falla se reclamaba cada 15 min para siempre, primero en la fila | Quitaba lugar a posts nuevos (máximo 3 por pasada) | ✅ Los inciertos van al final y dejan de revisarse tras 8 intentos (quedan en "Revisar en …" para el dueño) |
 | 4 | Una escritura con la ficha vencida no actualizaba nada, pero la pasada seguía subiendo y publicando | Duplicado si una pasada pasara de 10 min (hoy el máximo es 5) | ✅ Si no se actualiza ninguna fila, la pasada se detiene para ese post |
 | 5 | En ivethskin.com, una dirección rara bajo `/finds/...` mostraba la página 404 del panel en español | Texto del panel privado en la tienda | ✅ Página 404 global neutra en inglés, con una línea en español y sin enlace al panel |
+| 5b | **La red acepta la publicación y luego falla el guardado** en la base | El post con enlace de Facebook volvía a `pending` y **se publicaba 2 veces** (la prueba lo demostró antes del arreglo: 2 posts) | ✅ `failureFields`: una vez aceptada por la red, ningún fallo devuelve el post a la cola; queda `uncertain`. Instagram y los Reels ya se reconciliaban bien |
 | 6 | Rama muerta para posts con enlace inciertos (`facebook.ts`) | Ninguno | Se deja como protección |
 | 7 | `claim_token: null` se pone en dos lugares | Ninguno | Se deja |
 | 8 | No hay prueba de la ruta `/api/cron` en sí (saltar o seguir sin turno) | Bajo | Se deja: la lógica del turno está probada en SQL |
+
+**Prueba de punta a punta** (`tests/providers/publish-then-save-fails.test.ts`): el código real de publicación contra Postgres real (PGlite con todas las migraciones), con Instagram y Facebook simulados que aceptan todo. El guardado de "publicado" falla una vez y luego corren 3 pasadas más del cron, 20 min después cada una:
+
+| Caso | Envíos a la red | Estado final |
+|---|---|---|
+| Post con enlace de Facebook | 1 (antes del arreglo: **2**) | `uncertain` → "Revisar en Facebook" |
+| Instagram `media_publish` | 1 | `published` (la revisión vio el contenedor PUBLISHED) |
+| Reel de Facebook (`finish`) | 1 | `processing` del mismo video |
 
 **Pruebas nuevas:** índices de un post por día; inciertos al final y con tope; edad desde la hora programada; intentos contados en inciertos.
 
@@ -175,8 +184,8 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 ## Validación de esta rama
 
 - `npx tsc --noEmit` ✅
-- `npm test` 43 ✅ (dominio, base de datos, `traffic-source`, `social-claims`, `social-outcome` y `cron-lease`)
-- `npm run test:providers` 12 ✅
+- `npm test` 44 ✅ (dominio, base de datos, `traffic-source`, `social-claims`, `social-outcome` y `cron-lease`)
+- `npm run test:providers` 15 ✅ (incluye la prueba de punta a punta)
 - `npm run build` sin base de datos ✅ y con `SHOP_DEMO=1` ✅
 - Vista previa de Vercel: solo edvickar (karvic88 eliminado)
 

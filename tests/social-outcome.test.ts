@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   ageSinceDue,
+  failureFields,
   facebookReelNext,
   instagramNext,
   MaybeSent,
@@ -84,4 +85,11 @@ test("Facebook Reel: the same video is finished again only if the publish reques
     "failed",
   );
   assert.equal(facebookReelNext({}, "processing", 7 * 3600e3).step, "too-slow");
+});
+
+test("once the network accepted a post, a failure afterwards never puts it back in the queue", () => {
+  const dbError = new Error("database hiccup");
+  assert.equal(failureFields(dbError, true, "pending", 0).status, "uncertain", "accepted, then saving failed");
+  assert.equal(failureFields(dbError, false, "pending", 0).status, "pending", "nothing was sent: it can retry");
+  assert.equal(failureFields(new MaybeSent("timeout"), false, "pending", 0).status, "uncertain");
 });

@@ -55,6 +55,15 @@ export function releaseFields(from: string, attempts: number, error: string) {
   };
 }
 
+// What a run saves when a step fails. Once the network accepted the post
+// (sent), nothing may put it back in the queue: even when saving
+// "published" fails, it becomes uncertain and is checked, never re-sent.
+export function failureFields(e: unknown, sent: boolean, from: string, attempts: number) {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (sent) return uncertainFields(`accepted by the network, but saving failed: ${msg}`);
+  return e instanceof MaybeSent ? uncertainFields(msg) : releaseFields(from, attempts, msg);
+}
+
 export function uncertainFields(error: string) {
   return {
     status: "uncertain",

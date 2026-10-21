@@ -4,7 +4,7 @@ import { getSettings } from "./data";
 import { pinExtras, parseTitle } from "./generation";
 import { cleanProductName, detectCategory, storeDisclosure, storeOf } from "../domain";
 import type { Product } from "../types";
-import { ageSinceDue, instagramNext, MaybeSent, releaseFields, sendOnce, uncertainFields } from "../social-outcome";
+import { ageSinceDue, failureFields, instagramNext, sendOnce } from "../social-outcome";
 
 // Instagram API with Instagram Login: a professional account publishes Reels
 // straight from the app, no Facebook Page needed.
@@ -354,7 +354,8 @@ export async function publishReels(uid: string) {
       );
       if (!rows.length) throw new AppError("This run no longer holds the post.");
     };
-    const release = (msg: string) => save(releaseFields(from, post.attempts, msg));
+    // Set once Instagram accepted media_publish: from then on, never re-queue.
+    let sent = false;
     try {
       if (from === "pending") {
         // Containers are not public: a failure here is simply retried.
@@ -461,6 +462,7 @@ export async function publishReels(uid: string) {
           ),
         (r) => Boolean(r?.id),
       );
+      sent = true;
       const info = await json<{ permalink?: string }>(
         await fetch(`${GRAPH}/${pub.id}?${new URLSearchParams({ fields: "permalink", access_token: c.access_token })}`),
       ).catch(() => ({ permalink: undefined }));
@@ -473,8 +475,7 @@ export async function publishReels(uid: string) {
       });
       done.push(`${post.id}:published`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Error de Instagram";
-      await (e instanceof MaybeSent ? save(uncertainFields(msg)) : release(msg)).catch(() => undefined);
+      await save(failureFields(e, sent, from, post.attempts)).catch(() => undefined);
     }
   }
   return { status: done.length ? "worked" : "waiting", done };
