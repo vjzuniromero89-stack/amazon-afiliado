@@ -1,5 +1,5 @@
 import "server-only";
-import { admin, check } from "./db";
+import { admin, check, configured } from "./db";
 import { getSettings } from "./data";
 import { parseTitle, pinExtras } from "./generation";
 import { cleanProductName, detectCategory, pinLink, STORES, storeOf } from "../domain";
@@ -33,6 +33,9 @@ export type ShopItem = {
 };
 
 export async function shopItems(): Promise<ShopItem[]> {
+  // A build without the database (a Vercel preview or a local build) shows
+  // an empty shop instead of failing the build. Production always has it.
+  if (!configured()) return [];
   const uid = await shopOwner();
   if (!uid) return [];
   const [products, s] = await Promise.all([

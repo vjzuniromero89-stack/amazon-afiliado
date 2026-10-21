@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ShopItem } from "@/lib/server/shop";
 import styles from "./finds.module.css";
+import { jsonLd } from "./seo";
 
 // Each category wears one pastel from the logo's dots (pink, lilac, green,
 // yellow) or a sibling of them. Text on it is always the page ink, which
@@ -110,7 +111,7 @@ export function Footer() {
       <div className={`${styles.wrap} ${styles.footIn}`}>
         <p>
           <b>#ad</b> · Affiliate links: I may earn a commission from purchases at no extra cost to
-          you. As an Amazon Associate I earn from qualifying purchases. Photos are my own. Prices and
+          you. As an Amazon Associate I earn from qualifying purchases. Photos are ours; some are made with AI. Prices and
           availability are shown on the store&apos;s site.
         </p>
         <nav aria-label="About this site" className={styles.footLinks}>
@@ -125,6 +126,21 @@ export function Footer() {
         </nav>
       </div>
     </footer>
+  );
+}
+
+// Structured data for search engines (see seo.ts).
+export function JsonLd({ data }: { data: unknown }) {
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(data) }} />;
+}
+
+// The disclosure again right above a grid of store buttons, so it sits next
+// to the links and not only at the top of the page (FTC: near the link).
+export function GridNote({ dark }: { dark?: boolean }) {
+  return (
+    <p className={`${styles.gridNote} ${dark ? styles.gridNoteDark : ""}`}>
+      <b>#ad</b> · The buttons are affiliate links: I may earn a commission if you buy.
+    </p>
   );
 }
 

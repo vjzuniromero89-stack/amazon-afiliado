@@ -676,3 +676,13 @@ main > .light {
     transition: none !important;
   }
 }
+
+/* The disclosure next to each grid of store buttons. */
+.gridNote {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.gridNoteDark {
+  color: #d9d0ee;
+}

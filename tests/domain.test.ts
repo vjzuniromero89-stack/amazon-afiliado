@@ -216,3 +216,42 @@ test("home goods and deodorant are not read as beauty, baby, fashion or gifts", 
   assert.equal(detectCategory("medicube Deodorant with Kojic Acid Turmeric, Sweet Vanilla Scent, 2.92 oz", ""), "Beauty & Makeup");
   assert.equal(detectCategory("Tech Tools Punching Bag with Stand Adjustable Boxing Speed Bag", ""), "Fitness & Workout");
 });
+
+test("channel tracking IDs: parsed safely, picked by source, only on Amazon links", async () => {
+  const { channelTags, channelOf, withTag } = await import("../src/lib/channels");
+  assert.deepEqual(channelTags("pinterest=ivethskin-pin-20, tiktok=ivethskin-tt-20,bad=x,instagram=no spaces!"), {
+    pinterest: "ivethskin-pin-20",
+    tiktok: "ivethskin-tt-20",
+  });
+  assert.deepEqual(channelTags(undefined), {});
+  assert.equal(channelOf("pin.it"), "pinterest");
+  assert.equal(channelOf("www.pinterest.com"), "pinterest");
+  assert.equal(channelOf("l.instagram.com"), "instagram");
+  assert.equal(channelOf("m.facebook.com"), "facebook");
+  assert.equal(channelOf("tiktok"), "tiktok");
+  assert.equal(channelOf("google.com"), null);
+  assert.equal(channelOf(""), null);
+  assert.equal(
+    withTag("https://www.amazon.com/dp/B012345678?tag=ivethskin-20", "ivethskin-tt-20"),
+    "https://www.amazon.com/dp/B012345678?tag=ivethskin-tt-20",
+  );
+  const walmart = "https://goto.walmart.com/c/1/2/3?u=https%3A%2F%2Fwww.walmart.com%2Fip%2Fx%2F123456789";
+  assert.equal(withTag(walmart, "ivethskin-tt-20"), walmart);
+  assert.equal(withTag("https://www.amazon.com/dp/B012345678?tag=a-20", "bad tag"), "https://www.amazon.com/dp/B012345678?tag=a-20");
+});
+
+test("shop structured data: breadcrumbs from Home, item list of product pages, script-safe JSON", async () => {
+  const { breadcrumbs, itemList, jsonLd, siteGraph } = await import("../src/app/finds/seo");
+  const b = breadcrumbs([{ name: "Skincare", path: "/c/skincare" }]);
+  assert.deepEqual(
+    b.itemListElement.map((i) => [i.position, i.name, i.item]),
+    [
+      [1, "Home", "https://ivethskin.com/"],
+      [2, "Skincare", "https://ivethskin.com/c/skincare"],
+    ],
+  );
+  const l = itemList("Skincare finds", [{ id: "abc", short: "Toner" }]);
+  assert.equal(l.itemListElement[0].url, "https://ivethskin.com/p/abc");
+  assert.equal(siteGraph()["@graph"][0]["@type"], "Organization");
+  assert.ok(!jsonLd({ name: "</script><b>" }).includes("<"));
+});

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { shopItems } from "@/lib/server/shop";
 import styles from "../../finds.module.css";
-import { AdBar, Chip, colors, Footer, newIds, SiteHeader, slug } from "../../ui";
+import { breadcrumbs, itemList } from "../../seo";
+import { AdBar, Chip, colors, Footer, GridNote, JsonLd, newIds, SiteHeader, slug } from "../../ui";
 
 // One page per category: ivethskin.com/c/skincare. Newest find first.
 export const revalidate = 600;
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!found) return { title: "Ivethskin Finds" };
   const mine = found.items.filter((i) => i.category === found.category);
   const title = `${found.category} finds · Ivethskin Finds`;
-  const description = `${found.category}: ${mine.map((i) => i.short).join(", ")}. My own photos and the label details. #ad`;
+  const description = `${found.category}: ${mine.map((i) => i.short).join(", ")}. Our photos (some made with AI) and the label details. #ad`;
   return {
     metadataBase: new URL("https://ivethskin.com"),
     alternates: { canonical: `/c/${slug(found.category)}` },
@@ -46,6 +47,8 @@ export default async function CategoryPage({ params }: Props) {
   const fresh = newIds(items);
   return (
     <>
+      <JsonLd data={breadcrumbs([{ name: category, path: `/c/${slug(category)}` }])} />
+      <JsonLd data={itemList(`${category} finds`, mine)} />
       <AdBar />
       <SiteHeader categories={categories} current={slug(category)} />
 
@@ -56,6 +59,7 @@ export default async function CategoryPage({ params }: Props) {
             {mine.length} {mine.length === 1 ? "find" : "finds"}
           </p>
         </div>
+        <GridNote />
         <div className={`${styles.grid} ${styles.light}`}>
           {mine.map((i) => (
             <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />
