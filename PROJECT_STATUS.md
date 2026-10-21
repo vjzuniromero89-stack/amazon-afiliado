@@ -1,7 +1,7 @@
 # PROJECT_STATUS — Amazon Affiliate Command / ivethskin.com
 
 Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
-- **Actualizado:** 2026-10-21 (reserva de publicaciones de Instagram y Facebook).
+- **Actualizado:** 2026-10-21 (karvic88 eliminado; turno exclusivo del cron).
 - **Rama:** `mejoras/auditoria-seo-medicion` (PR #1), que ya incluye lo compatible del PR #2 de ChatGPT (`codex/ivethskin-audit-20261021`).
 - **Sin merge ni producción** hasta la revisión del usuario.
 
@@ -14,18 +14,23 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 - **Afiliado:** Amazon Associates, tracking ID principal `ivethskin-20`.
 - **Search Console:** propiedad de dominio `ivethskin.com`, verificada por DNS TXT en Vercel. Dueño: vjzuniromero89@gmail.com. Sitemap con 31 URLs.
 
-## Vercel: dos proyectos conectados al mismo repositorio (verificado 2026-10-21; no se borró ni desconectó nada)
+## Vercel: un solo proyecto (desde 2026-10-21)
 
-| Proyecto | Equipo | Dominios | Qué hace |
+| Proyecto | Equipo | Dominios | Estado |
 |---|---|---|---|
-| `amazon-afiliado` (`prj_HJz4db2xVwIR7ljyqsFdEBOQvpit`) | **edvickar** (acceso de Claude) | **ivethskin.com**, www.ivethskin.com (308 → apex), ivethskin.vercel.app, amazon-afiliado-liard.vercel.app | **Sirve la tienda real y el panel.** El HTML en vivo lleva `dpl_GwB1as…`, que es de edvickar |
-| `amazon-afiliado` (`prj_tUc7wgZzemB318TRiX5JJBXs73mu`) | **karvic88** (otra cuenta de Vercel; Claude no tiene acceso) | Probablemente amazon-afiliado-xi.vercel.app, que sirve la misma app con 8 productos reales y fotos | También despliega cada push y cada PR. Su `/api/cron` responde 401, así que **tiene `CRON_SECRET`** |
+| `amazon-afiliado` (`prj_HJz4db2xVwIR7ljyqsFdEBOQvpit`) | **edvickar** | **ivethskin.com**, www.ivethskin.com (308 → apex), ivethskin.vercel.app, amazon-afiliado-liard.vercel.app | **Sirve la tienda y el panel.** Producción `dpl_GwB1as…` |
+| `amazon-afiliado` (`prj_tUc7wgZzemB318TRiX5JJBXs73mu`) | karvic88 | amazon-afiliado-xi.vercel.app | **Eliminado por el dueño el 2026-10-21** |
 
-**Chequeos de GitHub:** los dos proyectos publican un estado con el **mismo nombre**, "Vercel – amazon-afiliado", y GitHub muestra el último que llega.
-- **PR #1:** karvic88 `BUBbJCfN…` y `DbHyC2aB…` correctos; edvickar `AcovtERi…` y `DaV3b1UL…` correctos.
-- **PR #2:** el estado fallido es de karvic88 `4y9UDEkA…` (sin base de datos al compilar). ChatGPT también vio fallar la vista previa de edvickar `dpl_CVVMMY2W…`.
+**Comprobado después de eliminarlo (2026-10-21):**
 
-**Riesgo:** si karvic88 usa la misma base de datos, su cron diario de `vercel.json` (12:00 UTC) también procesa la cola. Decisión pendiente del usuario: desconectar el repositorio en karvic88 o quitarle `CRON_SECRET`, pero no borrar nada sin revisar.
+| Comprobación | Resultado |
+|---|---|
+| ivethskin.com `/`, una categoría y un producto | 200, desde edvickar |
+| www.ivethskin.com | 308 → ivethskin.com |
+| amazon-afiliado-xi.vercel.app | 404 `DEPLOYMENT_NOT_FOUND`: confirma que **era** el proyecto de karvic88 |
+| Pasada del cron 14:00:17 UTC (edvickar) | "cron run: 1 ok, 0 failed, 1 accounts", ya con la migración de reservas |
+
+Antes, los dos proyectos publicaban en GitHub un estado con el mismo nombre ("Vercel – amazon-afiliado"). Ahora solo llega el de edvickar.
 
 ## Publicaciones duplicadas en Instagram y Facebook: corrección (en esta rama)
 
@@ -51,20 +56,28 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 
 **Migración aplicada:** el dueño corrió `20261021120000_social_post_claims.sql` en Supabase el 2026-10-21 ("Success"). Claude no puede leer esa base, así que no lo comprobó directamente. El código actual de producción sigue funcionando con ella: solo se agregaron estados, columnas y funciones.
 
-**Orden obligatorio para publicar:**
-1. Correr en Supabase (SQL Editor del proyecto `tkyqretgmnyeuqnihipl`) la migración `supabase/migrations/20261021120000_social_post_claims.sql`. Es compatible con el código actual: solo agrega estados, columnas y funciones.
-2. Después, hacer merge. Si se hace merge sin la migración, las colas de Instagram y Facebook no encuentran las funciones y no publican, pero tampoco duplican.
+## Pasadas del cron que coinciden: turno exclusivo (en esta rama)
 
-## karvic88 y la base de datos (2026-10-21)
+**Problema:** cron-job.org (cada 15 min) y el cron diario de Vercel (12:00 UTC) llegan casi juntos (el 2026-10-21, a 34 s). Las reservas ya impiden publicar dos veces el mismo post, pero no impiden que las dos pasadas **planifiquen** a la vez. `planPhotos` (foto y carrusel del día) y `planLinks` (post con enlace del día) leen "¿ya hay uno hoy?" y luego insertan: dos pasadas juntas podían crear dos posts del mismo día, y los dos se publicarían.
 
-| Hecho | Evidencia | ¿Verificado? |
-|---|---|---|
-| amazon-afiliado-xi.vercel.app usa **la misma base de datos** | Muestra los mismos 8 productos con **los mismos UUID** que ivethskin.com, y sus fotos responden 200 | Sí, de forma indirecta pero fuerte (los UUID son aleatorios) |
-| amazon-afiliado-xi tiene `CRON_SECRET` | `/api/cron` responde 401 (sin la variable sería 503) | Sí |
-| amazon-afiliado-xi es el proyecto de karvic88 | No pertenece a edvickar; karvic88 es el otro proyecto conectado al repositorio | **No** (sin acceso) |
-| El cron diario de Vercel de karvic88 se ejecuta contra esa base | No se pueden ver sus registros | **No: pendiente** |
+**Ahora:**
 
-**Pendiente:** el dueño de karvic88 debe revisar en Vercel → amazon-afiliado → Settings → Cron Jobs y Logs si `/api/cron` corre. Hasta entonces se asume que **puede** correr. Con esta rama ya no podría duplicar posts de Pinterest, Instagram ni Facebook, pero sí sumaría trabajo a la misma base.
+| Pieza | Qué hace |
+|---|---|
+| Tabla `cron_leases` + `acquire_cron_lease` (SQL) | Una sola fila `cron`. La pasada que llega primero la toma por 330 s (un poco más que el máximo de 300 s de la función). La segunda recibe `false`, escribe "cron run: skipped, another run is working" y termina sin hacer nada |
+| `release_cron_lease` | Al terminar, la pasada suelta el turno; solo puede soltarlo la pasada que lo tiene |
+| Pasada que muere | El turno vence solo a los 330 s; la siguiente pasada de 15 min corre normal |
+| Sin la migración | Si la función no existe todavía, la pasada sigue como antes y el registro agrega "(no lease: run the cron_lease migration)". El merge no rompe nada aunque falte la migración |
+
+**Pruebas:** `tests/cron-lease.test.ts` (PGlite): dos pasadas a la vez → solo una trabaja; otra pasada no puede soltar un turno ajeno; un turno vencido se puede volver a tomar.
+
+**Migraciones:**
+1. `20261021120000_social_post_claims.sql` — **aplicada** por el dueño (2026-10-21).
+2. `20261021150000_cron_lease.sql` — **pendiente**: la corre el dueño en el SQL Editor de `tkyqretgmnyeuqnihipl`. Es compatible con el código de producción actual (solo agrega una tabla y dos funciones). Conviene correrla antes del merge.
+
+## karvic88 y la base de datos (resuelto 2026-10-21)
+
+amazon-afiliado-xi.vercel.app (karvic88) usaba **la misma base de datos** (los mismos 8 productos con los mismos UUID) y tenía `CRON_SECRET`. No se pudo ver si su cron corría. El dueño **eliminó** ese proyecto el 2026-10-21; ahora xi responde `DEPLOYMENT_NOT_FOUND`. Ya no hay otro proyecto que trabaje contra esa base.
 
 ## Estado verificado
 
@@ -75,7 +88,7 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 | Facebook (Página) | ✅ Reels y post diario con enlace por API | Código (`facebook.ts`) |
 | TikTok | ❌ Sin integración; manual en TikTok Studio | No hay código de TikTok |
 | Cron | **Cada 15 min** (cron-job.org) + diario de Vercel (12:00 UTC) | Registros de `/api/cron` en edvickar: "cron run: 1 ok" a :00/:15/:30/:45. ChatGPT supuso "diario" porque no vio los registros |
-| Pasadas que se cruzan | ⚠️ A las 12:00 hubo **dos pasadas a 34 s** (cron-job.org 12:00:15 y Vercel 12:00:49) | Mismos registros |
+| Pasadas que se cruzan | ⚠️ A las 12:00 hubo **dos pasadas a 34 s** (cron-job.org 12:00:15 y Vercel 12:00:49). **En esta rama:** turno exclusivo (`cron_leases`); la segunda pasada se salta | Mismos registros; `tests/cron-lease.test.ts` |
 | Cola de Pins | Reclamo atómico (`claim_pin`): 1 Pin vencido por cuenta y pasada; límites de 5/día, 60 min, 9 am–9 pm NY | `publishNext`, `scheduleApproved` |
 | Colas de Instagram y Facebook | ✅ **En esta rama:** reserva atómica por pasada y estado `uncertain` (ver arriba). Migración `20261021120000_social_post_claims.sql` **aplicada** (2026-10-21, la reportó el dueño); el código nuevo entra con el merge | `publishReels`, `publishFacebook`, `claim_instagram_posts`, `claim_facebook_posts` y pruebas `social-claims` / `social-outcome` |
 | Métricas de Pinterest | Impresiones, guardados y clics salientes por día (READY + ESTIMATE) | `syncAnalytics` |
@@ -109,7 +122,7 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 ## Pendientes y riesgos
 
 1. ✅ **Migración `20261021120000_social_post_claims.sql`:** aplicada por el dueño (2026-10-21). Después del merge, comprobar en los registros de `/api/cron` y en el panel que Instagram y Facebook siguen publicando (estados "Publicando" y "Revisar").
-2. **karvic88:** usa la misma base (mismos UUID). Falta confirmar si su cron corre (sin acceso). Decidir si sigue conectado; si no, desconectar el repositorio o quitarle `CRON_SECRET`.
+2. ✅ **karvic88:** eliminado por el dueño (2026-10-21). Queda solo edvickar. **Migración `20261021150000_cron_lease.sql`:** pendiente; la corre el dueño. Después del merge, los registros deben mostrar "skipped, another run is working" a las 12:00 UTC en la pasada que llegue segunda.
 3. **"Not found" con código 200:** lleva `noindex`, pero lo ideal es un 404 real. Pasa por el streaming de `loading.tsx`, lo mismo que hoy en producción.
 4. **Medición:**
    - crear los tracking IDs en Associates (por ejemplo `ivethskin-pin-20`, `-ig-20`, `-fb-20`, `-tt-20`);
@@ -132,15 +145,15 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 ## Validación de esta rama
 
 - `npx tsc --noEmit` ✅
-- `npm test` 37 ✅ (dominio, base de datos, `traffic-source`, `social-claims` y `social-outcome`)
+- `npm test` 40 ✅ (dominio, base de datos, `traffic-source`, `social-claims`, `social-outcome` y `cron-lease`)
 - `npm run test:providers` 12 ✅
-- `npm run build` sin base de datos ✅ (con `SHOP_DEMO=1`: 8 productos)
-- Vistas previas de Vercel: edvickar ✅ y karvic88 ✅
+- `npm run build` sin base de datos ✅ y con `SHOP_DEMO=1` ✅
+- Vista previa de Vercel: solo edvickar (karvic88 eliminado)
 
 ## Siguiente tarea
 
 Antes de cualquier merge: revisión del usuario. Después:
-1. Merge del PR #1 cuando el dueño lo apruebe (la migración ya está aplicada) y revisar la primera pasada de Instagram y Facebook.
-2. Confirmar el cron de karvic88 y decidir si sigue conectado.
+1. El dueño corre `20261021150000_cron_lease.sql` en Supabase.
+2. Merge del PR #1 cuando el dueño lo apruebe; revisar la primera pasada de Instagram y Facebook y la de las 12:00 UTC (una debe decir "skipped").
 3. Configurar los tracking IDs por canal.
 4. Importar el reporte de Associates.
