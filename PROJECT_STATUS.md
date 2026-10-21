@@ -70,7 +70,6 @@ Disclosures should accompany the recommendation; video needs disclosure in the v
 - npm run typecheck: passed.
 - npm test launcher hit local IPC EPERM; equivalent node --import tsx --test tests/*.test.ts: 24 passed, 0 failed.
 - npm run build: compilation and TypeScript passed; prerender stopped because this local environment lacks NEXT_PUBLIC_SUPABASE_URL. No production credentials were copied.
-- Vercel preview build/status: check PR deployment after branch push. Do not label the PR production-ready until preview is READY and public/mobile routes are tested.
+- Vercel Preview dpl_CVVMMY2WAVtFiuJzN6tLUs3owdHe for commit 1157d0380fd9965f2f242756ef8e836a67506670: ERROR. Compilation and TypeScript passed; prerender failed with 'Falta configurar NEXT_PUBLIC_SUPABASE_URL en el servidor.' The allocated preview is not working. Configure an isolated test database/environment for Preview, then redeploy this branch. Do not copy production credentials merely to make the build pass. PR #2 remains draft: https://github.com/vjzuniromero89-stack/amazon-afiliado/pull/2 .
 - No social posts sent, database migrations applied, cron changed, or production release performed.
 - Next: validate preview/mobile; verify Pinterest Sandbox/Standard and actual connected accounts privately; then harden Meta queue claims before any cron increase. Obtain an Amazon report sample before implementing import.
-
