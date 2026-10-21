@@ -33,10 +33,19 @@ export async function sendOnce<T>(call: () => Promise<T>, hasResult: (r: T) => b
 
 type From = "pending" | "processing" | "uncertain";
 
-// The claim ends without publishing: the post goes back to where it was
-// (an "uncertain" post stays uncertain). Three failed tries end in "failed".
+// How long a post has been out, for the "too slow" limit: counted from when
+// it was due, not from when it was queued (a Reel can be queued days ahead).
+export function ageSinceDue(row: { created_at: string; scheduled_at?: string | null }, now = Date.now()) {
+  return now - Math.max(Date.parse(row.created_at), Date.parse(row.scheduled_at || row.created_at));
+}
+
+// The claim ends without publishing: the post goes back to where it was.
+// Three failed tries end in "failed". An "uncertain" post stays uncertain
+// (failing it could lead the owner to post it again), but its tries are
+// counted so the claim functions stop re-checking it after a few.
 export function releaseFields(from: string, attempts: number, error: string) {
-  if (from === "uncertain") return { status: "uncertain", error: error.slice(0, 500), claim_token: null };
+  if (from === "uncertain")
+    return { status: "uncertain", attempts: attempts + 1, error: error.slice(0, 500), claim_token: null };
   const next = attempts + 1;
   return {
     status: next >= 3 ? "failed" : (from as From),

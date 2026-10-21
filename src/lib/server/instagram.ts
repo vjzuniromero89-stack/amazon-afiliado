@@ -1,10 +1,10 @@
 import "server-only";
-import { admin, AppError, check, env, owned } from "./db";
+import { admin, AppError, check, checkNew, env, owned } from "./db";
 import { getSettings } from "./data";
 import { pinExtras, parseTitle } from "./generation";
 import { cleanProductName, detectCategory, storeDisclosure, storeOf } from "../domain";
 import type { Product } from "../types";
-import { instagramNext, MaybeSent, releaseFields, sendOnce, uncertainFields } from "../social-outcome";
+import { ageSinceDue, instagramNext, MaybeSent, releaseFields, sendOnce, uncertainFields } from "../social-outcome";
 
 // Instagram API with Instagram Login: a professional account publishes Reels
 // straight from the app, no Facebook Page needed.
@@ -231,7 +231,9 @@ export async function planPhotos(uid: string) {
       .filter((p) => at.getTime() - lastPhoto(p.id) > 5 * 864e5)
       .sort((a, b) => lastPhoto(a.id) - lastPhoto(b.id))[0];
     if (!pick) continue;
-    check(
+    // A run planning at the same moment may have made it already: the
+    // unique index allows one photo per user and time.
+    checkNew(
       await sb
         .from("instagram_posts")
         .insert({ user_id: uid, product_id: pick.id, kind: "photo", scheduled_at: at.toISOString() })
@@ -248,7 +250,7 @@ export async function planPhotos(uid: string) {
     if (at.getTime() < Date.now()) continue;
     if (rows.some((r) => r.kind === "carousel" && nyDate(new Date(r.scheduled_at)) === day)) continue;
     const picked = products.slice(0, 10);
-    check(
+    checkNew(
       await sb
         .from("instagram_posts")
         .insert({
@@ -313,6 +315,7 @@ type Post = {
   container_id: string | null;
   attempts: number;
   created_at: string;
+  scheduled_at: string;
   claim_token: string;
   claimed_from: string;
 };
@@ -340,8 +343,8 @@ export async function publishReels(uid: string) {
     const from = post.claimed_from;
     // Every write is guarded by this run's claim token: a run whose claim
     // was taken away (it ran over 10 minutes) cannot overwrite the post.
-    const save = async (fields: Record<string, unknown>) =>
-      check(
+    const save = async (fields: Record<string, unknown>) => {
+      const rows = check(
         await sb
           .from("instagram_posts")
           .update({ ...fields, claim_token: null })
@@ -349,6 +352,8 @@ export async function publishReels(uid: string) {
           .eq("claim_token", post.claim_token)
           .select("id"),
       );
+      if (!rows.length) throw new AppError("This run no longer holds the post.");
+    };
     const release = (msg: string) => save(releaseFields(from, post.attempts, msg));
     try {
       if (from === "pending") {
@@ -422,7 +427,7 @@ export async function publishReels(uid: string) {
           `${GRAPH}/${post.container_id}?${new URLSearchParams({ fields: "status_code,status", access_token: c.access_token })}`,
         ),
       );
-      const step = instagramNext(st.status_code, from, Date.now() - Date.parse(post.created_at));
+      const step = instagramNext(st.status_code, from, ageSinceDue(post));
       if (step === "published") {
         await save({
           status: "published",

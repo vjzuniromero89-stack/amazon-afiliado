@@ -21,6 +21,7 @@ before(async () => {
     "20261020230000_instagram_photos.sql",
     "20261021000000_facebook.sql",
     "20261021120000_social_post_claims.sql",
+    "20261021160000_plan_once.sql",
   ])
     await db.exec(migration(m));
   await db.query("insert into auth.users values ($1)", [u]);
@@ -119,4 +120,39 @@ test("posts scheduled later are not taken", async () => {
   await db.query("delete from instagram_posts");
   await db.query("insert into instagram_posts(user_id,product_id,scheduled_at) values ($1,$2,now()+interval '1 hour')", [u, product]);
   assert.deepEqual(await claimIg(), []);
+});
+
+test("two runs planning the same day: the second photo, carousel or link post is refused", async () => {
+  await db.query("delete from instagram_posts");
+  await db.query("delete from facebook_posts");
+  const at = "2026-10-25 23:00:00+00";
+  for (const kind of ["photo", "carousel"]) {
+    await db.query("insert into instagram_posts(user_id,product_id,kind,scheduled_at) values ($1,$2,$3,$4)", [u, product, kind, at]);
+    await assert.rejects(
+      db.query("insert into instagram_posts(user_id,product_id,kind,scheduled_at) values ($1,$2,$3,$4)", [u, product, kind, at]),
+      /instagram_posts_one_planned/,
+    );
+  }
+  await db.query("insert into facebook_posts(user_id,product_id,kind,scheduled_at) values ($1,$2,'link',$3)", [u, product, at]);
+  await assert.rejects(
+    db.query("insert into facebook_posts(user_id,product_id,kind,scheduled_at) values ($1,$2,'link',$3)", [u, product, at]),
+    /facebook_posts_one_planned/,
+  );
+  // A photo at another time of the same day (not planned) is not limited.
+  await db.query("insert into instagram_posts(user_id,product_id,kind,scheduled_at) values ($1,$2,'photo',$3)", [u, product, "2026-10-25 23:30:00+00"]);
+});
+
+test("uncertain posts go after the others and stop being re-checked after 8 tries", async () => {
+  await db.query("delete from instagram_posts");
+  // Three old uncertain posts whose check keeps failing, and one new post.
+  for (let i = 0; i < 3; i++)
+    await db.query(
+      "insert into instagram_posts(user_id,product_id,kind,status,container_id,scheduled_at,created_at,claimed_at) values ($1,$2,'photo','uncertain','c',now()-interval '2 days'-make_interval(mins=>$3),now()-interval '2 days',now()-interval '1 hour')",
+      [u, product, i],
+    );
+  await db.query("insert into instagram_posts(user_id,product_id,scheduled_at) values ($1,$2,now())", [u, product]);
+  const first = await db.query<{ claimed_from: string }>("select * from claim_instagram_posts($1, 1)", [u]);
+  assert.equal(first.rows[0].claimed_from, "pending", "the new post is not pushed out by the uncertain ones");
+  await db.query("update instagram_posts set status='uncertain', claim_token=null, attempts=8, claimed_at=now()-interval '1 hour'");
+  assert.deepEqual(await claimIg(), [], "after 8 tries they wait for the owner");
 });

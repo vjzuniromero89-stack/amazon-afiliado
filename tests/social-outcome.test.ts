@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  ageSinceDue,
   facebookReelNext,
   instagramNext,
   MaybeSent,
@@ -48,6 +49,18 @@ test("after a doubtful call the post is 'uncertain'; after a refusal it goes bac
   assert.equal(releaseFields("processing", 1, "bad").status, "processing");
   assert.equal(releaseFields("pending", 2, "bad").status, "failed");
   assert.equal(releaseFields("uncertain", 5, "bad").status, "uncertain", "an uncertain post is never failed or re-sent on its own");
+  assert.equal(releaseFields("uncertain", 5, "bad").attempts, 6, "its checks are counted");
+});
+
+test("the 'too slow' age starts when the post was due, not when it was queued", () => {
+  const now = Date.parse("2026-10-23T23:15:00Z");
+  // Queued two days ahead, due 15 minutes ago: 15 minutes, not 2 days.
+  const row = { created_at: "2026-10-21T15:00:00Z", scheduled_at: "2026-10-23T23:00:00Z" };
+  assert.equal(ageSinceDue(row, now), 15 * 60e3);
+  assert.equal(instagramNext("IN_PROGRESS", "processing", ageSinceDue(row, now)), "wait");
+  assert.equal(facebookReelNext({ publishing_phase: { status: "not_started" } }, "processing", ageSinceDue(row, now)).step, "wait");
+  // Queued after it was due ("now" posts): counted from the queueing.
+  assert.equal(ageSinceDue({ created_at: "2026-10-23T23:10:00Z", scheduled_at: "2026-10-23T23:00:00Z" }, now), 5 * 60e3);
 });
 
 test("Instagram: an uncertain post is checked, published only if its container is not published yet", () => {

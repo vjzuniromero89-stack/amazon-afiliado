@@ -1,11 +1,11 @@
 import "server-only";
-import { admin, AppError, check, env, owned } from "./db";
+import { admin, AppError, check, checkNew, env, owned } from "./db";
 import { getSettings } from "./data";
 import { pinExtras, parseTitle } from "./generation";
 import { cleanProductName, detectCategory, storeDisclosure, storeOf } from "../domain";
 import { nyDate, nyTime, TAGS, VIDEO_BUCKET } from "./instagram";
 import type { Product } from "../types";
-import { facebookReelNext, type FbVideoStatus, MaybeSent, releaseFields, sendOnce, uncertainFields } from "../social-outcome";
+import { ageSinceDue, facebookReelNext, type FbVideoStatus, MaybeSent, releaseFields, sendOnce, uncertainFields } from "../social-outcome";
 
 // Facebook Page through the same Meta app: each product's video as a Reel
 // and a daily post whose link card opens the product page on ivethskin.com.
@@ -183,7 +183,9 @@ export async function planLinks(uid: string) {
     if (rows.some((r) => nyDate(new Date(r.scheduled_at)) === day)) continue;
     const pick = [...products].filter((p) => at.getTime() - last(p.id) > 5 * 864e5).sort((a, b) => last(a.id) - last(b.id))[0];
     if (!pick) continue;
-    check(
+    // One link post per user and time (unique index): a run planning at the
+    // same moment may have made it already.
+    checkNew(
       await sb
         .from("facebook_posts")
         .insert({ user_id: uid, product_id: pick.id, kind: "link", scheduled_at: at.toISOString() })
@@ -218,6 +220,7 @@ type Post = {
   video_id: string | null;
   attempts: number;
   created_at: string;
+  scheduled_at: string;
   claim_token: string;
   claimed_from: string;
 };
@@ -248,8 +251,10 @@ export async function publishFacebook(uid: string) {
   for (const row of data as Post[]) {
     const from = row.claimed_from;
     // Every write is guarded by this run's claim token.
-    const write = async (fields: Record<string, unknown>) =>
-      check(
+    // A write that finds no row means the claim was taken away: stop here,
+    // before uploading or sending anything more for this post.
+    const write = async (fields: Record<string, unknown>) => {
+      const rows = check(
         await sb
           .from("facebook_posts")
           .update(fields)
@@ -257,6 +262,8 @@ export async function publishFacebook(uid: string) {
           .eq("claim_token", row.claim_token)
           .select("id"),
       );
+      if (!rows.length) throw new AppError("This run no longer holds the post.");
+    };
     const save = (fields: Record<string, unknown>) => write({ ...fields, claim_token: null });
     const release = (msg: string) => save(releaseFields(from, row.attempts, msg));
     try {
@@ -294,7 +301,7 @@ export async function publishFacebook(uid: string) {
         if (videoId) {
           // Already started on an earlier try: look before doing anything.
           st = (await get<{ status?: FbVideoStatus }>(`/${videoId}`, { fields: "status", access_token: token })).status || {};
-          const next = facebookReelNext(st, from, Date.now() - Date.parse(row.created_at));
+          const next = facebookReelNext(st, from, ageSinceDue(row));
           if (next.step === "failed") {
             await save({ status: "failed", error: `Facebook: ${next.problem}`.slice(0, 500) });
             continue;
@@ -358,7 +365,7 @@ export async function publishFacebook(uid: string) {
         fields: "status,permalink_url",
         access_token: token,
       });
-      const next = facebookReelNext(v.status || {}, from, Date.now() - Date.parse(row.created_at));
+      const next = facebookReelNext(v.status || {}, from, ageSinceDue(row));
       if (next.step === "failed") {
         await save({ status: "failed", error: `Facebook: ${next.problem}`.slice(0, 500) });
         continue;

@@ -111,6 +111,13 @@ export function check<T>({
   }
   return data as NonNullable<T>;
 }
+// For an insert that a unique index may refuse because another run already
+// made the same row: true when this call inserted it, false when it existed.
+export function checkNew(result: { error: { message: string; code?: string } | null }) {
+  if (result.error?.code === "23505") return false;
+  check({ data: null, ...result });
+  return true;
+}
 export async function owned(table: string, id: string, uid: string) {
   const row = check(
     await admin()
