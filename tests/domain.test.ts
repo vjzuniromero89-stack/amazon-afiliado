@@ -255,3 +255,26 @@ test("shop structured data: breadcrumbs from Home, item list of product pages, s
   assert.equal(siteGraph()["@graph"][0]["@type"], "Organization");
   assert.ok(!jsonLd({ name: "</script><b>" }).includes("<"));
 });
+
+test("shop test data: only in previews or SHOP_DEMO, real tagged Amazon links, valid product ids", async () => {
+  const { DEMO_ITEMS, demoShop } = await import("../src/lib/server/shop-demo");
+  const env = { ...process.env };
+  try {
+    process.env.VERCEL_ENV = "production";
+    delete process.env.SHOP_DEMO;
+    assert.equal(demoShop(), false);
+    process.env.VERCEL_ENV = "preview";
+    assert.equal(demoShop(), true);
+    delete process.env.VERCEL_ENV;
+    process.env.SHOP_DEMO = "1";
+    assert.equal(demoShop(), true);
+  } finally {
+    process.env = env;
+  }
+  assert.ok(DEMO_ITEMS.length >= 8);
+  for (const i of DEMO_ITEMS) {
+    assert.match(i.id, /^[0-9a-f-]{36}$/);
+    assert.match(i.link, /^https:\/\/www\.amazon\.com\/dp\/[A-Z0-9]{10}\?tag=ivethskin-20$/);
+  }
+  assert.equal(new Set(DEMO_ITEMS.map((i) => i.category)).size >= 4, true);
+});

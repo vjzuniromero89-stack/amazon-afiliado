@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { shopItem } from "@/lib/server/shop";
 import styles from "../../finds.module.css";
 import { breadcrumbs } from "../../seo";
-import { AdBar, Arrow, Chip, colors, family, Footer, GridNote, JsonLd, newIds, SiteHeader, slug, STORE_LINK } from "../../ui";
+import { AdBar, Arrow, Chip, colors, family, Footer, JsonLd, newIds, SiteHeader, slug, STORE_LINK } from "../../ui";
 
 // One find on its own page: every photo, the label facts and the store link.
 // Served as ivethskin.com/p/<id> (the proxy rewrites it here).
@@ -100,7 +100,8 @@ export default async function FindPage({ params }: Props) {
               See it on {item.store} <Arrow />
             </a>
             <p className={styles.note}>
-              #ad · Affiliate link. It opens {item.store}, where you see the price and availability.
+              #ad · I may earn a commission from this link. It opens {item.store}, where you see the price and
+              availability.
             </p>
           </section>
         </div>
@@ -108,7 +109,6 @@ export default async function FindPage({ params }: Props) {
         {more.length > 0 && (
           <section className={styles.moreFinds} aria-labelledby="more">
             <h2 id="more">{same.length ? `More in ${item.category}` : "More finds"}</h2>
-            <GridNote />
             <div className={`${styles.grid} ${styles.light}`}>
               {more.map((i) => (
                 <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />

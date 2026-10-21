@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { shopItems } from "@/lib/server/shop";
 import styles from "../../finds.module.css";
 import { breadcrumbs, itemList } from "../../seo";
-import { AdBar, Chip, colors, Footer, GridNote, JsonLd, newIds, SiteHeader, slug } from "../../ui";
+import { AdBar, Chip, colors, Footer, JsonLd, newIds, SiteHeader, slug } from "../../ui";
 
 // One page per category: ivethskin.com/c/skincare. Newest find first.
 export const revalidate = 600;
@@ -59,7 +59,6 @@ export default async function CategoryPage({ params }: Props) {
             {mine.length} {mine.length === 1 ? "find" : "finds"}
           </p>
         </div>
-        <GridNote />
         <div className={`${styles.grid} ${styles.light}`}>
           {mine.map((i) => (
             <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />

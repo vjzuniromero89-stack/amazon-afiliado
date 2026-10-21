@@ -389,6 +389,12 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.affiliateNote {
+  margin: 0 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
 .facts {
   margin: 0 4px;
   font-size: 14px;
@@ -677,12 +683,3 @@ main > .light {
   }
 }
 
-/* The disclosure next to each grid of store buttons. */
-.gridNote {
-  margin: 0 0 16px;
-  font-size: 14px;
-  color: var(--ink-2);
-}
-.gridNoteDark {
-  color: #d9d0ee;
-}

@@ -92,6 +92,10 @@ export function Chip({ item, isNew }: { item: ShopItem; isNew?: boolean }) {
         <a href={`/p/${item.id}`}>{item.short}</a>
       </h3>
       {item.facts.length > 0 && <p className={styles.facts}>{item.facts.join(" · ")}</p>}
+      {/* FTC: the disclosure sits right next to each store link. */}
+      <p className={styles.affiliateNote}>
+        <b>#ad</b> · I may earn a commission from this link.
+      </p>
       <a className={styles.go} href={item.link} data-go={item.id} {...STORE_LINK}>
         See it on {item.store} <Arrow />
       </a>
@@ -132,16 +136,6 @@ export function Footer() {
 // Structured data for search engines (see seo.ts).
 export function JsonLd({ data }: { data: unknown }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(data) }} />;
-}
-
-// The disclosure again right above a grid of store buttons, so it sits next
-// to the links and not only at the top of the page (FTC: near the link).
-export function GridNote({ dark }: { dark?: boolean }) {
-  return (
-    <p className={`${styles.gridNote} ${dark ? styles.gridNoteDark : ""}`}>
-      <b>#ad</b> · The buttons are affiliate links: I may earn a commission if you buy.
-    </p>
-  );
 }
 
 // The two most recent finds wear the "New" flag for three weeks.

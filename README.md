@@ -1,5 +1,7 @@
 # Amazon Affiliate Command
 
+> Estado actualizado (2026-10-21): consulta [PROJECT_STATUS.md](PROJECT_STATUS.md). Este README conserva detalles históricos de V1; el código actual también incluye la tienda pública ivethskin.com y la publicación en Instagram y Facebook. Que exista el código no confirma que una cuenta esté conectada. TikTok no tiene integración de publicación.
+
 Aplicación Next.js App Router + Supabase, preparada para Vercel. Interfaz en español con las diez áreas solicitadas. Flujo predeterminado: **generar → revisar → aprobar → programar → publicar → medir**.
 
 ## Qué incluye

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { shopItems } from "@/lib/server/shop";
 import styles from "./finds.module.css";
 import { siteGraph } from "./seo";
-import { AdBar, Arrow, Chip, colors, family, Footer, GridNote, JsonLd, newIds, SiteHeader, slug, SOCIAL } from "./ui";
+import { AdBar, Arrow, Chip, colors, family, Footer, JsonLd, newIds, SiteHeader, slug, SOCIAL } from "./ui";
 
 // Public page for the bio links (TikTok, Instagram, Facebook, Pinterest) and
 // for ads: our own page first, then the store. Rebuilt every 10 minutes.
@@ -106,7 +106,6 @@ export default async function Finds() {
                 {items.length} {items.length === 1 ? "find" : "finds"} in all
               </p>
             </div>
-            <GridNote dark />
             <div className={styles.grid}>
               {newest.map((i) => (
                 <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />
