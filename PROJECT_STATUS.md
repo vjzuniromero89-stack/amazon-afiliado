@@ -1,9 +1,32 @@
 # PROJECT_STATUS — Amazon Affiliate Command / ivethskin.com
 
 Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
-- **Actualizado:** 2026-10-21 (revisión de duplicados terminada; tienda en inglés y panel en español).
-- **Rama:** `mejoras/auditoria-seo-medicion` (PR #1), que ya incluye lo compatible del PR #2 de ChatGPT (`codex/ivethskin-audit-20261021`).
-- **Sin merge ni producción** hasta la revisión del usuario.
+- **Actualizado:** 2026-10-21 (PR #1 en producción, verificado).
+- **Rama:** `main`. El PR #1 (`mejoras/auditoria-seo-medicion`, que incluye lo compatible del PR #2 de ChatGPT) se unió el 2026-10-21 con autorización del dueño (merge `c013b4b`).
+- **En producción** desde el 2026-10-21 14:43 UTC.
+
+## Producción después del merge (2026-10-21)
+
+**Despliegue:** Vercel no arrancó el despliegue al hacer el merge; a los 9 min Claude lanzó uno desde `main` (`dpl_EzpdWx…`). El aviso de GitHub llegó 45 s después y Vercel hizo otro con el **mismo commit** `c013b4b` (`dpl_6pK5q1…`), que es el que sirve ahora. Mismo código; no hace falta tocar nada.
+
+| Comprobación | Resultado |
+|---|---|
+| ivethskin.com | 200, `<html lang="en">`, sin texto del panel |
+| www.ivethskin.com | 308 → ivethskin.com |
+| Datos reales (no de prueba) | 21 productos en 6 categorías. Los datos de prueba son 12 productos en 4 categorías, y no incluyen Fashion ni Supplements. Las fotos salen de la base (200 imagen), sin la redirección del modo de prueba |
+| Categorías | Las 6 responden 200 con `lang="en"`: Beauty & Makeup 7, Fashion & Clothing 1, Fitness & Workout 3, Home Decor & Organization 4, Skincare 4, Supplements & Wellness 2 |
+| Productos | Los 21 responden 200 y sus 21 fotos responden 200 (imagen). La ficha tiene "See it on Amazon" y la nota "#ad · I may earn a commission from this link. It opens Amazon…" |
+| Enlaces | 8 en la portada: `https://www.amazon.com/dp/<ASIN>?tag=ivethskin-20`, con `rel="sponsored nofollow noopener noreferrer"` |
+| Avisos | 8 de 8 tarjetas con "#ad · I may earn a commission from this link."; barra superior y pie con "As an Amazon Associate I earn from qualifying purchases" |
+| Sitemap | 31 URLs |
+| Panel (amazon-afiliado-liard) | 200, `<html lang="es">` |
+| Cron sin clave | `/api/cron` → 401 (no corre nada) |
+| Cron real, 14:45:14 UTC (código nuevo) | "cron run: 1 ok, 0 failed, 1 accounts", **sin** el aviso "no lease": la función del turno existe y funcionó |
+| Errores y advertencias en producción (últimos 10 min) | Ninguno |
+
+**No se provocó ninguna publicación de prueba.** El cron solo se observó en sus registros.
+
+**Pendiente de observar:** la pasada de las 12:00 UTC de mañana, cuando cron-job.org y Vercel coinciden: una de las dos debe registrar "cron run: skipped, another run is working". Los primeros posts de Instagram y Facebook con el código nuevo deben pasar por "Publicando" y terminar publicados.
 
 ## Qué es
 
@@ -191,8 +214,8 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 
 ## Siguiente tarea
 
-Antes de cualquier merge: revisión del usuario. Después:
-1. ✅ Las tres migraciones están aplicadas (2026-10-21).
-2. Merge del PR #1 cuando el dueño lo apruebe; revisar la primera pasada de Instagram y Facebook y la de las 12:00 UTC (una debe decir "skipped").
+Cada cambio nuevo, en una rama con PR y revisión del dueño antes del merge.
+1. ✅ Migraciones aplicadas y PR #1 en producción (2026-10-21).
+2. Revisar mañana la pasada de las 12:00 UTC (una debe decir "skipped") y los primeros posts de Instagram y Facebook con el código nuevo.
 3. Configurar los tracking IDs por canal.
 4. Importar el reporte de Associates.
