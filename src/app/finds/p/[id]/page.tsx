@@ -90,7 +90,7 @@ export default async function FindPage({ params }: Props) {
               See it on {item.store} <Arrow />
             </a>
             <p className={styles.note}>
-              #ad · Affiliate link. It opens {item.store}, where you see the price and availability.
+              Ad · I may earn a commission from this link. It opens {item.store}, where you see the price and availability.
             </p>
           </section>
         </div>
@@ -111,3 +111,4 @@ export default async function FindPage({ params }: Props) {
     </>
   );
 }
+
