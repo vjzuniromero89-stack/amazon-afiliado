@@ -331,6 +331,12 @@
   font-weight: 700;
 }
 
+.affiliateNote {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0.75rem 0 0.5rem;
+}
+
 /* A product card. */
 .card {
   background: var(--wall);
@@ -676,3 +682,4 @@ main > .light {
     transition: none !important;
   }
 }
+

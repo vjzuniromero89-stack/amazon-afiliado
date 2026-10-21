@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { trafficSource } from "@/lib/traffic-source";
 
 // Counts taps on the store buttons (a[data-go]) without touching the
 // affiliate link itself. The first outside site a visitor came from
@@ -8,10 +9,13 @@ export function Tracker() {
   useEffect(() => {
     let source = "";
     try {
-      const from = document.referrer ? new URL(document.referrer).hostname : "";
       const utm = new URLSearchParams(location.search).get("utm_source") || "";
-      if (utm || (from && from !== location.hostname)) sessionStorage.setItem("src", utm || from);
-      source = sessionStorage.getItem("src") || "";
+      source = trafficSource(utm, document.referrer, location.hostname);
+      try {
+        const first = sessionStorage.getItem("src");
+        if (first) source = trafficSource(first, "", location.hostname);
+        else if (source) sessionStorage.setItem("src", source);
+      } catch { /* Keep the current source when storage is unavailable. */ }
     } catch {
       /* Private mode: the tap still counts, without a source. */
     }
@@ -26,3 +30,4 @@ export function Tracker() {
   }, []);
   return null;
 }
+

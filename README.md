@@ -1,5 +1,7 @@
 # Amazon Affiliate Command
 
+> Estado actualizado (2026-10-21): consulta [PROJECT_STATUS.md](PROJECT_STATUS.md). Este README conserva detalles históricos de V1; el código actual también incluye el catálogo público Ivethskin.com y publicación para Instagram y Facebook. La presencia del código no confirma que una cuenta esté conectada. TikTok sigue sin integración de publicación encontrada.
+
 Aplicación Next.js App Router + Supabase, preparada para Vercel. Interfaz en español con las diez áreas solicitadas. Flujo predeterminado: **generar → revisar → aprobar → programar → publicar → medir**.
 
 ## Qué incluye
@@ -197,3 +199,4 @@ tests/                    pruebas de dominio y base de datos
 - [OpenAI Chat API](https://developers.openai.com/api/reference/resources/chat)
 
 Las credenciales, aprobación de Pinterest y comprobación de una publicación real dependen de tus cuentas. Ningún resultado de pruebas locales significa que una cuenta externa ya esté conectada o aprobada.
+

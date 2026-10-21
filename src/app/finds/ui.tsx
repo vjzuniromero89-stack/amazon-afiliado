@@ -91,6 +91,7 @@ export function Chip({ item, isNew }: { item: ShopItem; isNew?: boolean }) {
         <a href={`/p/${item.id}`}>{item.short}</a>
       </h3>
       {item.facts.length > 0 && <p className={styles.facts}>{item.facts.join(" · ")}</p>}
+      <p className={styles.affiliateNote}>Ad · I may earn a commission from this link.</p>
       <a className={styles.go} href={item.link} data-go={item.id} {...STORE_LINK}>
         See it on {item.store} <Arrow />
       </a>
@@ -151,3 +152,4 @@ export function TextPage({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+
