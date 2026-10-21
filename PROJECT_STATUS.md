@@ -1,7 +1,7 @@
 # PROJECT_STATUS — Amazon Affiliate Command / ivethskin.com
 
 Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
-- **Actualizado:** 2026-10-21 (karvic88 eliminado; turno exclusivo del cron).
+- **Actualizado:** 2026-10-21 (revisión de duplicados terminada; tienda en inglés y panel en español).
 - **Rama:** `mejoras/auditoria-seo-medicion` (PR #1), que ya incluye lo compatible del PR #2 de ChatGPT (`codex/ivethskin-audit-20261021`).
 - **Sin merge ni producción** hasta la revisión del usuario.
 
@@ -74,6 +74,36 @@ Antes, los dos proyectos publicaban en GitHub un estado con el mismo nombre ("Ve
 **Migraciones:**
 1. `20261021120000_social_post_claims.sql` — **aplicada** por el dueño (2026-10-21).
 2. `20261021150000_cron_lease.sql` — **aplicada** por el dueño (2026-10-21, "Success"). El código de producción actual no la usa todavía; entra en uso con el merge.
+3. `20261021160000_plan_once.sql` — **pendiente** (ver la revisión de abajo). La corre el dueño **antes** del merge. Compatible con el código actual: agrega dos índices y reemplaza las dos funciones de reserva.
+
+## Revisión contra publicaciones duplicadas (2026-10-21)
+
+Revisión completa del código de reservas, del cron y de las migraciones. Hallazgos y qué se hizo:
+
+| # | Hallazgo | Riesgo | Arreglo |
+|---|---|---|---|
+| 1 | El límite "tardó demasiado" (6 h) contaba desde que el post se **creó**, no desde que se **programó** | Un Reel programado días antes se marcaba "falló" en su primera revisión aunque Facebook lo publicara después; rehacerlo duplicaba. En Instagram se perdía | ✅ `ageSinceDue`: cuenta desde la hora programada |
+| 2 | Los interruptores del panel (fotos y posts automáticos) planifican fuera del turno del cron | Dos fotos o dos posts con enlace el mismo día si coinciden con una pasada | ✅ Índices únicos: un post planificado por usuario y hora (`instagram_posts_one_planned`, `facebook_posts_one_planned`); el segundo se rechaza y se omite (`checkNew`) |
+| 3 | Un post `uncertain` cuya revisión siempre falla se reclamaba cada 15 min para siempre, primero en la fila | Quitaba lugar a posts nuevos (máximo 3 por pasada) | ✅ Los inciertos van al final y dejan de revisarse tras 8 intentos (quedan en "Revisar en …" para el dueño) |
+| 4 | Una escritura con la ficha vencida no actualizaba nada, pero la pasada seguía subiendo y publicando | Duplicado si una pasada pasara de 10 min (hoy el máximo es 5) | ✅ Si no se actualiza ninguna fila, la pasada se detiene para ese post |
+| 5 | En ivethskin.com, una dirección rara bajo `/finds/...` mostraba la página 404 del panel en español | Texto del panel privado en la tienda | ✅ Página 404 global neutra en inglés, con una línea en español y sin enlace al panel |
+| 6 | Rama muerta para posts con enlace inciertos (`facebook.ts`) | Ninguno | Se deja como protección |
+| 7 | `claim_token: null` se pone en dos lugares | Ninguno | Se deja |
+| 8 | No hay prueba de la ruta `/api/cron` en sí (saltar o seguir sin turno) | Bajo | Se deja: la lógica del turno está probada en SQL |
+
+**Pruebas nuevas:** índices de un post por día; inciertos al final y con tope; edad desde la hora programada; intentos contados en inciertos.
+
+## Idioma de la tienda y del panel (2026-10-21)
+
+Antes toda la app tenía un solo layout raíz con `<html lang="es">`, así que ivethskin.com (en inglés) se declaraba en español, y sus páginas llevaban dentro el texto "Esta página no existe · Volver al Dashboard" del panel.
+
+| Parte | Layout raíz | `lang` |
+|---|---|---|
+| Tienda (`src/app/finds`) | `finds/layout.tsx` | `en` |
+| Panel privado (`src/app/(panel)`) | `(panel)/layout.tsx` | `es` |
+| URL que no existe | `global-not-found.tsx` (flag `experimental.globalNotFound`) | `en`, con una línea `lang="es"` |
+
+Las dos partes cargan el mismo `globals.css`, así que ninguna cambia de aspecto. La tienda tiene su propia página de error en inglés (`finds/error.tsx`). Pasar de la tienda al panel recarga la página completa (son dos layouts raíz). En la tienda no hay enlaces al panel.
 
 ## karvic88 y la base de datos (resuelto 2026-10-21)
 
@@ -145,7 +175,7 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 ## Validación de esta rama
 
 - `npx tsc --noEmit` ✅
-- `npm test` 40 ✅ (dominio, base de datos, `traffic-source`, `social-claims`, `social-outcome` y `cron-lease`)
+- `npm test` 43 ✅ (dominio, base de datos, `traffic-source`, `social-claims`, `social-outcome` y `cron-lease`)
 - `npm run test:providers` 12 ✅
 - `npm run build` sin base de datos ✅ y con `SHOP_DEMO=1` ✅
 - Vista previa de Vercel: solo edvickar (karvic88 eliminado)
@@ -153,7 +183,7 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 ## Siguiente tarea
 
 Antes de cualquier merge: revisión del usuario. Después:
-1. ✅ Las dos migraciones ya están aplicadas.
+1. El dueño corre `20261021160000_plan_once.sql` en Supabase (las dos anteriores ya están aplicadas).
 2. Merge del PR #1 cuando el dueño lo apruebe; revisar la primera pasada de Instagram y Facebook y la de las 12:00 UTC (una debe decir "skipped").
 3. Configurar los tracking IDs por canal.
 4. Importar el reporte de Associates.
