@@ -73,7 +73,7 @@ Antes, los dos proyectos publicaban en GitHub un estado con el mismo nombre ("Ve
 
 **Migraciones:**
 1. `20261021120000_social_post_claims.sql` — **aplicada** por el dueño (2026-10-21).
-2. `20261021150000_cron_lease.sql` — **pendiente**: la corre el dueño en el SQL Editor de `tkyqretgmnyeuqnihipl`. Es compatible con el código de producción actual (solo agrega una tabla y dos funciones). Conviene correrla antes del merge.
+2. `20261021150000_cron_lease.sql` — **aplicada** por el dueño (2026-10-21, "Success"). El código de producción actual no la usa todavía; entra en uso con el merge.
 
 ## karvic88 y la base de datos (resuelto 2026-10-21)
 
@@ -122,7 +122,7 @@ amazon-afiliado-xi.vercel.app (karvic88) usaba **la misma base de datos** (los m
 ## Pendientes y riesgos
 
 1. ✅ **Migración `20261021120000_social_post_claims.sql`:** aplicada por el dueño (2026-10-21). Después del merge, comprobar en los registros de `/api/cron` y en el panel que Instagram y Facebook siguen publicando (estados "Publicando" y "Revisar").
-2. ✅ **karvic88:** eliminado por el dueño (2026-10-21). Queda solo edvickar. **Migración `20261021150000_cron_lease.sql`:** pendiente; la corre el dueño. Después del merge, los registros deben mostrar "skipped, another run is working" a las 12:00 UTC en la pasada que llegue segunda.
+2. ✅ **karvic88:** eliminado por el dueño (2026-10-21). Queda solo edvickar. **Migración `20261021150000_cron_lease.sql`:** aplicada (2026-10-21). Después del merge, los registros deben mostrar "skipped, another run is working" a las 12:00 UTC en la pasada que llegue segunda.
 3. **"Not found" con código 200:** lleva `noindex`, pero lo ideal es un 404 real. Pasa por el streaming de `loading.tsx`, lo mismo que hoy en producción.
 4. **Medición:**
    - crear los tracking IDs en Associates (por ejemplo `ivethskin-pin-20`, `-ig-20`, `-fb-20`, `-tt-20`);
@@ -153,7 +153,7 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 ## Siguiente tarea
 
 Antes de cualquier merge: revisión del usuario. Después:
-1. El dueño corre `20261021150000_cron_lease.sql` en Supabase.
+1. ✅ Las dos migraciones ya están aplicadas.
 2. Merge del PR #1 cuando el dueño lo apruebe; revisar la primera pasada de Instagram y Facebook y la de las 12:00 UTC (una debe decir "skipped").
 3. Configurar los tracking IDs por canal.
 4. Importar el reporte de Associates.
