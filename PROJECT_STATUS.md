@@ -1,7 +1,7 @@
 # PROJECT_STATUS — Amazon Affiliate Command / ivethskin.com
 
 Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
-- **Actualizado:** 2026-10-21.
+- **Actualizado:** 2026-10-21 (reserva de publicaciones de Instagram y Facebook).
 - **Rama:** `mejoras/auditoria-seo-medicion` (PR #1), que ya incluye lo compatible del PR #2 de ChatGPT (`codex/ivethskin-audit-20261021`).
 - **Sin merge ni producción** hasta la revisión del usuario.
 
@@ -27,6 +27,43 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 
 **Riesgo:** si karvic88 usa la misma base de datos, su cron diario de `vercel.json` (12:00 UTC) también procesa la cola. Decisión pendiente del usuario: desconectar el repositorio en karvic88 o quitarle `CRON_SECRET`, pero no borrar nada sin revisar.
 
+## Publicaciones duplicadas en Instagram y Facebook: corrección (en esta rama)
+
+**Antes:** cada pasada leía las filas `pending` y `processing` con un SELECT y publicaba. Dos pasadas a la vez (cron-job.org y el cron de Vercel a las 12:00 UTC, o el proyecto de karvic88) podían publicar el mismo post. Un timeout después de publicar dejaba el post para reintentar, y lo **reenviaba**.
+
+**Ahora:**
+
+| Pieza | Qué hace |
+|---|---|
+| `claim_instagram_posts` / `claim_facebook_posts` (SQL) | Reservan los posts vencidos con `FOR UPDATE SKIP LOCKED`. Cada post pasa a `publishing` con una ficha (`claim_token`) de esa pasada; otra pasada no lo puede tomar |
+| Escrituras con la ficha | Cada actualización exige `claim_token` = la ficha de la pasada. Una pasada cuya reserva venció no puede sobrescribir |
+| `sendOnce` | La llamada que publica se envía **una sola vez** por reserva, con límite de 60 s. Si falla con un 4xx, nada se publicó: se reintenta en otra pasada (3 intentos). Si falla por timeout, conexión cortada, 5xx o respuesta sin id, quizás sí se publicó: el post queda `uncertain` |
+| Instagram `uncertain` | Se revisa cada 15 min preguntando el estado del contenedor. `PUBLISHED`: queda publicado, sin repetirlo. `FINISHED`: se publica ahora (un contenedor se publica una sola vez). `ERROR` o `EXPIRED`: falla |
+| Facebook Reel | El `video_id` se guarda apenas se inicia la subida y se reutiliza siempre; nunca hay un segundo `start`. Si es `uncertain`, se revisa el estado del video: publicado, en curso o "finish nunca llegó" (se reenvía para el **mismo** video) |
+| Facebook post con enlace | Si queda `uncertain`, **no** se reenvía solo: el panel muestra "Revisar en Facebook" |
+| Pasada que muere a la mitad | Un post en `publishing` por más de 10 min pasa a `uncertain`. Si solo se estaba creando el contenedor, o iniciando la subida sin video, vuelve a `pending` (nada se publicó) |
+| Panel | Muestra "Revisar en Instagram", "Revisar en Facebook" y "Publicando" |
+
+**Pruebas:**
+- `tests/social-claims.test.ts`: Postgres real (PGlite) con todas las migraciones. Tres pasadas a la vez no comparten ningún post. Una escritura con una ficha vieja no cambia nada. Una pasada muerta pasa a `uncertain` y no se reenvía. Los posts con enlace inciertos esperan al dueño.
+- `tests/social-outcome.test.ts`: un timeout después de publicar genera `MaybeSent` (una sola llamada); un 4xx se puede reintentar; reconciliación de Instagram y Facebook.
+- **Límite:** PGlite atiende una consulta a la vez. La prueba demuestra que la reserva cambia el estado y que otra pasada ya no encuentra el post. El bloqueo en paralelo lo da `FOR UPDATE SKIP LOCKED` de Postgres en Supabase.
+
+**Orden obligatorio para publicar:**
+1. Correr en Supabase (SQL Editor del proyecto `tkyqretgmnyeuqnihipl`) la migración `supabase/migrations/20261021120000_social_post_claims.sql`. Es compatible con el código actual: solo agrega estados, columnas y funciones.
+2. Después, hacer merge. Si se hace merge sin la migración, las colas de Instagram y Facebook no encuentran las funciones y no publican, pero tampoco duplican.
+
+## karvic88 y la base de datos (2026-10-21)
+
+| Hecho | Evidencia | ¿Verificado? |
+|---|---|---|
+| amazon-afiliado-xi.vercel.app usa **la misma base de datos** | Muestra los mismos 8 productos con **los mismos UUID** que ivethskin.com, y sus fotos responden 200 | Sí, de forma indirecta pero fuerte (los UUID son aleatorios) |
+| amazon-afiliado-xi tiene `CRON_SECRET` | `/api/cron` responde 401 (sin la variable sería 503) | Sí |
+| amazon-afiliado-xi es el proyecto de karvic88 | No pertenece a edvickar; karvic88 es el otro proyecto conectado al repositorio | **No** (sin acceso) |
+| El cron diario de Vercel de karvic88 se ejecuta contra esa base | No se pueden ver sus registros | **No: pendiente** |
+
+**Pendiente:** el dueño de karvic88 debe revisar en Vercel → amazon-afiliado → Settings → Cron Jobs y Logs si `/api/cron` corre. Hasta entonces se asume que **puede** correr. Con esta rama ya no podría duplicar posts de Pinterest, Instagram ni Facebook, pero sí sumaría trabajo a la misma base.
+
 ## Estado verificado
 
 | Área | Estado | Cómo se verificó |
@@ -38,7 +75,7 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 | Cron | **Cada 15 min** (cron-job.org) + diario de Vercel (12:00 UTC) | Registros de `/api/cron` en edvickar: "cron run: 1 ok" a :00/:15/:30/:45. ChatGPT supuso "diario" porque no vio los registros |
 | Pasadas que se cruzan | ⚠️ A las 12:00 hubo **dos pasadas a 34 s** (cron-job.org 12:00:15 y Vercel 12:00:49) | Mismos registros |
 | Cola de Pins | Reclamo atómico (`claim_pin`): 1 Pin vencido por cuenta y pasada; límites de 5/día, 60 min, 9 am–9 pm NY | `publishNext`, `scheduleApproved` |
-| Colas de Instagram y Facebook | ⚠️ Toman filas `pending` con SELECT, sin reclamo atómico | `publishReels`, `publishFacebook`. Con pasadas cruzadas podría salir un post doble (riesgo que señaló ChatGPT) |
+| Colas de Instagram y Facebook | ✅ **En esta rama:** reserva atómica por pasada y estado `uncertain` (ver arriba). **Hay que correr la migración `20261021120000_social_post_claims.sql` antes del merge** | `publishReels`, `publishFacebook`, `claim_instagram_posts`, `claim_facebook_posts` y pruebas `social-claims` / `social-outcome` |
 | Métricas de Pinterest | Impresiones, guardados y clics salientes por día (READY + ESTIMATE) | `syncAnalytics` |
 | Clics en la tienda | Toques en "See it on Amazon" por producto y fuente normalizada (sin IP, cookies ni rutas) | `shop_clicks` y `traffic-source.ts` |
 | Pedidos y comisiones de Amazon | ❌ No se importan | — |
@@ -69,8 +106,8 @@ Archivo compartido para revisar el avance (Claude, ChatGPT o una persona).
 
 ## Pendientes y riesgos
 
-1. **Colas de Instagram y Facebook sin reclamo atómico** y pasadas que se cruzan a las 12:00 UTC (y quizás el cron de karvic88). Agregar un reclamo atómico (`UPDATE … SET status='processing' WHERE id=? AND status='pending'`) antes de publicar. Prioridad alta.
-2. **karvic88:** que el usuario confirme si debe seguir conectado; si no, desconectar el repositorio o quitarle `CRON_SECRET`.
+1. **Migración `20261021120000_social_post_claims.sql`:** debe correrla el dueño en Supabase **antes** del merge. La corrección de duplicados ya está en el código de esta rama.
+2. **karvic88:** usa la misma base (mismos UUID). Falta confirmar si su cron corre (sin acceso). Decidir si sigue conectado; si no, desconectar el repositorio o quitarle `CRON_SECRET`.
 3. **"Not found" con código 200:** lleva `noindex`, pero lo ideal es un 404 real. Pasa por el streaming de `loading.tsx`, lo mismo que hoy en producción.
 4. **Medición:**
    - crear los tracking IDs en Associates (por ejemplo `ivethskin-pin-20`, `-ig-20`, `-fb-20`, `-tt-20`);
@@ -93,7 +130,7 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 ## Validación de esta rama
 
 - `npx tsc --noEmit` ✅
-- `npm test` 27 ✅ (dominio, más `traffic-source` del PR #2)
+- `npm test` 37 ✅ (dominio, base de datos, `traffic-source`, `social-claims` y `social-outcome`)
 - `npm run test:providers` 12 ✅
 - `npm run build` sin base de datos ✅ (con `SHOP_DEMO=1`: 8 productos)
 - Vistas previas de Vercel: edvickar ✅ y karvic88 ✅
@@ -101,7 +138,7 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 ## Siguiente tarea
 
 Antes de cualquier merge: revisión del usuario. Después:
-1. Reclamo atómico en las colas de Instagram y Facebook.
-2. Decidir sobre karvic88.
+1. Correr la migración de reservas en Supabase y luego hacer merge del PR #1.
+2. Confirmar el cron de karvic88 y decidir si sigue conectado.
 3. Configurar los tracking IDs por canal.
 4. Importar el reporte de Associates.

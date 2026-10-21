@@ -1284,7 +1284,9 @@ export function Workspace({
                                       >
                                         {reel.status === "failed"
                                           ? "Reel con error"
-                                          : Date.parse(reel.scheduled_at) > Date.now() + 60e3
+                                          : reel.status === "uncertain"
+                                            ? "Reel: revisar"
+                                            : Date.parse(reel.scheduled_at) > Date.now() + 60e3
                                             ? `Reel ${new Date(reel.scheduled_at).toLocaleDateString("es", { day: "numeric", month: "short" })}`
                                             : "Reel en cola"}
                                       </span>
@@ -2218,7 +2220,9 @@ function VideoLibrary({
                       ? "Reel publicado"
                       : reel.status === "failed"
                         ? "Reel con error"
-                        : Date.parse(reel.scheduled_at) > Date.now() + 60e3
+                        : reel.status === "uncertain"
+                          ? "Reel: revisar en Instagram"
+                          : Date.parse(reel.scheduled_at) > Date.now() + 60e3
                           ? `Reel programado: ${new Date(reel.scheduled_at).toLocaleString("es", {
                               weekday: "short",
                               day: "numeric",
@@ -3569,6 +3573,10 @@ function SettingsPanel({
                           </a>
                         ) : x.status === "failed" ? (
                           "Con error"
+                        ) : x.status === "uncertain" ? (
+                          "Revisar en Instagram"
+                        ) : x.status === "publishing" ? (
+                          "Publicando"
                         ) : (
                           "Programado"
                         )}
@@ -3640,7 +3648,9 @@ function SettingsPanel({
                           </a>
                         ) : x.status === "failed" ? (
                           "Con error"
-                        ) : x.status === "processing" ? (
+                        ) : x.status === "uncertain" ? (
+                          "Revisar en Facebook"
+                        ) : x.status === "processing" || x.status === "publishing" ? (
                           "Procesando"
                         ) : (
                           "Programado"

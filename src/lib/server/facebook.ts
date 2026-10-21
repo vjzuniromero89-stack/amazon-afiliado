@@ -5,6 +5,7 @@ import { pinExtras, parseTitle } from "./generation";
 import { cleanProductName, detectCategory, storeDisclosure, storeOf } from "../domain";
 import { nyDate, nyTime, TAGS, VIDEO_BUCKET } from "./instagram";
 import type { Product } from "../types";
+import { facebookReelNext, type FbVideoStatus, MaybeSent, releaseFields, sendOnce, uncertainFields } from "../social-outcome";
 
 // Facebook Page through the same Meta app: each product's video as a Reel
 // and a daily post whose link card opens the product page on ivethskin.com.
@@ -31,14 +32,15 @@ export function authorizeUrl(state: string) {
 
 async function json<T>(res: Response): Promise<T> {
   const body = (await res.json().catch(() => ({}))) as T & { error?: { message?: string } };
-  if (!res.ok) throw new AppError(`Facebook: ${body.error?.message || res.statusText}`);
+  // The HTTP status tells a refusal (4xx) from a server error (5xx).
+  if (!res.ok) throw new AppError(`Facebook: ${body.error?.message || res.statusText}`, res.status);
   return body;
 }
 
 const get = <T,>(path: string, params: Record<string, string>) =>
   fetch(`${GRAPH}${path}?${new URLSearchParams(params)}`).then((r) => json<T>(r));
-const post = <T,>(path: string, params: Record<string, string>) =>
-  fetch(`${GRAPH}${path}`, { method: "POST", body: new URLSearchParams(params) }).then((r) => json<T>(r));
+const post = <T,>(path: string, params: Record<string, string>, signal?: AbortSignal) =>
+  fetch(`${GRAPH}${path}`, { method: "POST", body: new URLSearchParams(params), signal }).then((r) => json<T>(r));
 
 // Code -> user token -> long-lived user token -> the Page's own token, which
 // does not expire while the owner keeps the app authorized.
@@ -208,51 +210,69 @@ export async function setAutoFacebook(uid: string, on: boolean) {
   return on;
 }
 
-type Post = { id: string; product_id: string; kind: string; status: string; video_id: string | null; attempts: number; created_at: string };
-type VideoStatus = {
-  status?: {
-    video_status?: string;
-    processing_phase?: { status?: string; error?: { message?: string } };
-    publishing_phase?: { status?: string; errors?: { message?: string }[] };
-  };
-  permalink_url?: string;
+type Post = {
+  id: string;
+  product_id: string;
+  kind: string;
+  status: string;
+  video_id: string | null;
+  attempts: number;
+  created_at: string;
+  claim_token: string;
+  claimed_from: string;
 };
 
-// One step per cron run: a link post goes out at once; a Reel is uploaded
-// by URL, then checked until Facebook finishes publishing it.
+// A call that publishes gets a time limit: a hung request becomes "maybe
+// sent" instead of using up the whole run.
+const SEND_TIMEOUT = 60_000;
+
+// One step per post and run. Each due post is first reserved for this run
+// only (claim_facebook_posts: FOR UPDATE SKIP LOCKED), so two runs that
+// overlap never handle the same post.
+// - A link post is one call that publishes. If it fails in a way that may
+//   have published, the post becomes "uncertain" and waits for the owner:
+//   there is no id to check, so it is never re-sent on its own.
+// - A Reel gets its video id first (nothing public yet) and keeps it: every
+//   later try reuses that same video, so it can never become two Reels. The
+//   "finish" call publishes; if it may have gone through, the next check
+//   asks Facebook for that video's status.
 export async function publishFacebook(uid: string) {
   const c = await connection(uid);
   if (!c) return { status: "idle" };
   const sb = admin();
   await planLinks(uid).catch(() => undefined);
-  const { data, error } = await sb
-    .from("facebook_posts")
-    .select("*")
-    .eq("user_id", uid)
-    .in("status", ["pending", "processing"])
-    .lte("scheduled_at", new Date().toISOString())
-    .order("scheduled_at")
-    .limit(3);
+  const { data, error } = await sb.rpc("claim_facebook_posts", { p_user: uid, p_limit: 3 });
   if (error || !data?.length) return { status: "idle" };
   const token = c.access_token;
   const done: string[] = [];
   for (const row of data as Post[]) {
-    const update = async (fields: Record<string, unknown>) =>
-      check(await sb.from("facebook_posts").update(fields).eq("id", row.id).select("id"));
-    const fail = async (msg: string) => {
-      const attempts = row.attempts + 1;
-      await update({ attempts, error: msg.slice(0, 500), ...(attempts >= 3 ? { status: "failed" } : {}) });
-    };
+    const from = row.claimed_from;
+    // Every write is guarded by this run's claim token.
+    const write = async (fields: Record<string, unknown>) =>
+      check(
+        await sb
+          .from("facebook_posts")
+          .update(fields)
+          .eq("id", row.id)
+          .eq("claim_token", row.claim_token)
+          .select("id"),
+      );
+    const save = (fields: Record<string, unknown>) => write({ ...fields, claim_token: null });
+    const release = (msg: string) => save(releaseFields(from, row.attempts, msg));
     try {
-      if (row.status === "pending" && row.kind === "link") {
+      if (from === "pending" && row.kind === "link") {
         const p = (await owned("products", row.product_id, uid)) as Product;
         const s = await getSettings(uid);
-        const made = await post<{ id: string }>(`/${c.page_id}/feed`, {
-          message: linkMessage(p, s.disclosure),
-          link: shopLink(p.id),
-          access_token: token,
-        });
-        await update({
+        const made = await sendOnce(
+          () =>
+            post<{ id: string }>(
+              `/${c.page_id}/feed`,
+              { message: linkMessage(p, s.disclosure), link: shopLink(p.id), access_token: token },
+              AbortSignal.timeout(SEND_TIMEOUT),
+            ),
+          (r) => Boolean(r?.id),
+        );
+        await save({
           status: "published",
           post_id: made.id,
           permalink: `https://www.facebook.com/${made.id}`,
@@ -262,51 +282,97 @@ export async function publishFacebook(uid: string) {
         done.push(`${row.id}:published`);
         continue;
       }
-      if (row.status === "pending") {
+
+      if (row.kind === "reel" && (from === "pending" || from === "uncertain")) {
         const p = (await owned("products", row.product_id, uid)) as Product;
         if (!p.video_path) {
-          await fail("El producto ya no tiene video.");
+          await save({ status: "failed", error: "El producto ya no tiene video." });
           continue;
         }
-        const signed = await sb.storage.from(VIDEO_BUCKET).createSignedUrl(p.video_path, 2 * 3600);
-        if (signed.error || !signed.data) throw new AppError("No se pudo leer el video.");
+        let videoId = row.video_id;
+        let st: FbVideoStatus = {};
+        if (videoId) {
+          // Already started on an earlier try: look before doing anything.
+          st = (await get<{ status?: FbVideoStatus }>(`/${videoId}`, { fields: "status", access_token: token })).status || {};
+          const next = facebookReelNext(st, from, Date.now() - Date.parse(row.created_at));
+          if (next.step === "failed") {
+            await save({ status: "failed", error: `Facebook: ${next.problem}`.slice(0, 500) });
+            continue;
+          }
+          if (next.step === "published" || st.publishing_phase?.status === "in_progress") {
+            // The earlier finish did arrive.
+            await save({ status: "processing", error: null });
+            done.push(`${row.id}:recovered`);
+            continue;
+          }
+        } else {
+          // Starting an upload session does not publish anything.
+          const start = await post<{ video_id: string }>(`/${c.page_id}/video_reels`, {
+            upload_phase: "start",
+            access_token: token,
+          });
+          if (!start?.video_id) throw new AppError("Facebook no devolvió el video.");
+          videoId = start.video_id;
+          // Kept at once, so no later try ever starts a second video.
+          await write({ video_id: videoId });
+        }
+        if (st.uploading_phase?.status !== "complete") {
+          const signed = await sb.storage.from(VIDEO_BUCKET).createSignedUrl(p.video_path, 2 * 3600);
+          if (signed.error || !signed.data) throw new AppError("No se pudo leer el video.");
+          const up = await fetch(`https://rupload.facebook.com/video-upload/v26.0/${videoId}`, {
+            method: "POST",
+            headers: { Authorization: `OAuth ${token}`, file_url: signed.data.signedUrl },
+          }).then((r) => json<{ success?: boolean }>(r));
+          if (!up.success) throw new AppError("Facebook no aceptó el video.");
+        }
         const s = await getSettings(uid);
-        const start = await post<{ video_id: string }>(`/${c.page_id}/video_reels`, {
-          upload_phase: "start",
-          access_token: token,
-        });
-        const up = await fetch(`https://rupload.facebook.com/video-upload/v26.0/${start.video_id}`, {
-          method: "POST",
-          headers: { Authorization: `OAuth ${token}`, file_url: signed.data.signedUrl },
-        }).then((r) => json<{ success?: boolean }>(r));
-        if (!up.success) throw new AppError("Facebook no aceptó el video.");
-        await post(`/${c.page_id}/video_reels`, {
-          upload_phase: "finish",
-          video_id: start.video_id,
-          video_state: "PUBLISHED",
-          description: reelDescription(p, s.disclosure),
-          access_token: token,
-        });
-        await update({ status: "processing", video_id: start.video_id });
+        // The call that publishes, at most once per claim, always for the same video.
+        await sendOnce(
+          () =>
+            post<{ success?: boolean }>(
+              `/${c.page_id}/video_reels`,
+              {
+                upload_phase: "finish",
+                video_id: videoId!,
+                video_state: "PUBLISHED",
+                description: reelDescription(p, s.disclosure),
+                access_token: token,
+              },
+              AbortSignal.timeout(SEND_TIMEOUT),
+            ),
+          (r) => r?.success !== false,
+        );
+        await save({ status: "processing", video_id: videoId, error: null });
         done.push(`${row.id}:started`);
         continue;
       }
-      const v = await get<VideoStatus>(`/${row.video_id}`, { fields: "status,permalink_url", access_token: token });
-      const st = v.status || {};
-      const problem =
-        st.processing_phase?.error?.message ||
-        st.publishing_phase?.errors?.[0]?.message ||
-        (st.video_status === "error" ? "Facebook no pudo procesar el video." : "");
-      if (problem) {
-        await update({ status: "failed", error: `Facebook: ${problem}`.slice(0, 500) });
+
+      if (from === "uncertain") {
+        // A link post: nothing to check, the owner decides.
+        await save({ status: "uncertain" });
         continue;
       }
-      if (st.publishing_phase?.status !== "complete") {
-        if (Date.now() - Date.parse(row.created_at) > 6 * 3600e3) await fail("Facebook tardó demasiado en publicar el video.");
+
+      // "processing": the Reel was sent; wait until Facebook publishes it.
+      const v = await get<{ status?: FbVideoStatus; permalink_url?: string }>(`/${row.video_id}`, {
+        fields: "status,permalink_url",
+        access_token: token,
+      });
+      const next = facebookReelNext(v.status || {}, from, Date.now() - Date.parse(row.created_at));
+      if (next.step === "failed") {
+        await save({ status: "failed", error: `Facebook: ${next.problem}`.slice(0, 500) });
+        continue;
+      }
+      if (next.step === "too-slow") {
+        await save({ status: "failed", error: "Facebook tardó demasiado en publicar el video." });
+        continue;
+      }
+      if (next.step !== "published") {
+        await save({ status: "processing" });
         continue;
       }
       const link = v.permalink_url || "";
-      await update({
+      await save({
         status: "published",
         post_id: row.video_id,
         permalink: link ? (link.startsWith("http") ? link : `https://www.facebook.com${link}`) : null,
@@ -315,7 +381,8 @@ export async function publishFacebook(uid: string) {
       });
       done.push(`${row.id}:published`);
     } catch (e) {
-      await fail(e instanceof Error ? e.message : "Error de Facebook");
+      const msg = e instanceof Error ? e.message : "Error de Facebook";
+      await (e instanceof MaybeSent ? save(uncertainFields(msg)) : release(msg)).catch(() => undefined);
     }
   }
   return { status: done.length ? "worked" : "waiting", done };
