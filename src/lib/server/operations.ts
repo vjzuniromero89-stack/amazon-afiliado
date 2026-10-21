@@ -15,6 +15,7 @@ import {
 import { imageProvider } from "./artwork";
 import { queueReel } from "./instagram";
 import { queueFacebookReel } from "./facebook";
+import { channelTags } from "../channels";
 import { photoFor } from "./images";
 import {
   pinterest,
@@ -239,7 +240,9 @@ export async function publishNext(uid: string) {
       getSettings(uid),
       token(uid),
     ]);
-    const link = pinLink(p, s.tracking_id);
+    // Pinterest's own tracking ID when set (AMAZON_CHANNEL_TAGS), so Amazon's
+    // reports separate Pin orders from the shop's.
+    const link = pinLink(p, channelTags(process.env.AMAZON_CHANNEL_TAGS).pinterest || s.tracking_id);
     // Target and Walmart Pins carry their own disclosure, not Amazon's.
     const ss = { ...s, disclosure: storeDisclosure(storeOf(p), s.disclosure) };
     const png = await imageProvider.render(c, ss, await photoFor(c), pinExtras(p as Product));

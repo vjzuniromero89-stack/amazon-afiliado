@@ -1,9 +1,10 @@
 import "server-only";
-import { admin, AppError, check, env, owned } from "./db";
+import { admin, AppError, check, checkNew, env, owned } from "./db";
 import { getSettings } from "./data";
 import { pinExtras, parseTitle } from "./generation";
 import { cleanProductName, detectCategory, storeDisclosure, storeOf } from "../domain";
 import type { Product } from "../types";
+import { ageSinceDue, failureFields, instagramNext, sendOnce } from "../social-outcome";
 
 // Instagram API with Instagram Login: a professional account publishes Reels
 // straight from the app, no Facebook Page needed.
@@ -31,7 +32,8 @@ async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const e = body.error;
     const msg = typeof e === "string" ? e : e?.message || body.error_message || res.statusText;
-    throw new AppError(`Instagram: ${msg}`);
+    // The HTTP status tells a refusal (4xx) from a server error (5xx).
+    throw new AppError(`Instagram: ${msg}`, res.status);
   }
   return body;
 }
@@ -229,7 +231,9 @@ export async function planPhotos(uid: string) {
       .filter((p) => at.getTime() - lastPhoto(p.id) > 5 * 864e5)
       .sort((a, b) => lastPhoto(a.id) - lastPhoto(b.id))[0];
     if (!pick) continue;
-    check(
+    // A run planning at the same moment may have made it already: the
+    // unique index allows one photo per user and time.
+    checkNew(
       await sb
         .from("instagram_posts")
         .insert({ user_id: uid, product_id: pick.id, kind: "photo", scheduled_at: at.toISOString() })
@@ -246,7 +250,7 @@ export async function planPhotos(uid: string) {
     if (at.getTime() < Date.now()) continue;
     if (rows.some((r) => r.kind === "carousel" && nyDate(new Date(r.scheduled_at)) === day)) continue;
     const picked = products.slice(0, 10);
-    check(
+    checkNew(
       await sb
         .from("instagram_posts")
         .insert({
@@ -311,141 +315,167 @@ type Post = {
   container_id: string | null;
   attempts: number;
   created_at: string;
+  scheduled_at: string;
+  claim_token: string;
+  claimed_from: string;
 };
 
-// One step per cron run: start a container, or publish one that is ready.
+// A call that publishes gets a time limit: a hung request becomes "maybe
+// sent" instead of using up the whole run.
+const SEND_TIMEOUT = 60_000;
+
+// One step per post and run. Each due post is first reserved for this run
+// only (claim_instagram_posts: FOR UPDATE SKIP LOCKED), so two runs that
+// overlap never handle the same post. Creating a container does not publish
+// anything; media_publish does, and it is sent at most once per claim. When
+// it fails in a way that may have published, the post becomes "uncertain"
+// and the next check asks Instagram: a container is published at most once,
+// and its status says PUBLISHED or still FINISHED.
 export async function publishReels(uid: string) {
   const sb = admin();
   await planPhotos(uid).catch(() => undefined);
-  const { data, error } = await sb
-    .from("instagram_posts")
-    .select("*")
-    .eq("user_id", uid)
-    .in("status", ["pending", "processing"])
-    .lte("scheduled_at", new Date().toISOString())
-    .order("created_at")
-    .limit(3);
-  if (error || !data?.length) return { status: "idle" };
+  if (!(await connection(uid))) return { status: "idle" };
   const c = await liveToken(uid);
+  const { data, error } = await sb.rpc("claim_instagram_posts", { p_user: uid, p_limit: 3 });
+  if (error || !data?.length) return { status: "idle" };
   const done: string[] = [];
   for (const post of data as Post[]) {
-    const fail = async (msg: string) => {
-      const attempts = post.attempts + 1;
-      check(
+    const from = post.claimed_from;
+    // Every write is guarded by this run's claim token: a run whose claim
+    // was taken away (it ran over 10 minutes) cannot overwrite the post.
+    const save = async (fields: Record<string, unknown>) => {
+      const rows = check(
         await sb
           .from("instagram_posts")
-          .update({ attempts, error: msg.slice(0, 500), ...(attempts >= 3 ? { status: "failed" } : {}) })
+          .update({ ...fields, claim_token: null })
           .eq("id", post.id)
+          .eq("claim_token", post.claim_token)
           .select("id"),
       );
+      if (!rows.length) throw new AppError("This run no longer holds the post.");
     };
+    // Set once Instagram accepted media_publish: from then on, never re-queue.
+    let sent = false;
     try {
-      if (post.status === "pending" && (post.kind === "photo" || post.kind === "carousel")) {
+      if (from === "pending") {
+        // Containers are not public: a failure here is simply retried.
         const s = await getSettings(uid);
-        // The AI label goes on the post; carousel children reject it.
-        const media = (fields: Record<string, string>) =>
-          fetch(`${GRAPH}/${c.ig_user_id}/media`, {
-            method: "POST",
-            body: new URLSearchParams({
-              ...fields,
-              ...(fields.is_carousel_item ? {} : { is_ai_generated: "true" }),
-              access_token: c.access_token,
-            }),
-          }).then((r) => json<{ id: string }>(r));
         let made: { id: string };
-        if (post.kind === "photo") {
-          const p = (await owned("products", post.product_id, uid)) as Product;
-          made = await media({ image_url: photoUrl(p.id), caption: reelCaption(p, s.disclosure) });
+        if (post.kind === "photo" || post.kind === "carousel") {
+          // The AI label goes on the post; carousel children reject it.
+          const media = (fields: Record<string, string>) =>
+            fetch(`${GRAPH}/${c.ig_user_id}/media`, {
+              method: "POST",
+              body: new URLSearchParams({
+                ...fields,
+                ...(fields.is_carousel_item ? {} : { is_ai_generated: "true" }),
+                access_token: c.access_token,
+              }),
+            }).then((r) => json<{ id: string }>(r));
+          if (post.kind === "photo") {
+            const p = (await owned("products", post.product_id, uid)) as Product;
+            made = await media({ image_url: photoUrl(p.id), caption: reelCaption(p, s.disclosure) });
+          } else {
+            const ids = post.product_ids?.length ? post.product_ids : [post.product_id];
+            const products = (
+              check(await sb.from("products").select("*").eq("user_id", uid).in("id", ids)) as Product[]
+            ).filter((p) => (p.images || []).length);
+            if (products.length < 2) {
+              await save({ status: "failed", error: "El carrusel necesita al menos 2 productos con foto." });
+              continue;
+            }
+            const children: string[] = [];
+            for (const p of products)
+              children.push((await media({ image_url: photoUrl(p.id), is_carousel_item: "true" })).id);
+            made = await media({
+              media_type: "CAROUSEL",
+              children: children.join(","),
+              caption: carouselCaption(products, s.disclosure),
+            });
+          }
         } else {
-          const ids = post.product_ids?.length ? post.product_ids : [post.product_id];
-          const products = (
-            check(await sb.from("products").select("*").eq("user_id", uid).in("id", ids)) as Product[]
-          ).filter((p) => (p.images || []).length);
-          if (products.length < 2) {
-            await fail("El carrusel necesita al menos 2 productos con foto.");
+          const p = (await owned("products", post.product_id, uid)) as Product;
+          if (!p.video_path) {
+            await save({ status: "failed", error: "El producto ya no tiene video." });
             continue;
           }
-          const children: string[] = [];
-          for (const p of products)
-            children.push((await media({ image_url: photoUrl(p.id), is_carousel_item: "true" })).id);
-          made = await media({
-            media_type: "CAROUSEL",
-            children: children.join(","),
-            caption: carouselCaption(products, s.disclosure),
-          });
-        }
-        check(
-          await sb.from("instagram_posts").update({ status: "processing", container_id: made.id }).eq("id", post.id).select("id"),
-        );
-        done.push(`${post.id}:started`);
-        continue;
-      }
-      if (post.status === "pending") {
-        const p = (await owned("products", post.product_id, uid)) as Product;
-        if (!p.video_path) {
-          await fail("El producto ya no tiene video.");
-          continue;
-        }
-        const signed = await sb.storage.from(VIDEO_BUCKET).createSignedUrl(p.video_path, 2 * 3600);
-        if (signed.error || !signed.data) throw new AppError("No se pudo leer el video.");
-        const s = await getSettings(uid);
-        const made = await json<{ id: string }>(
-          await fetch(`${GRAPH}/${c.ig_user_id}/media`, {
-            method: "POST",
-            body: new URLSearchParams({
-              media_type: "REELS",
-              video_url: signed.data.signedUrl,
-              caption: reelCaption(p, s.disclosure),
-              share_to_feed: "true",
-              thumb_offset: "1500",
-              is_ai_generated: "true",
-              access_token: c.access_token,
+          const signed = await sb.storage.from(VIDEO_BUCKET).createSignedUrl(p.video_path, 2 * 3600);
+          if (signed.error || !signed.data) throw new AppError("No se pudo leer el video.");
+          made = await json<{ id: string }>(
+            await fetch(`${GRAPH}/${c.ig_user_id}/media`, {
+              method: "POST",
+              body: new URLSearchParams({
+                media_type: "REELS",
+                video_url: signed.data.signedUrl,
+                caption: reelCaption(p, s.disclosure),
+                share_to_feed: "true",
+                thumb_offset: "1500",
+                is_ai_generated: "true",
+                access_token: c.access_token,
+              }),
             }),
-          }),
-        );
-        check(
-          await sb.from("instagram_posts").update({ status: "processing", container_id: made.id }).eq("id", post.id).select("id"),
-        );
+          );
+        }
+        if (!made?.id) throw new AppError("Instagram no devolvió el contenedor.");
+        await save({ status: "processing", container_id: made.id, error: null });
         done.push(`${post.id}:started`);
         continue;
       }
+
+      // "processing" or "uncertain": the container already exists.
       const st = await json<{ status_code: string; status?: string }>(
-        await fetch(`${GRAPH}/${post.container_id}?${new URLSearchParams({ fields: "status_code,status", access_token: c.access_token })}`),
+        await fetch(
+          `${GRAPH}/${post.container_id}?${new URLSearchParams({ fields: "status_code,status", access_token: c.access_token })}`,
+        ),
       );
-      if (st.status_code === "IN_PROGRESS") {
-        // Instagram keeps a container for 24 hours; give up after 6.
-        if (Date.now() - Date.parse(post.created_at) > 6 * 3600e3) await fail("Instagram tardó demasiado en procesar el video.");
+      const step = instagramNext(st.status_code, from, ageSinceDue(post));
+      if (step === "published") {
+        await save({
+          status: "published",
+          published_at: new Date().toISOString(),
+          error: "Instagram shows this container as published (confirmed after a doubtful attempt).",
+        });
+        done.push(`${post.id}:recovered`);
         continue;
       }
-      if (st.status_code !== "FINISHED") {
-        check(
-          await sb
-            .from("instagram_posts")
-            .update({ status: "failed", error: `Instagram: ${st.status || st.status_code}`.slice(0, 500) })
-            .eq("id", post.id)
-            .select("id"),
-        );
+      if (step === "wait") {
+        await save({ status: from });
         continue;
       }
-      const pub = await json<{ id: string }>(
-        await fetch(`${GRAPH}/${c.ig_user_id}/media_publish`, {
-          method: "POST",
-          body: new URLSearchParams({ creation_id: post.container_id!, access_token: c.access_token }),
-        }),
+      if (step === "too-slow") {
+        await save({ status: "failed", error: "Instagram tardó demasiado en procesar el video." });
+        continue;
+      }
+      if (step === "failed") {
+        await save({ status: "failed", error: `Instagram: ${st.status || st.status_code}`.slice(0, 500) });
+        continue;
+      }
+      // FINISHED and not published: publish it, once.
+      const pub = await sendOnce(
+        async () =>
+          json<{ id: string }>(
+            await fetch(`${GRAPH}/${c.ig_user_id}/media_publish`, {
+              method: "POST",
+              body: new URLSearchParams({ creation_id: post.container_id!, access_token: c.access_token }),
+              signal: AbortSignal.timeout(SEND_TIMEOUT),
+            }),
+          ),
+        (r) => Boolean(r?.id),
       );
+      sent = true;
       const info = await json<{ permalink?: string }>(
         await fetch(`${GRAPH}/${pub.id}?${new URLSearchParams({ fields: "permalink", access_token: c.access_token })}`),
       ).catch(() => ({ permalink: undefined }));
-      check(
-        await sb
-          .from("instagram_posts")
-          .update({ status: "published", media_id: pub.id, permalink: info.permalink || null, published_at: new Date().toISOString(), error: null })
-          .eq("id", post.id)
-          .select("id"),
-      );
+      await save({
+        status: "published",
+        media_id: pub.id,
+        permalink: info.permalink || null,
+        published_at: new Date().toISOString(),
+        error: null,
+      });
       done.push(`${post.id}:published`);
     } catch (e) {
-      await fail(e instanceof Error ? e.message : "Error de Instagram");
+      await save(failureFields(e, sent, from, post.attempts)).catch(() => undefined);
     }
   }
   return { status: done.length ? "worked" : "waiting", done };

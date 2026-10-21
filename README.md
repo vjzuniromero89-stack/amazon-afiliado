@@ -1,5 +1,7 @@
 # Amazon Affiliate Command
 
+> Estado actualizado (2026-10-21): consulta [PROJECT_STATUS.md](PROJECT_STATUS.md). Este README conserva detalles históricos de V1; el código actual también incluye la tienda pública ivethskin.com y la publicación en Instagram y Facebook. Que exista el código no confirma que una cuenta esté conectada. TikTok no tiene integración de publicación.
+
 Aplicación Next.js App Router + Supabase, preparada para Vercel. Interfaz en español con las diez áreas solicitadas. Flujo predeterminado: **generar → revisar → aprobar → programar → publicar → medir**.
 
 ## Qué incluye
@@ -123,7 +125,7 @@ Autopilot solo usa tu catálogo importado. No descubre ni compra productos autom
 2. En Vercel, **Add New → Project → Import Git Repository**. Si el repositorio contiene más carpetas, selecciona esta carpeta como Root Directory. Framework: Next.js. Node: 22 o superior. Install: `npm ci`. Build: `npm run build`.
 3. En **Settings → Environment Variables**, añade todas las variables necesarias de `.env.example`. `APP_URL` debe ser el origen público final sin barra final. `PINTEREST_REDIRECT_URI` debe ser ese origen más `/api/pinterest/callback`. No pongas credenciales de producción en previews públicas.
 4. Genera un secreto independiente para `CRON_SECRET` (usa el comando aleatorio de arriba otra vez). Vercel lo enviará como `Authorization: Bearer …` al worker.
-5. **El `vercel.json` incluido usa `0 12 * * *`: una ejecución diaria, compatible con el límite de cron de Hobby.** Vercel puede ejecutarla entre las 12:00 y las 12:59 UTC. El worker procesa como máximo un Pin vencido por cuenta en cada ejecución; los demás esperan a otro día o a que pulses “Procesar siguiente”. Para automatización frecuente, usa un plan compatible y cambia el schedule a `*/15 * * * *`, o configura un scheduler externo con HTTPS y el mismo Bearer secret. Actualiza también la etiqueta informativa de Scheduler si cambias la frecuencia.
+5. **Frecuencia real (verificada en los registros de Vercel, 2026-10-21):** el motor lo dispara un scheduler externo (cron-job.org, trabajo «Amazon afiliado») **cada 15 minutos** con `Authorization: Bearer CRON_SECRET`. El cron de Vercel en `vercel.json` (`0 12 * * *`, límite de Hobby) queda como respaldo diario. En cada pasada, por cuenta: autopilot, hasta 3 publicaciones de Instagram vencidas, Facebook, **un** Pin vencido y la sincronización de métricas de 2 Pins. Con pasadas cada 15 min caben hasta 4 Pins por hora; los límites reales los pone el planificador (5 al día, 60 min entre Pins, de 9 am a 9 pm de Nueva York). Si el scheduler externo se detiene, la cola sigue avanzando solo una vez al día.
 6. Despliega. Configura el dominio en Pinterest y completa OAuth desde ese dominio. Registra también la URL del sitio en Supabase Auth. No uses un callback de un despliegue preview efímero para la conexión permanente.
 7. Ejecuta el recorrido de aceptación de abajo. Comprueba los registros de la función `/api/cron` y la cola en Scheduler. El endpoint devuelve contadores `completed`, `failed` y `accounts`.
 
@@ -151,7 +153,7 @@ Para ejecutar manualmente un trabajo **ya vencido**, pulsa **Scheduler → Proce
 - Los endpoints de escritura validan sesión con Supabase y exigen el origen configurado; las consultas de propiedad preceden a las mutaciones. La clave de servicio es privilegiada: no la compartas y no la uses fuera del servidor.
 - La cuenta Supabase emplea sesión cookie renovada por `proxy.ts`. Mantén copias de seguridad y observa la cola y los logs. Cambiar el esquema o las políticas requiere volver a ejecutar las pruebas.
 - V1 se orienta a un workspace personal: el worker limita cada ejecución a 50 cuentas y un presupuesto de tiempo de 220 segundos; para una instalación grande, divide trabajo entre workers y añade particionado/paginación persistente.
-- La sincronización de métricas rota por Pins menos recientemente consultados: hasta 20 en una acción manual y 2 por cuenta en cada cron. Solo importa métricas diarias `READY` de los 30 días completos anteriores; no suma snapshots superpuestos. Los datos se actualizan mediante upsert por publicación/fecha.
+- La sincronización de métricas rota por Pins menos recientemente consultados: hasta 20 en una acción manual y 2 por cuenta en cada cron. Importa los días `READY` y `ESTIMATE` (las cifras recientes de Pinterest, que se corrigen en las siguientes pasadas) de los últimos 30 días hasta hoy; no suma snapshots superpuestos. Los datos se actualizan mediante upsert por publicación/fecha.
 - Las recomendaciones son descriptivas y exigen al menos 100 impresiones por plantilla en dos plantillas para comparar CTR. La hora agrupada es la hora en que se publicó el Pin, no la hora del clic.
 - No incluye importación de ventas/comisiones Amazon, Canva OAuth, sincronización automática de Storefront, acceso a Creators API ni modelo de imágenes conectado. Las plantillas PNG y la entrada manual sí están implementadas. No se necesita Canva para el flujo de V1.
 

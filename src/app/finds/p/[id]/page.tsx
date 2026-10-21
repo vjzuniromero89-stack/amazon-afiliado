@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { shopItem } from "@/lib/server/shop";
 import styles from "../../finds.module.css";
-import { AdBar, Arrow, Chip, colors, family, Footer, newIds, SiteHeader, slug, STORE_LINK } from "../../ui";
+import { breadcrumbs } from "../../seo";
+import { AdBar, Arrow, Chip, colors, family, Footer, JsonLd, newIds, SiteHeader, slug, STORE_LINK } from "../../ui";
 
 // One find on its own page: every photo, the label facts and the store link.
 // Served as ivethskin.com/p/<id> (the proxy rewrites it here).
@@ -18,7 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!found) return { title: "Ivethskin Finds" };
   const { item } = found;
   const title = `${item.short} · Ivethskin Finds`;
-  const description = [item.facts.join(", "), `My own photos and the label details. See it on ${item.store}. #ad`]
+  const description = [
+    `${item.short}${item.facts.length ? `: ${item.facts.join(", ")}` : ""}`,
+    `${item.category} find with the label details. See it on ${item.store}. #ad`,
+  ]
     .filter(Boolean)
     .join(". ");
   return {
@@ -50,6 +54,12 @@ export default async function FindPage({ params }: Props) {
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbs([
+          { name: item.category, path: `/c/${slug(item.category)}` },
+          { name: item.short, path: `/p/${item.id}` },
+        ])}
+      />
       <AdBar />
       <SiteHeader categories={categories} current={slug(item.category)} />
 
@@ -90,7 +100,8 @@ export default async function FindPage({ params }: Props) {
               See it on {item.store} <Arrow />
             </a>
             <p className={styles.note}>
-              #ad · Affiliate link. It opens {item.store}, where you see the price and availability.
+              #ad · I may earn a commission from this link. It opens {item.store}, where you see the price and
+              availability.
             </p>
           </section>
         </div>

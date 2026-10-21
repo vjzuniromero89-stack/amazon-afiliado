@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   poweredByHeader: false,
+  // Two root layouts (panel in Spanish, shop in English) need one page for
+  // URLs that match no route: app/global-not-found.tsx.
+  experimental: { globalNotFound: true },
   // Pin artwork fonts are read from disk at render time.
   outputFileTracingIncludes: {
     "/api/**": ["./src/lib/server/fonts/**"],

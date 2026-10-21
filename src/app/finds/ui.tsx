@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ShopItem } from "@/lib/server/shop";
 import styles from "./finds.module.css";
+import { jsonLd } from "./seo";
 
 // Each category wears one pastel from the logo's dots (pink, lilac, green,
 // yellow) or a sibling of them. Text on it is always the page ink, which
@@ -91,6 +92,10 @@ export function Chip({ item, isNew }: { item: ShopItem; isNew?: boolean }) {
         <a href={`/p/${item.id}`}>{item.short}</a>
       </h3>
       {item.facts.length > 0 && <p className={styles.facts}>{item.facts.join(" · ")}</p>}
+      {/* FTC: the disclosure sits right next to each store link. */}
+      <p className={styles.affiliateNote}>
+        <b>#ad</b> · I may earn a commission from this link.
+      </p>
       <a className={styles.go} href={item.link} data-go={item.id} {...STORE_LINK}>
         See it on {item.store} <Arrow />
       </a>
@@ -110,7 +115,7 @@ export function Footer() {
       <div className={`${styles.wrap} ${styles.footIn}`}>
         <p>
           <b>#ad</b> · Affiliate links: I may earn a commission from purchases at no extra cost to
-          you. As an Amazon Associate I earn from qualifying purchases. Photos are my own. Prices and
+          you. As an Amazon Associate I earn from qualifying purchases. Photos are ours; some are made with AI. Prices and
           availability are shown on the store&apos;s site.
         </p>
         <nav aria-label="About this site" className={styles.footLinks}>
@@ -126,6 +131,11 @@ export function Footer() {
       </div>
     </footer>
   );
+}
+
+// Structured data for search engines (see seo.ts).
+export function JsonLd({ data }: { data: unknown }) {
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(data) }} />;
 }
 
 // The two most recent finds wear the "New" flag for three weeks.

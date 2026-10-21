@@ -389,6 +389,12 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.affiliateNote {
+  margin: 0 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
 .facts {
   margin: 0 4px;
   font-size: 14px;
@@ -676,3 +682,4 @@ main > .light {
     transition: none !important;
   }
 }
+

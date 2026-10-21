@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { shopItems } from "@/lib/server/shop";
 import styles from "./finds.module.css";
-import { AdBar, Arrow, Chip, colors, family, Footer, newIds, SiteHeader, slug, SOCIAL } from "./ui";
+import { siteGraph } from "./seo";
+import { AdBar, Arrow, Chip, colors, family, Footer, JsonLd, newIds, SiteHeader, slug, SOCIAL } from "./ui";
 
 // Public page for the bio links (TikTok, Instagram, Facebook, Pinterest) and
 // for ads: our own page first, then the store. Rebuilt every 10 minutes.
@@ -9,7 +10,7 @@ export const revalidate = 600;
 
 const TITLE = "Ivethskin Finds · Home, skincare, style & gift ideas";
 const DESCRIPTION =
-  "Everyday skincare, beauty, home and gift finds from TikTok and Pinterest, with my own photos and the real label details.";
+  "Everyday skincare, beauty, home and gift finds from TikTok and Pinterest, with our photos (some made with AI) and the real label details.";
 // The home page shows the newest finds; each category has its own page.
 const NEWEST = 8;
 
@@ -45,6 +46,7 @@ export default async function Finds() {
     .slice(0, 4);
   return (
     <>
+      <JsonLd data={siteGraph()} />
       <AdBar />
       <SiteHeader categories={categories} current="" />
 
