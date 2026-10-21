@@ -212,6 +212,15 @@ El aviso debe ir junto a la recomendación. En video, dentro del video y no solo
 - `npm run build` sin base de datos ✅ y con `SHOP_DEMO=1` ✅
 - Vista previa de Vercel: solo edvickar (karvic88 eliminado)
 
+## TikTok (rama `tiktok/solicitud-accounts-api`, sin merge)
+
+- **Sigue manual.** La app no tiene conexión con TikTok y no envía nada.
+- **Vía oficial elegida:** Accounts API de TikTok API for Business (`/business/video/publish/`, scope "TikTok Accounts"), para publicar en una cuenta propia. La Content Posting API de TikTok for Developers no sirve para una herramienta interna de una sola cuenta. Detalle y enlaces: `docs/TIKTOK.md`.
+- **Bloqueos:**
+  - TikTok exige una empresa registrada (nombre legal y documento) y un correo `@ivethskin.com`; no acepta desarrolladores individuales.
+  - El tipo de cuenta de @ivethskin está **pendiente**: hay que comprobarlo con la sesión de esa cuenta.
+- **En la rama:** página `/terms`, prototipo "TikTok (sin conexión)" en Settings (`src/lib/tiktok.ts`) y el borrador del formulario de acceso, **no enviado**.
+
 ## Siguiente tarea
 
 Cada cambio nuevo, en una rama con PR y revisión del dueño antes del merge.

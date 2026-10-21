@@ -11,6 +11,7 @@ const SHOP_PAGES: Record<string, string> = {
   "/about": "/finds/about",
   "/privacy": "/finds/privacy",
   "/contact": "/finds/contact",
+  "/terms": "/finds/terms",
   "/sitemap.xml": "/finds/sitemap.xml",
   "/robots.txt": "/finds/robots.txt",
 };

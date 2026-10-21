@@ -63,6 +63,7 @@ import {
   type StoreId,
 } from "@/lib/domain";
 import type { Creative, Photo, Product, Settings, Snapshot } from "@/lib/types";
+import { tiktokPost } from "@/lib/tiktok";
 type Upload = (productId: string | null, file: File) => Promise<boolean>;
 
 export const sections = [
@@ -3662,6 +3663,60 @@ function SettingsPanel({
               )}
             </div>
           )}
+          {/* TikTok stays manual until TikTok approves the Accounts API
+              (docs/TIKTOK.md): this card only shows what would be sent. */}
+          <div className="integration-row">
+            <span className="integration-logo tiktok">TT</span>
+            <div>
+              <h3>TikTok</h3>
+              <p>Sin conexión · se publica a mano. Prototipo: la publicación automática espera la aprobación de TikTok</p>
+            </div>
+            <button className="secondary" disabled title="No hay conexión con TikTok: espera la aprobación de TikTok">
+              Sin conectar
+            </button>
+          </div>
+          {(() => {
+            const next = data.reels
+              .filter((r) => r.status !== "published" && r.status !== "failed")
+              .sort((a, b) => Date.parse(a.scheduled_at) - Date.parse(b.scheduled_at))
+              .slice(0, 5);
+            if (!next.length) return null;
+            return (
+              <div className="auto-photos">
+                <p className="tiktok-note">
+                  Vista previa, sin conexión: así saldría cada video si TikTok aprueba la app (etiqueta «Paid
+                  partnership» por ser afiliado, etiqueta de IA y este texto). La app no envía nada a TikTok; hoy se
+                  publica a mano desde TikTok Studio.
+                </p>
+                <ul className="ig-plan">
+                  {next.map((r) => {
+                    const p = data.products.find((x) => x.id === r.product_id);
+                    if (!p) return null;
+                    const post = tiktokPost(p, data.settings.disclosure);
+                    return (
+                      <li key={r.product_id}>
+                        <span>
+                          {new Date(r.scheduled_at).toLocaleString("es", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </span>
+                        <details>
+                          <summary>Video · {p.title.slice(0, 40)}</summary>
+                          <pre className="tiktok-caption">{post.caption}</pre>
+                        </details>
+                        <span className="reel-state">A mano</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })()}
           {data.connected && (
             <div className="board-tools">
               <button
