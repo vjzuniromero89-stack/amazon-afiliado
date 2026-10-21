@@ -1,14 +1,16 @@
 /*
-  Ivethskin Finds: a paint-chip rack. White wall, near-black ink, and one
-  three-shade family per category (--pale, --tone, --deep, set inline).
+  Ivethskin Finds: "pop" style. Warm cream page, deep plum ink, and the
+  logo's four dot colors (pink, lilac, green, yellow) as category tones
+  (--tone, set inline). Thick ink outlines and offset shadows make photos
+  and cards read like stickers.
 */
 .page {
-  --ink: #16161b;
-  --ink-2: #4a4a55;
-  --wall: #ffffff;
-  --rule: #e6e4ea;
+  --ink: #1d1630;
+  --ink-2: #4a3d6b;
+  --wall: #fff8ec;
+  --pop: #f8e08a;
+  --line: 2px solid var(--ink);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --lift: 0 1px 2px rgb(22 22 27 / 0.08), 0 10px 22px -14px rgb(22 22 27 / 0.35);
   min-height: 100vh;
   background: var(--wall);
   color: var(--ink);
@@ -66,623 +68,575 @@
   outline-offset: 3px;
 }
 .wrap {
-  max-width: 1180px;
+  max-width: 1220px;
   margin: 0 auto;
   padding-inline: 16px;
+}
+@media (min-width: 720px) {
+  .wrap {
+    padding-inline: 28px;
+  }
 }
 
 /* Disclosure, first thing on every page. */
 .ad {
   margin: 0;
   background: var(--ink);
-  color: #fff;
+  color: var(--wall);
   font-size: 13px;
   line-height: 1.4;
-  padding: 8px 16px;
+  padding: 9px 16px;
   text-align: center;
 }
 
-.top {
-  padding-top: 28px;
-  padding-bottom: 18px;
+/* Header: logo and name, then one pill per category. */
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 20px;
+  padding-top: 16px;
+  padding-bottom: 16px;
 }
 .mark {
   display: inline-flex;
   align-items: center;
-  gap: 14px;
-  font: 800 22px/1 var(--display);
-  letter-spacing: -0.01em;
+  gap: 10px;
   text-decoration: none;
+  font: 800 22px/1 var(--display), system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 .mark img {
-  width: 80px;
-  height: 80px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  flex: none;
+  border: var(--line);
 }
-.top h1 {
-  font: 800 clamp(40px, 9vw, 80px) / 0.95 var(--display);
-  letter-spacing: -0.035em;
-  margin: 26px 0 14px;
-  max-width: 12ch;
-  text-wrap: balance;
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.page .pills a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: var(--line);
+  background: var(--tone, var(--wall));
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14px;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+/* The app's globals.css colors "nav a:hover" white on navy; every shop link
+   inside a nav sets its own hover color with more weight. */
+.page .pills a:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 2px 2px 0 var(--ink);
+  color: var(--ink);
+  background: var(--tone, var(--wall));
+}
+.page .pills .pillAll,
+.page .pills .pillAll:hover {
+  background: var(--wall);
+}
+.page .pills a[aria-current="page"],
+.page .pills a[aria-current="page"]:hover {
+  background: var(--ink);
+  color: var(--wall);
+}
+
+/* Home hero: big headline and a stack of sticker photos. */
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 40px;
+  padding-top: 24px;
+  padding-bottom: 56px;
+}
+.heroText {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+.hero h1 {
+  margin: 0;
+  font: 800 clamp(46px, 8vw, 96px) / 0.95 var(--display), system-ui, sans-serif;
+  letter-spacing: -0.04em;
+}
+.hl {
+  background: var(--pop);
+  padding: 0 0.12em;
+  border-radius: 16px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 .lede {
-  margin: 0;
+  margin: 22px 0 28px;
+  font-size: 19px;
+  max-width: 470px;
   color: var(--ink-2);
-  font-size: 17px;
-  max-width: 44ch;
 }
-
-/* The rack: one strip per category, pulled up on hover. */
-.rack {
-  display: flex;
+.cta {
+  display: inline-flex;
+  align-items: center;
   gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 16px;
-  padding-top: 22px;
-  padding-bottom: 26px;
-  scrollbar-width: none;
-}
-.rack::-webkit-scrollbar {
-  display: none;
-}
-.strip {
-  flex: 1 0 140px;
-  max-width: 300px;
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
+  min-height: 54px;
+  padding: 0 28px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--wall) !important;
   text-decoration: none;
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: var(--lift);
-  transition:
-    transform 0.45s var(--ease),
-    box-shadow 0.45s var(--ease);
+  font-weight: 700;
+  font-size: 17px;
+  box-shadow: 4px 4px 0 var(--pop);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
-.strip:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 2px 4px rgb(22 22 27 / 0.1), 0 24px 32px -16px rgb(22 22 27 / 0.4);
+.cta:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--pop);
 }
-.strip > span {
-  display: block;
-  padding: 10px 12px;
-}
-.s1 {
-  background: var(--pale);
-  color: var(--deep);
-  font: 700 17px/1.1 var(--display);
-  min-height: 92px;
-}
-.s2 {
-  background: var(--tone);
-  color: var(--deep);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.35;
-  min-height: 58px;
-}
-.s2 em {
-  font-style: normal;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.s3 {
-  background: var(--deep);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  min-height: 58px;
-  display: flex !important;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-.s3 svg,
+.cta svg,
 .go svg,
-.back svg {
+.tileFoot svg {
   width: 16px;
   height: 16px;
-  flex: none;
+}
+.stack {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 8px 8px 32px;
+}
+.stack img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 24px;
+  border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--tone);
+}
+.stack img:nth-child(1) {
+  transform: rotate(-3deg);
+}
+.stack img:nth-child(2) {
+  transform: rotate(2deg) translateY(24px);
+}
+.stack img:nth-child(3) {
+  transform: rotate(2deg);
+}
+.stack img:nth-child(4) {
+  transform: rotate(-2deg) translateY(24px);
 }
 
-/* Sticky color tabs for the long scroll. */
-.tabs {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: rgb(255 255 255 / 0.96);
-  border-bottom: 1px solid var(--rule);
+.empty {
+  padding-block: 40px;
+  font-size: 18px;
 }
-.tabs > div {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  scrollbar-width: none;
+
+/* Category tiles. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding-bottom: 56px;
 }
-.tabs a {
-  flex: none;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 7px 12px 7px 9px;
-  border-radius: 999px;
-  border: 1px solid var(--rule);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  transition: border-color 0.2s;
-}
-.tabs a:hover {
-  border-color: var(--ink);
+.page .tile,
+.page .tile:hover {
   color: var(--ink);
-  background: transparent;
-}
-.strip:hover {
-  background: none;
-  color: inherit;
-}
-.tabs a i {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
   background: var(--tone);
 }
-.tabs a.all {
-  padding-left: 12px;
+.tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 170px;
+  padding: 20px;
+  border-radius: 26px;
+  border: var(--line);
+  background: var(--tone);
+  text-decoration: none;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
-/* The one reserved accent: the strip you are looking at. */
-.tabs a[aria-current],
-.tabs a[aria-current]:hover {
-  background: var(--deep, var(--ink));
-  color: #fff;
-  border-color: var(--deep, var(--ink));
+.tile:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 4px 4px 0 var(--ink);
 }
-.tabs a[aria-current] i {
-  box-shadow: 0 0 0 2px #fff;
+.tileName {
+  font: 800 28px/1 var(--display), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+.tileFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.tileFoot > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tileFoot img {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: var(--line);
 }
 
-/* A category section: a full-width band in its tone. */
-.sec {
-  padding-top: 34px;
-  scroll-margin-top: 58px;
+/* The dark shelf with the newest finds. */
+.dark {
+  background: var(--ink);
+  color: var(--wall);
+  padding-block: 64px;
 }
-.band {
-  background: var(--tone);
-  color: var(--deep);
-}
-.band > div {
+.headRow {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 22px;
-  padding-bottom: 20px;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-bottom: 28px;
 }
-.band h2 {
+.headRow h2 {
   margin: 0;
-  font: 800 clamp(28px, 6vw, 46px) / 1 var(--display);
+  font: 800 clamp(34px, 5vw, 56px) / 1 var(--display), system-ui, sans-serif;
   letter-spacing: -0.03em;
-  text-wrap: balance;
 }
-.band p {
+.headRow p {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
+  color: #d9d0ee;
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding-top: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 22px;
+}
+.more {
+  margin: 32px 0 0;
+  color: #d9d0ee;
+}
+.page .more a {
+  color: var(--pop);
+  font-weight: 700;
 }
 
-/* The chip: photo, number, name, small print, store bar. */
-.chip {
+/* A product card. */
+.card {
+  background: var(--wall);
+  color: var(--ink);
+  border-radius: 24px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  background: var(--tone);
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: var(--lift);
+  gap: 10px;
 }
-/* The newest chip wears the deepest shade. */
-.chip.fresh {
-  background: var(--deep);
-}
-.chip.fresh .body {
-  color: #fff;
-}
-.chip.fresh .facts li::before {
-  background: var(--tone);
-}
-.chip.fresh .flag {
-  background: var(--tone);
-  color: var(--deep);
-}
-.chip.fresh .go:hover {
-  background: #000;
+.light .card {
+  border: var(--line);
+  box-shadow: 4px 4px 0 var(--tone);
 }
 .photo {
   position: relative;
   display: block;
-  aspect-ratio: 1 / 1;
-  background: #fff;
-  overflow: hidden;
 }
 .photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   display: block;
-  transition: transform 0.6s var(--ease);
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 16px;
+  background: var(--tone);
 }
-.chip:hover .photo img {
-  transform: scale(1.04);
-}
+.tag,
 .flag {
   position: absolute;
-  left: 8px;
-  top: 8px;
-  background: var(--deep);
-  color: #fff;
+  top: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: var(--line);
   font-size: 12px;
   font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 4px;
 }
-.body {
-  padding: 12px 12px 0;
-  color: var(--deep);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.tag {
+  left: 10px;
+  background: var(--tone);
 }
-.no {
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
+.flag {
+  right: 10px;
+  background: var(--ink);
+  color: var(--wall);
+  border-color: var(--wall);
 }
-.chip h3 {
-  font: 700 clamp(17px, 2.2vw, 20px) / 1.12 var(--display);
-  letter-spacing: -0.015em;
-  margin: 0 0 3px;
+.card h3 {
+  margin: 0 4px;
+  font: 700 19px/1.2 var(--display), system-ui, sans-serif;
 }
-.chip .no {
-  display: block;
-  margin-bottom: 8px;
-}
-.chip h3 a {
+.card h3 a {
   text-decoration: none;
 }
-.chip h3 a:hover {
+.card h3 a:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 .facts {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 0;
+  margin: 0 4px;
   font-size: 14px;
-  display: grid;
-  gap: 2px;
-}
-.facts li::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
-  background: var(--deep);
-  margin: 0 7px 2px 0;
+  color: var(--ink-2);
 }
 .go {
-  margin: auto -12px 0;
-  display: flex;
-  justify-content: space-between;
+  margin-top: auto;
+  display: inline-flex;
+  justify-content: center;
   align-items: center;
   gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 14px;
   background: var(--ink);
-  color: #fff !important;
+  color: var(--wall) !important;
   text-decoration: none;
   font-weight: 700;
-  font-size: 14px;
-  padding: 13px 12px;
-  transition: background 0.2s;
+  font-size: 15px;
+  transition: background 0.2s var(--ease);
 }
 .go:hover {
-  background: var(--deep);
+  background: var(--ink-2);
 }
 
-/* A category's chips. On a phone a lone chip takes the whole row. */
-.stack {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding: 18px 16px 0;
+/* "Seen it on TikTok?" */
+.social {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  padding-block: 64px;
 }
-.stack > :only-child {
-  grid-column: 1 / -1;
+.social > div {
+  flex: 1 1 420px;
+  min-width: 0;
 }
-@media (min-width: 720px) {
-  .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 22px;
-  }
-  .rack {
-    padding-top: 30px;
-  }
-  /* Tall strips, like the cards on a paint rack. */
-  .s1 {
-    min-height: 150px;
-    font-size: 19px;
-  }
-  .s3 {
-    min-height: 96px;
-  }
-  /* The sections stand side by side as one rack: band on top, chips below. */
-  .shelf {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 34px 16px 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 22px;
-    align-items: start;
-  }
-  .shelf .sec {
-    padding-top: 0;
-    scroll-margin-top: 70px;
-  }
-  .shelf .sec.wide {
-    grid-column: span 2;
-  }
-  .shelf .band {
-    border-radius: 6px;
-  }
-  /* Every band takes two title lines, so the chips under them line up
-     across the rack whether a name fits on one line or two. */
-  .shelf .band > div {
-    padding: 16px 14px 14px;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 4px;
-    height: 120px;
-  }
-  /* Names take two lines on every chip, so the rows line up too. */
-  .shelf .chip h3 {
-    min-height: calc(2 * 1.12em);
-  }
-  .shelf .band h2 {
-    font-size: clamp(24px, 2.3vw, 30px);
-  }
-  .stack {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
-    padding: 14px 0 0;
-  }
-  .wide .stack {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.social h2 {
+  margin: 0 0 12px;
+  font: 800 clamp(34px, 5vw, 46px) / 1 var(--display), system-ui, sans-serif;
+  letter-spacing: -0.03em;
 }
-@media (min-width: 1080px) {
-  .grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.empty {
-  padding: 48px 0;
+.social p {
+  margin: 0 0 22px;
   font-size: 18px;
+  max-width: 440px;
+  color: var(--ink-2);
 }
-
-/* Product page */
-.back {
+.socialLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.socialLinks a {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: var(--line);
+  background: var(--tone);
   text-decoration: none;
+  font-weight: 700;
 }
-.back svg {
-  transform: rotate(180deg);
+.social > img {
+  flex: 1 1 340px;
+  min-width: 0;
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 28px;
+  border: 3px solid var(--ink);
+  box-shadow: 8px 8px 0 #bfe3b0;
 }
-.bar {
+
+/* Category page banner. */
+.banner {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding-top: 18px;
-  padding-bottom: 18px;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin: 8px 0 28px;
+  padding: 28px;
+  border-radius: 28px;
+  border: var(--line);
+  background: var(--tone);
 }
+.banner h1 {
+  margin: 0;
+  font: 800 clamp(38px, 6vw, 72px) / 1 var(--display), system-ui, sans-serif;
+  letter-spacing: -0.03em;
+}
+.banner p {
+  margin: 0;
+  font-weight: 700;
+}
+main > .light {
+  padding-bottom: 64px;
+}
+
+/* Product page. */
 .item {
   display: grid;
-  gap: 0;
-  padding-bottom: 8px;
+  gap: 28px;
+  padding: 8px 0 48px;
+}
+@media (min-width: 900px) {
+  .item {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 44px;
+  }
+  .panel {
+    position: sticky;
+    top: 20px;
+  }
 }
 .shots {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 14px;
 }
 .shots img {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
   display: block;
-  border-radius: 6px;
-  background: #f4f4f6;
-}
-.shots img:first-child {
-  grid-column: 1 / -1;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 26px;
+  border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--tone);
 }
 .panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+.tagLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: var(--line);
   background: var(--tone);
-  color: var(--deep);
-  border-radius: 6px;
-  padding: 20px 18px 18px;
-  margin-top: 12px;
-  align-self: start;
-}
-.panel .no {
-  display: block;
-  margin-bottom: 12px;
-}
-.panel .no a {
   text-decoration: none;
-}
-.panel .no a:hover {
-  text-decoration: underline;
+  font-weight: 700;
+  font-size: 14px;
 }
 .panel h1 {
-  font: 800 clamp(32px, 5vw, 52px) / 1 var(--display);
+  margin: 0;
+  font: 800 clamp(34px, 5vw, 54px) / 1.02 var(--display), system-ui, sans-serif;
   letter-spacing: -0.03em;
-  margin: 8px 0 10px;
-  text-wrap: balance;
 }
 .full {
-  margin: 0 0 18px;
-  font-size: 15px;
-  max-width: 60ch;
+  margin: 0;
+  color: var(--ink-2);
 }
-/* The label call-out: a cornered box, like a 1:1 parts call-out. */
 .callout {
-  position: relative;
-  border: 2px solid var(--deep);
-  background: var(--pale);
-  padding: 14px 16px 12px;
-  margin: 0 0 18px;
-}
-.callout::before,
-.callout::after {
-  content: "";
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: var(--deep);
-}
-.callout::before {
-  top: -2px;
-  left: -2px;
-}
-.callout::after {
-  bottom: -2px;
-  right: -2px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: var(--line);
+  background: #ffffff;
 }
 .callout h2 {
-  margin: 0 0 6px;
-  font: 700 14px/1.2 var(--text);
+  margin: 0 0 8px;
+  font: 700 18px/1.2 var(--display), system-ui, sans-serif;
 }
-.callout .facts {
+.callout ul {
   margin: 0;
-  font-size: 16px;
+  padding-left: 20px;
+}
+.callout li + li {
+  margin-top: 4px;
 }
 .big {
-  margin: 0 !important;
-  border-radius: 6px;
-  font-size: 17px !important;
-  padding: 16px 18px !important;
+  min-height: 56px;
+  padding: 0 30px;
+  font-size: 17px;
+  border-radius: 999px;
+  box-shadow: 4px 4px 0 var(--tone);
 }
 .note {
-  margin: 10px 0 0;
-  font-size: 13px;
-}
-.more {
-  padding-top: 40px;
-}
-.more h2 {
-  font: 800 clamp(26px, 4.5vw, 36px) / 1 var(--display);
-  letter-spacing: -0.03em;
   margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
 }
-@media (min-width: 860px) {
-  .item {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-    gap: 28px;
-  }
-  .panel {
-    margin-top: 0;
-    position: sticky;
-    top: 20px;
-    padding: 28px 26px 24px;
-  }
+.moreFinds {
+  padding-bottom: 64px;
+}
+.moreFinds h2 {
+  margin: 0 0 20px;
+  font: 800 32px/1.1 var(--display), system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
+/* Footer. */
 .footer {
-  margin-top: 64px;
-  background: var(--ink);
-  color: #d9d8de;
-}
-.footRack {
-  display: flex;
-  height: 10px;
-}
-.footRack i {
-  flex: 1;
+  border-top: var(--line);
 }
 .footIn {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 36px 16px 44px;
-}
-.footIn nav {
   display: flex;
-  gap: 18px;
   flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-.footIn nav a {
-  color: #fff;
-  font-weight: 700;
-  text-underline-offset: 4px;
+  justify-content: space-between;
+  gap: 18px 32px;
+  padding-block: 32px;
+  font-size: 14px;
 }
 .footIn p {
   margin: 0;
-  font-size: 14px;
-  max-width: 62ch;
+  flex: 1 1 360px;
+  max-width: 600px;
+  color: var(--ink-2);
 }
-.footIn b {
-  color: #fff;
+.footLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-weight: 700;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .strip,
-  .photo img {
-    transition: none;
-  }
-  .strip:hover,
-  .chip:hover .photo img {
-    transform: none;
-  }
+.page .footLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-
-/* Footer: the site's own pages, quieter than the social links. */
-.footIn nav.footPages a {
-  font-weight: 600;
-  color: #d9d8de;
+.page .footLinks a:hover {
+  color: var(--ink-2);
+  background: none;
 }
 
-/* Text pages (About, Contact, Privacy): one readable column on the wall. */
+/* About, Contact and Privacy. */
 .prose {
   max-width: 68ch;
   padding-top: 8px;
-  padding-bottom: 24px;
+  padding-bottom: 48px;
 }
 .prose h1 {
-  font: 800 clamp(36px, 6vw, 56px) / 1 var(--display);
+  font: 800 clamp(36px, 6vw, 56px) / 1 var(--display), system-ui, sans-serif;
   letter-spacing: -0.03em;
   margin: 18px 0 18px;
 }
 .prose h2 {
-  font: 700 22px/1.2 var(--display);
+  font: 700 22px/1.2 var(--display), system-ui, sans-serif;
   margin: 30px 0 8px;
 }
 .prose p,
@@ -705,60 +659,20 @@
 }
 
 @media (max-width: 600px) {
-  .mark {
-    font-size: 19px;
+  .stack {
+    gap: 12px;
+    padding-bottom: 20px;
   }
-  .mark img {
-    width: 64px;
-    height: 64px;
+  .stack img:nth-child(2),
+  .stack img:nth-child(4) {
+    transform: rotate(2deg) translateY(12px);
   }
-}
-
-/* Rows of chips: every page lays its finds left to right in even rows,
-   2 on a phone, 3 on a tablet, 4 on a computer. */
-.room {
-  padding-top: 28px;
-  scroll-margin-top: 70px;
-}
-.room .band {
-  border-radius: 6px;
-}
-.room .band > div {
-  padding: 18px 18px 16px;
-}
-.rows {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding-top: 16px;
-}
-.rows .chip h3 {
-  min-height: calc(2 * 1.12em);
-}
-.more {
-  margin: 18px 0 0;
-  font-size: 15px;
-  color: var(--ink-2);
-}
-.more a {
-  color: var(--ink);
-  font-weight: 700;
-}
-@media (min-width: 720px) {
-  .rows {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 22px;
+  .tile {
+    min-height: 140px;
   }
 }
-@media (min-width: 1080px) {
-  .rows {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    transition: none !important;
   }
-}
-/* The category name is the page title, set like a section band. */
-.band .catTitle {
-  margin: 0;
-  font: 800 clamp(30px, 6vw, 52px) / 1 var(--display);
-  letter-spacing: -0.03em;
-  text-wrap: balance;
 }

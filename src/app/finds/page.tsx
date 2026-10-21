@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { shopItems } from "@/lib/server/shop";
 import styles from "./finds.module.css";
-import { Tabs } from "./tabs";
-import { AdBar, Arrow, Chip, colors, family, Footer, Mark, newIds, slug } from "./ui";
+import { AdBar, Arrow, Chip, colors, family, Footer, newIds, SiteHeader, slug, SOCIAL } from "./ui";
 
 // Public page for the bio links (TikTok, Instagram, Facebook, Pinterest) and
 // for ads: our own page first, then the store. Rebuilt every 10 minutes.
@@ -10,8 +9,8 @@ export const revalidate = 600;
 
 const TITLE = "Ivethskin Finds · Home, skincare, style & gift ideas";
 const DESCRIPTION =
-  "Everyday home, skincare, style and gift finds, sorted by color, with my own photos and the real label details.";
-// The home page shows the newest finds; each color has its own page.
+  "Everyday skincare, beauty, home and gift finds from TikTok and Pinterest, with my own photos and the real label details.";
+// The home page shows the newest finds; each category has its own page.
 const NEWEST = 8;
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -37,31 +36,58 @@ export default async function Finds() {
   const categories = [...new Set(items.map((i) => i.category))];
   const fresh = newIds(items);
   const newest = [...items].sort((a, b) => b.added.localeCompare(a.added)).slice(0, NEWEST);
+  // Four photos for the sticker stack: the newest finds, one per category first.
+  const stack = [
+    ...newest.filter((i, n) => newest.findIndex((j) => j.category === i.category) === n),
+    ...newest,
+  ]
+    .filter((i, n, all) => all.indexOf(i) === n)
+    .slice(0, 4);
   return (
     <>
       <AdBar />
-      <header className={`${styles.wrap} ${styles.top}`} id="top">
-        <Mark categories={categories} />
-        <h1>Everyday finds, sorted by color.</h1>
-        <p className={styles.lede}>
-          My own photos, the real label details and a link to the store. Pick a color to start.
-        </p>
-      </header>
+      <SiteHeader categories={categories} current="" />
+
+      <section className={`${styles.wrap} ${styles.hero}`} id="top">
+        <div className={styles.heroText}>
+          <h1>
+            Finds you&apos;ll want to <span className={styles.hl}>save.</span>
+          </h1>
+          <p className={styles.lede}>
+            Skincare, beauty, home and gym picks from our TikTok and Pinterest, all in one place.
+          </p>
+          {newest.length > 0 && (
+            <a className={styles.cta} href="#newest">
+              See today&apos;s finds <Arrow />
+            </a>
+          )}
+        </div>
+        {stack.length > 0 && (
+          <div className={styles.stack} aria-hidden="true">
+            {stack.map((i) => (
+              // Our own product photos, served by this site.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={i.id} src={`/finds/img/${i.id}`} alt="" width={600} height={600} style={colors(i.category)} />
+            ))}
+          </div>
+        )}
+      </section>
 
       {items.length === 0 && <p className={`${styles.wrap} ${styles.empty}`}>New finds are coming soon.</p>}
 
       {categories.length > 0 && (
-        <nav className={`${styles.wrap} ${styles.rack}`} aria-label="Categories">
+        <nav className={`${styles.wrap} ${styles.tiles}`} aria-label="Shop by category">
           {categories.map((c) => {
             const mine = items.filter((i) => i.category === c);
             return (
-              <a key={c} className={styles.strip} href={`/c/${slug(c)}`} style={colors(c)}>
-                <span className={styles.s1}>{c}</span>
-                <span className={styles.s2}>
-                  <em>{mine.map((i) => i.short).join(" · ")}</em>
-                </span>
-                <span className={styles.s3}>
-                  {mine.length} {mine.length === 1 ? "find" : "finds"} <Arrow />
+              <a key={c} className={styles.tile} href={`/c/${slug(c)}`} style={colors(c)}>
+                <span className={styles.tileName}>{family(c).tab}</span>
+                <span className={styles.tileFoot}>
+                  <span>
+                    {mine.length} {mine.length === 1 ? "find" : "finds"} <Arrow />
+                  </span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/finds/img/${mine[0].id}`} alt="" width={160} height={160} loading="lazy" />
                 </span>
               </a>
             );
@@ -69,35 +95,54 @@ export default async function Finds() {
         </nav>
       )}
 
-      {categories.length > 1 && (
-        <Tabs
-          current=""
-          categories={categories.map((c) => ({ id: slug(c), label: family(c).tab, ...family(c) }))}
-        />
-      )}
-
       {newest.length > 0 && (
-        <main className={`${styles.wrap} ${styles.room}`} aria-labelledby="h-newest">
-          <div className={styles.band} style={{ "--tone": "#16161b", "--deep": "#ffffff" } as React.CSSProperties}>
-            <div>
-              <h2 id="h-newest">Newest finds</h2>
+        <main className={styles.dark} aria-labelledby="h-newest" id="newest">
+          <div className={styles.wrap}>
+            <div className={styles.headRow}>
+              <h2 id="h-newest">Fresh on the shelf</h2>
               <p>
                 {items.length} {items.length === 1 ? "find" : "finds"} in all
               </p>
             </div>
+            <div className={styles.grid}>
+              {newest.map((i) => (
+                <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />
+              ))}
+            </div>
+            {items.length > newest.length && categories.length > 1 && (
+              <p className={styles.more}>
+                Every find, by category:{" "}
+                {categories.map((c, n) => (
+                  <span key={c}>
+                    {n > 0 && " · "}
+                    <a href={`/c/${slug(c)}`}>{family(c).tab}</a>
+                  </span>
+                ))}
+              </p>
+            )}
           </div>
-          <div className={styles.rows}>
-            {newest.map((i) => (
-              <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />
-            ))}
-          </div>
-          {items.length > newest.length && (
-            <p className={styles.more}>Pick a color above to see every find in it.</p>
-          )}
         </main>
       )}
 
-      <Footer categories={categories} />
+      <section className={`${styles.wrap} ${styles.social}`} aria-labelledby="h-social">
+        <div>
+          <h2 id="h-social">Seen it on TikTok?</h2>
+          <p>Every video&apos;s product lives here, with its store link. Follow along for new finds.</p>
+          <div className={styles.socialLinks}>
+            {SOCIAL.map(([name, handle, url, tone]) => (
+              <a key={name} href={url} target="_blank" rel="noopener noreferrer" style={{ "--tone": tone } as React.CSSProperties}>
+                {name} {handle}
+              </a>
+            ))}
+          </div>
+        </div>
+        {newest[0] && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={`/finds/img/${newest[0].id}`} alt="" width={600} height={600} loading="lazy" aria-hidden="true" />
+        )}
+      </section>
+
+      <Footer />
     </>
   );
 }

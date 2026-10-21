@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { shopItem } from "@/lib/server/shop";
 import styles from "../../finds.module.css";
-import { AdBar, Arrow, Chip, chipNo, colors, Footer, Mark, newIds, slug, STORE_LINK } from "../../ui";
+import { AdBar, Arrow, Chip, colors, family, Footer, newIds, SiteHeader, slug, STORE_LINK } from "../../ui";
 
 // One find on its own page: every photo, the label facts and the store link.
 // Served as ivethskin.com/p/<id> (the proxy rewrites it here).
@@ -51,12 +51,7 @@ export default async function FindPage({ params }: Props) {
   return (
     <>
       <AdBar />
-      <div className={`${styles.wrap} ${styles.bar}`}>
-        <Mark categories={categories} />
-        <a className={styles.back} href="/">
-          <Arrow /> All finds
-        </a>
-      </div>
+      <SiteHeader categories={categories} current={slug(item.category)} />
 
       <main className={styles.wrap}>
         <div className={styles.item} style={colors(item.category)}>
@@ -76,15 +71,15 @@ export default async function FindPage({ params }: Props) {
           </div>
 
           <section className={styles.panel} aria-labelledby="find-name">
+            <a className={styles.tagLink} href={`/c/${slug(item.category)}`}>
+              {family(item.category).tab}
+            </a>
             <h1 id="find-name">{item.short}</h1>
-            <span className={styles.no}>
-              {chipNo(item.no)} · <a href={`/c/${slug(item.category)}`}>{item.category}</a>
-            </span>
             {item.title !== item.short && <p className={styles.full}>{item.title}</p>}
             {item.facts.length > 0 && (
               <div className={styles.callout}>
                 <h2>On the label</h2>
-                <ul className={styles.facts}>
+                <ul>
                   {item.facts.map((f) => (
                     <li key={f}>{f}</li>
                   ))}
@@ -101,9 +96,9 @@ export default async function FindPage({ params }: Props) {
         </div>
 
         {more.length > 0 && (
-          <section className={styles.more} aria-labelledby="more">
+          <section className={styles.moreFinds} aria-labelledby="more">
             <h2 id="more">{same.length ? `More in ${item.category}` : "More finds"}</h2>
-            <div className={styles.grid}>
+            <div className={`${styles.grid} ${styles.light}`}>
               {more.map((i) => (
                 <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />
               ))}
@@ -112,7 +107,7 @@ export default async function FindPage({ params }: Props) {
         )}
       </main>
 
-      <Footer categories={categories} />
+      <Footer />
     </>
   );
 }

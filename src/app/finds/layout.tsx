@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import styles from "./finds.module.css";
 import { Tracker } from "./tracker";
 
-// The public shop has its own type: a heavy grotesque for chip names and
-// a plain grotesque for the small print. Both are served by this site.
+// The public shop has its own type: a heavy grotesque for headings and
+// product names, a friendly sans for the rest. Both are served by this site.
 const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--display", display: "swap" });
-const text = Hanken_Grotesk({ subsets: ["latin"], variable: "--text", display: "swap" });
+const text = DM_Sans({ subsets: ["latin"], variable: "--text", display: "swap" });
 
 // Pinterest's website claim for ivethskin.com (Karen's account).
 export const metadata: Metadata = {

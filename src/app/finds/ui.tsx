@@ -2,33 +2,31 @@ import type { CSSProperties } from "react";
 import type { ShopItem } from "@/lib/server/shop";
 import styles from "./finds.module.css";
 
-// Each category is a paint strip: a pale shade, a tone and a deep ink that
-// stays readable on both.
-const FAMILIES: Record<string, { pale: string; tone: string; deep: string; tab: string }> = {
-  Skincare: { pale: "#fde4e6", tone: "#f4adb6", deep: "#741c30", tab: "Skincare" },
-  "Beauty & Makeup": { pale: "#fbe0f1", tone: "#ec9fd0", deep: "#6a1048", tab: "Beauty" },
-  "Supplements & Wellness": { pale: "#e2f0de", tone: "#9fcd95", deep: "#1c4526", tab: "Wellness" },
-  "Home Decor & Organization": { pale: "#fbf0c9", tone: "#f2cd55", deep: "#4f3a04", tab: "Home" },
-  Kitchen: { pale: "#fde3d6", tone: "#f6a582", deep: "#6b2410", tab: "Kitchen" },
-  "Fashion & Clothing": { pale: "#ece5fb", tone: "#b9a3ef", deep: "#33206a", tab: "Fashion" },
-  "Fitness & Workout": { pale: "#d8f3ec", tone: "#74d3bf", deep: "#0c4339", tab: "Fitness" },
-  "Tech & Gadgets": { pale: "#e0e8fd", tone: "#93b1f4", deep: "#152f6b", tab: "Tech" },
-  "Baby & Mom": { pale: "#ffead8", tone: "#ffc28f", deep: "#653608", tab: "Baby & Mom" },
-  "Pets & Dogs": { pale: "#f3e7dc", tone: "#d5aa83", deep: "#4a2b12", tab: "Pets" },
-  "Gift Ideas": { pale: "#ffe1df", tone: "#ff978c", deep: "#741515", tab: "Gifts" },
+// Each category wears one pastel from the logo's dots (pink, lilac, green,
+// yellow) or a sibling of them. Text on it is always the page ink, which
+// reads on every tone.
+const FAMILIES: Record<string, { tone: string; tab: string }> = {
+  Skincare: { tone: "#f7b6c2", tab: "Skincare" },
+  "Beauty & Makeup": { tone: "#cdbdf5", tab: "Beauty" },
+  "Supplements & Wellness": { tone: "#bfe3b0", tab: "Wellness" },
+  "Home Decor & Organization": { tone: "#bfe3b0", tab: "Home" },
+  Kitchen: { tone: "#fbc9a8", tab: "Kitchen" },
+  "Fashion & Clothing": { tone: "#cdbdf5", tab: "Fashion" },
+  "Fitness & Workout": { tone: "#f8e08a", tab: "Fitness" },
+  "Tech & Gadgets": { tone: "#b9d2f7", tab: "Tech" },
+  "Baby & Mom": { tone: "#ffd7b0", tab: "Baby & Mom" },
+  "Pets & Dogs": { tone: "#e6cfb6", tab: "Pets" },
+  "Gift Ideas": { tone: "#f7b6c2", tab: "Gifts" },
 };
 const fallback = FAMILIES["Gift Ideas"];
 
 export const family = (category: string) => FAMILIES[category] ?? fallback;
 
 export function colors(category: string) {
-  const f = family(category);
-  return { "--pale": f.pale, "--tone": f.tone, "--deep": f.deep } as CSSProperties;
+  return { "--tone": family(category).tone } as CSSProperties;
 }
 
 export const slug = (c: string) => c.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
-export const chipNo = (n: number) => `IF ${String(n).padStart(3, "0")}`;
 
 export const STORE_LINK = { target: "_blank", rel: "sponsored nofollow noopener noreferrer" } as const;
 
@@ -49,79 +47,82 @@ export function AdBar() {
   );
 }
 
-// The wordmark: four chips from the rack, then the name.
-// The same round logo as the Facebook, Instagram and TikTok profiles.
-export function Mark(_: { categories: string[] }) {
+// Logo and name on the left; one pill per category on the right. The page
+// you are on is marked; "All" is the home page.
+export function SiteHeader({ categories, current }: { categories: string[]; current?: string }) {
   return (
-    <a className={styles.mark} href="/">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/finds/logo-240.png" alt="" width={80} height={80} />
-      Ivethskin Finds
-    </a>
+    <header className={`${styles.wrap} ${styles.head}`}>
+      <a className={styles.mark} href="/">
+        {/* The same round logo as the Facebook, Instagram and TikTok profiles. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/finds/logo-240.png" alt="" width={56} height={56} />
+        Ivethskin Finds
+      </a>
+      <nav className={styles.pills} aria-label="Categories">
+        <a href="/" className={styles.pillAll} aria-current={current === "" ? "page" : undefined}>
+          All
+        </a>
+        {categories.map((c) => (
+          <a
+            key={c}
+            href={`/c/${slug(c)}`}
+            style={colors(c)}
+            aria-current={current === slug(c) ? "page" : undefined}
+          >
+            {family(c).tab}
+          </a>
+        ))}
+      </nav>
+    </header>
   );
 }
 
 export function Chip({ item, isNew }: { item: ShopItem; isNew?: boolean }) {
   return (
-    <article className={`${styles.chip} ${isNew ? styles.fresh : ""}`} style={colors(item.category)}>
+    <article className={styles.card} style={colors(item.category)}>
       <a className={styles.photo} href={`/p/${item.id}`} tabIndex={-1} aria-hidden="true">
         {/* Our own product photo, served by this site. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={`/finds/img/${item.id}`} alt="" loading="lazy" width={600} height={600} />
+        <span className={styles.tag}>{family(item.category).tab}</span>
         {isNew && <span className={styles.flag}>New</span>}
       </a>
-      <div className={styles.body}>
-        <h3>
-          <a href={`/p/${item.id}`}>{item.short}</a>
-        </h3>
-        <span className={styles.no}>{chipNo(item.no)}</span>
-        {item.facts.length > 0 && (
-          <ul className={styles.facts}>
-            {item.facts.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-        )}
-        <a className={styles.go} href={item.link} data-go={item.id} {...STORE_LINK}>
-          See it on {item.store} <Arrow />
-        </a>
-      </div>
+      <h3>
+        <a href={`/p/${item.id}`}>{item.short}</a>
+      </h3>
+      {item.facts.length > 0 && <p className={styles.facts}>{item.facts.join(" · ")}</p>}
+      <a className={styles.go} href={item.link} data-go={item.id} {...STORE_LINK}>
+        See it on {item.store} <Arrow />
+      </a>
     </article>
   );
 }
 
-const SOCIAL = [
-  ["Pinterest", "https://www.pinterest.com/karenivette_29/"],
-  ["Instagram", "https://www.instagram.com/ivethskin_/"],
-  ["TikTok", "https://www.tiktok.com/@ivethskin"],
+export const SOCIAL = [
+  ["TikTok", "@ivethskin", "https://www.tiktok.com/@ivethskin", "#f7b6c2"],
+  ["Instagram", "@ivethskin_", "https://www.instagram.com/ivethskin_/", "#cdbdf5"],
+  ["Pinterest", "Ivethskin Finds", "https://www.pinterest.com/karenivette_29/", "#f8e08a"],
 ];
 
-export function Footer({ categories }: { categories: string[] }) {
+export function Footer() {
   return (
     <footer className={styles.footer}>
-      <div className={styles.footRack} aria-hidden="true">
-        {(categories.length ? categories : Object.keys(FAMILIES)).map((c) => (
-          <i key={c} style={{ background: family(c).tone }} />
-        ))}
-      </div>
-      <div className={styles.footIn}>
-        <nav aria-label="Social">
-          {SOCIAL.map(([name, url]) => (
-            <a key={name} href={url} target="_blank" rel="noopener noreferrer">
-              {name}
-            </a>
-          ))}
-        </nav>
-        <nav aria-label="About this site" className={styles.footPages}>
-          <a href="/about">About</a>
-          <a href="/contact">Contact</a>
-          <a href="/privacy">Privacy</a>
-        </nav>
+      <div className={`${styles.wrap} ${styles.footIn}`}>
         <p>
           <b>#ad</b> · Affiliate links: I may earn a commission from purchases at no extra cost to
           you. As an Amazon Associate I earn from qualifying purchases. Photos are my own. Prices and
           availability are shown on the store&apos;s site.
         </p>
+        <nav aria-label="About this site" className={styles.footLinks}>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          {SOCIAL.map(([name, , url]) => (
+            <a key={name} href={url} target="_blank" rel="noopener noreferrer">
+              {name}
+            </a>
+          ))}
+        </nav>
       </div>
     </footer>
   );
@@ -144,14 +145,9 @@ export function TextPage({ children }: { children: React.ReactNode }) {
   return (
     <>
       <AdBar />
-      <div className={`${styles.wrap} ${styles.bar}`}>
-        <Mark categories={[]} />
-        <a className={styles.back} href="/">
-          <Arrow /> All finds
-        </a>
-      </div>
+      <SiteHeader categories={[]} />
       <main className={`${styles.wrap} ${styles.prose}`}>{children}</main>
-      <Footer categories={[]} />
+      <Footer />
     </>
   );
 }

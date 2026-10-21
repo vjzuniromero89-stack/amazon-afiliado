@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { shopItems } from "@/lib/server/shop";
 import styles from "../../finds.module.css";
-import { Tabs } from "../../tabs";
-import { AdBar, Arrow, Chip, colors, family, Footer, Mark, newIds, slug } from "../../ui";
+import { AdBar, Chip, colors, Footer, newIds, SiteHeader, slug } from "../../ui";
 
-// One page per color: ivethskin.com/c/skincare. Newest find first, in rows.
+// One page per category: ivethskin.com/c/skincare. Newest find first.
 export const revalidate = 600;
 
 type Props = { params: Promise<{ slug: string }> };
@@ -48,39 +47,23 @@ export default async function CategoryPage({ params }: Props) {
   return (
     <>
       <AdBar />
-      <div className={`${styles.wrap} ${styles.bar}`}>
-        <Mark categories={categories} />
-        <a className={styles.back} href="/">
-          <Arrow /> All finds
-        </a>
-      </div>
+      <SiteHeader categories={categories} current={slug(category)} />
 
-      {categories.length > 1 && (
-        <Tabs
-          current={slug(category)}
-          categories={categories.map((c) => ({ id: slug(c), label: family(c).tab, ...family(c) }))}
-        />
-      )}
-
-      <main className={`${styles.wrap} ${styles.room}`} style={colors(category)} aria-labelledby="h-cat">
-        <div className={styles.band}>
-          <div>
-            <h1 id="h-cat" className={styles.catTitle}>
-              {category}
-            </h1>
-            <p>
-              {mine.length} {mine.length === 1 ? "find" : "finds"}
-            </p>
-          </div>
+      <main className={styles.wrap} aria-labelledby="h-cat">
+        <div className={styles.banner} style={colors(category)}>
+          <h1 id="h-cat">{category}</h1>
+          <p>
+            {mine.length} {mine.length === 1 ? "find" : "finds"}
+          </p>
         </div>
-        <div className={styles.rows}>
+        <div className={`${styles.grid} ${styles.light}`}>
           {mine.map((i) => (
             <Chip key={i.id} item={i} isNew={fresh.has(i.id)} />
           ))}
         </div>
       </main>
 
-      <Footer categories={categories} />
+      <Footer />
     </>
   );
 }
