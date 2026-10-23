@@ -372,6 +372,28 @@ export function pinDailyMetrics(
       };
     });
 }
+// The account's own daily totals (every Pin, also those not published by
+// the app). Only consolidated days count: PROCESSING days come with zeros
+// that are not data, and days before the account have none.
+export function accountDailyMetrics(
+  daily: { date: string; data_status?: string; metrics?: Record<string, number> }[],
+) {
+  const n = (v: unknown) => (typeof v === "number" && v >= 0 ? Math.round(v) : null);
+  return daily
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.date) && (d.data_status === "READY" || d.data_status === "ESTIMATE"))
+    .map((d) => ({
+      date: d.date,
+      impressions: n(d.metrics?.IMPRESSION),
+      outbound_clicks: n(d.metrics?.OUTBOUND_CLICK),
+      saves: n(d.metrics?.SAVE),
+      engagements: n(d.metrics?.ENGAGEMENT),
+      pin_clicks: n(d.metrics?.PIN_CLICK),
+    }));
+}
+// Totals plus a CTR (clicks ÷ impressions) over the days that have both
+// numbers. ctrDays/days says how much of the series the CTR covers, so a
+// partial CTR is never shown as complete; days with no number at all
+// (pending at Pinterest) are not counted.
 export function aggregate(metrics: Metric[]) {
   const sum = (key: "impressions" | "saves" | "outbound_clicks") => {
     const values = metrics
@@ -379,19 +401,19 @@ export function aggregate(metrics: Metric[]) {
       .filter((v): v is number => v !== null);
     return values.length ? values.reduce((a, b) => a + b, 0) : null;
   };
-  const impressions = sum("impressions"),
-    clicks = sum("outbound_clicks");
-  const complete = metrics.every(
-    (m) => m.impressions !== null && m.outbound_clicks !== null,
+  const withData = metrics.filter(
+    (m) => m.impressions !== null || m.outbound_clicks !== null || m.saves !== null,
   );
+  const paired = withData.filter((m) => m.impressions !== null && m.outbound_clicks !== null);
+  const pairedImpressions = paired.reduce((t, m) => t + m.impressions!, 0);
+  const pairedClicks = paired.reduce((t, m) => t + m.outbound_clicks!, 0);
   return {
-    impressions,
+    impressions: sum("impressions"),
     saves: sum("saves"),
-    clicks,
-    ctr:
-      complete && impressions && clicks !== null
-        ? (clicks / impressions) * 100
-        : null,
+    clicks: sum("outbound_clicks"),
+    ctr: pairedImpressions ? (pairedClicks / pairedImpressions) * 100 : null,
+    ctrDays: paired.length,
+    days: withData.length,
   };
 }
 export function breakdown(

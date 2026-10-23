@@ -10,6 +10,7 @@ import {
   creativeInput,
   descriptionWithDisclosure,
   pinDailyMetrics,
+  accountDailyMetrics,
   TEMPLATES,
 } from "../domain";
 import { imageProvider } from "./artwork";
@@ -323,29 +324,40 @@ export async function syncAnalytics(uid: string, limit = 20) {
   // How Pinterest labeled each day (READY, ESTIMATE, PROCESSING...), so a
   // sync that brings no numbers says why.
   const statuses: Record<string, number> = {};
+  const note = (k: string) => (statuses[k] = (statuses[k] || 0) + 1);
+  // The whole account first (the button forces it; the cron at most hourly).
+  await syncAccount(uid, limit >= 20, start, end).catch((e) =>
+    note(`cuenta: ${e instanceof Error ? e.message.slice(0, 80) : "error"}`),
+  );
   for (const p of publications) {
     try {
       const response = await pinterest<PinterestAnalytics>(
         uid,
         `/pins/${encodeURIComponent(p.pinterest_id)}/analytics?start_date=${start}&end_date=${end}&metric_types=IMPRESSION,SAVE,OUTBOUND_CLICK`,
       );
-      for (const d of response.all?.daily_metrics || []) {
-        const k = d.data_status || "none";
-        statuses[k] = (statuses[k] || 0) + 1;
-      }
-      const rows = pinDailyMetrics(response.all?.daily_metrics || [], start, end).map((r) => ({
-        ...r,
-        user_id: uid,
-        publication_id: p.id,
-        fetched_at: new Date().toISOString(),
-      }));
+      for (const d of response.all?.daily_metrics || []) note(d.data_status || "none");
+      // Only days with numbers: a pending (PROCESSING) day or a day before
+      // the Pin has none, and storing it would read as a missing day.
+      const rows = pinDailyMetrics(response.all?.daily_metrics || [], start, end)
+        .filter((r) => r.impressions !== null || r.saves !== null || r.outbound_clicks !== null)
+        .map((r) => ({
+          ...r,
+          user_id: uid,
+          publication_id: p.id,
+          fetched_at: new Date().toISOString(),
+        }));
       if (rows.length)
         check(await sb.from("analytics_metrics").upsert(rows, { onConflict: "publication_id,date" }));
       count += rows.length;
     } catch (e) {
+      // Pinterest's rate limit: stop here and leave this Pin unmarked, so the
+      // next run asks for it first instead of a full rotation later.
+      if (e instanceof PinterestError && e.code === 429) {
+        note("límite de Pinterest (429): se sigue en la próxima pasada");
+        break;
+      }
       // One Pin's failure must not stop the others.
-      const k = `error: ${e instanceof Error ? e.message.slice(0, 80) : "unknown"}`;
-      statuses[k] = (statuses[k] || 0) + 1;
+      note(`error: ${e instanceof Error ? e.message.slice(0, 80) : "unknown"}`);
     }
     // Always marked, so a Pin without data never holds the queue.
     check(
@@ -356,6 +368,30 @@ export async function syncAnalytics(uid: string, limit = 20) {
     );
   }
   return { rows: count, statuses };
+}
+
+// The account's own daily totals: every Pin, also those uploaded straight on
+// Pinterest, which the per-Pin sync never sees. At most hourly unless forced.
+// Needs the account_analytics table and the user_accounts:read scope; without
+// them it throws and syncAnalytics notes why.
+async function syncAccount(uid: string, force: boolean, start: string, end: string) {
+  const sb = admin();
+  const last = check(
+    await sb
+      .from("account_analytics")
+      .select("fetched_at")
+      .eq("user_id", uid)
+      .order("fetched_at", { ascending: false })
+      .limit(1),
+  ) as { fetched_at: string }[];
+  if (!force && last[0] && Date.now() - Date.parse(last[0].fetched_at) < 3600e3) return;
+  const response = await pinterest<PinterestAnalytics>(
+    uid,
+    `/user_account/analytics?start_date=${start}&end_date=${end}&metric_types=IMPRESSION,OUTBOUND_CLICK,SAVE,ENGAGEMENT,PIN_CLICK`,
+  );
+  const fetched_at = new Date().toISOString();
+  const rows = accountDailyMetrics(response.all?.daily_metrics || []).map((r) => ({ ...r, user_id: uid, fetched_at }));
+  if (rows.length) check(await sb.from("account_analytics").upsert(rows, { onConflict: "user_id,date" }));
 }
 
 // ---------- Autopilot ----------

@@ -62,6 +62,7 @@ export async function snapshot(): Promise<Snapshot> {
     queue: [],
     publications: [],
     metrics: [],
+    account: [],
     campaigns: [],
     audit: [],
     settings: defaults,
@@ -93,7 +94,7 @@ export async function snapshot(): Promise<Snapshot> {
     "analytics_metrics",
     "campaigns",
   ] as const;
-  const [rows, auditRes, photos, connectionRes, settings, igRes, reelsRes, videos, fbRes, fbPostsRes, clicksRes] = await Promise.all([
+  const [rows, auditRes, photos, connectionRes, settings, igRes, reelsRes, videos, fbRes, fbPostsRes, clicksRes, accountRes] = await Promise.all([
     Promise.all(tables.map((table) => allRows(table, user.id))),
     admin()
       .from("audit_logs")
@@ -133,6 +134,13 @@ export async function snapshot(): Promise<Snapshot> {
       .eq("user_id", user.id)
       .gt("created_at", new Date(Date.now() - 30 * 864e5).toISOString())
       .limit(20000),
+    // Tolerates a database without the analytics_cuenta_historial migration.
+    admin()
+      .from("account_analytics")
+      .select("date,impressions,outbound_clicks,saves,engagements,pin_clicks")
+      .eq("user_id", user.id)
+      .gte("date", new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10))
+      .order("date"),
   ]);
   // Missing table (before its migration) simply counts nothing.
   const clicks = { total: 0, byProduct: {} as Record<string, number>, bySource: {} as Record<string, number> };
@@ -154,6 +162,7 @@ export async function snapshot(): Promise<Snapshot> {
     queue: rows[3],
     publications: rows[4],
     metrics: rows[5],
+    account: accountRes.error ? [] : accountRes.data,
     campaigns: rows[6],
     audit,
     settings,
