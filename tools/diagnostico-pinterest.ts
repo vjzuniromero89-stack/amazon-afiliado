@@ -73,6 +73,9 @@ async function main() {
     bookmark = page.bookmark;
   }
   save("pins.json", account);
+  // A token of another Pinterest account would see none of the app's Pins.
+  const owned = appPins.filter((id) => account.some((p) => p.id === id)).length;
+  if (!owned) throw new Error("El token no es de la cuenta que publicó los Pines de la app (0 encontrados). No se consultó nada más.");
 
   const ids = [...new Set([...appPins, ...account.map((p) => p.id)])];
   const raw: Record<string, Series> = {};
@@ -112,7 +115,7 @@ async function main() {
   const lines = [
     `# Diagnóstico Pinterest (${start} → ${end}, UTC)`,
     "",
-    `Pins en la cuenta: ${account.length} · Pins de la app: ${appPins.length} · Pins de la cuenta que la app no conoce: ${account.filter((p) => !appPins.includes(p.id)).length}`,
+    `Pins en la cuenta: ${account.length} · Pins de la app: ${appPins.length} (encontrados en la cuenta: ${owned}) · Pins de la cuenta que la app no conoce: ${account.filter((p) => !appPins.includes(p.id)).length}`,
     "",
     "## Estados por fila (Pins de la app)",
     "| Estado | Filas | Con cifras | Impresiones | Clics | Guardados |",
