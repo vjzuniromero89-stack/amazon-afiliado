@@ -3318,8 +3318,10 @@ function Analytics({
   const lastDay = account.length ? account[account.length - 1].date : null;
   // Account minus the app's Pins, only over days every app Pin has already
   // been synced past (otherwise an unsynced app Pin would look external).
+  // A sync brings days up to ~2 days before it (the rest are still pending).
   const syncs = data.publications.map((p) => p.last_analytics_sync_at || "");
-  const cutoff = syncs.every(Boolean) ? (syncs.sort()[0] || "9999").slice(0, 10) : "";
+  const oldest = syncs.every(Boolean) ? syncs.sort()[0] : "";
+  const cutoff = !syncs.length ? "9999" : oldest ? new Date(Date.parse(oldest) - 2 * 86400000).toISOString().slice(0, 10) : "";
   const sameDays = new Set(account.filter((d) => d.date < cutoff).map((d) => d.date));
   const appSame = aggregate(metrics.filter((m) => sameDays.has(m.date)));
   const accountSame = account.filter((d) => sameDays.has(d.date));
