@@ -1631,11 +1631,10 @@ export function Workspace({
                           <tr key={p.id}>
                             <td>
                               <b>
-                                {
-                                  data.creatives.find(
-                                    (c) => c.id === p.creative_id,
-                                  )?.title
-                                }
+                                {data.creatives.find(
+                                  (c) => c.id === p.creative_id,
+                                )?.title ||
+                                  `${p.product_title || "Producto"} (eliminado de la app)`}
                               </b>
                               <small>{p.template}</small>
                             </td>
@@ -3308,21 +3307,78 @@ function Analytics({
     [group, setGroup] = useState<
       "product_id" | "template" | "board_id" | "hour"
     >("product_id");
-  const metrics = data.metrics.filter(
-    (m) =>
-      m.date >=
-      new Date(Date.now() - days * 86400000).toISOString().slice(0, 10),
-  );
+  const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const metrics = data.metrics.filter((m) => m.date >= from);
   const total = aggregate(metrics),
     rows = breakdown(data.publications, metrics, group, data.settings.timezone);
+  // The whole account, same period; only consolidated days are stored.
+  const account = data.account.filter((d) => d.date >= from);
+  const sumAccount = (k: "impressions" | "outbound_clicks" | "saves" | "engagements") =>
+    account.reduce((t, d) => t + (d[k] ?? 0), 0);
+  const lastDay = account.length ? account[account.length - 1].date : null;
+  // Account minus the app's Pins, only over days every app Pin has already
+  // been synced past (otherwise an unsynced app Pin would look external).
+  // A sync brings days up to ~2 days before it (the rest are still pending).
+  const syncs = data.publications.map((p) => p.last_analytics_sync_at || "");
+  const oldest = syncs.every(Boolean) ? syncs.sort()[0] : "";
+  const cutoff = !syncs.length ? "9999" : oldest ? new Date(Date.parse(oldest) - 2 * 86400000).toISOString().slice(0, 10) : "";
+  const sameDays = new Set(account.filter((d) => d.date < cutoff).map((d) => d.date));
+  const appSame = aggregate(metrics.filter((m) => sameDays.has(m.date)));
+  const accountSame = account.filter((d) => sameDays.has(d.date));
+  const outside = (k: "impressions" | "outbound_clicks") =>
+    Math.max(
+      0,
+      accountSame.reduce((t, d) => t + (d[k] ?? 0), 0) -
+        ((k === "impressions" ? appSame.impressions : appSame.clicks) ?? 0),
+    );
+  const accountCtr = sumAccount("impressions") ? (sumAccount("outbound_clicks") / sumAccount("impressions")) * 100 : null;
   const label = (key: string) =>
     group === "product_id"
-      ? data.products.find((p) => p.id === key)?.title || key
+      ? data.products.find((p) => p.id === key)?.title ||
+        `${data.publications.find((p) => p.product_id === key)?.product_title || "Producto"} (eliminado de la app)`
       : group === "board_id"
         ? data.boards.find((b) => b.id === key)?.name || key
         : key;
   return (
     <>
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Toda tu cuenta de Pinterest</h2>
+            <p>
+              Todos tus Pines, también los que subes directamente en Pinterest. Fuente: estadísticas de la cuenta
+              de Pinterest.
+            </p>
+          </div>
+        </div>
+        {account.length ? (
+          <>
+            <div className="metrics-grid">
+              <Stat label="Impresiones" value={number(sumAccount("impressions"))} foot="Toda la cuenta" icon={BarChart3} />
+              <Stat label="Interacciones" value={number(sumAccount("engagements"))} foot="Toda la cuenta" icon={CheckCheck} />
+              <Stat label="Clics salientes" value={number(sumAccount("outbound_clicks"))} foot="Toda la cuenta" icon={ArrowUpRight} />
+              <Stat
+                label="CTR"
+                value={accountCtr === null ? "—" : `${accountCtr.toFixed(2)}%`}
+                foot="Clics salientes ÷ impresiones"
+                icon={Compass}
+              />
+            </div>
+            <p className="fine-print">
+              Datos consolidados hasta el {lastDay}. Pinterest tarda unos 2 días en consolidar los más recientes
+              (llegan como «pendientes» y no se cuentan como 0).{" "}
+              {sameDays.size
+                ? `Pines fuera de la app (subidos directamente en Pinterest o ya borrados), en los ${sameDays.size} días que todos los Pines de la app ya sincronizaron: ${number(outside("impressions"))} impresiones y ${number(outside("outbound_clicks"))} clics salientes.`
+                : "La parte de Pines fuera de la app se calcula cuando todos los Pines de la app estén sincronizados."}
+            </p>
+          </>
+        ) : (
+          <Empty icon={BarChart3} title="Todavía sin datos de la cuenta">
+            Pulsa «Sincronizar Pinterest». Si sigue vacío, falta la migración de la base de datos o el permiso de
+            estadísticas de la cuenta en la conexión de Pinterest.
+          </Empty>
+        )}
+      </section>
       <WhatWorks data={data} />
       <div className="analytics-toolbar">
         <select
@@ -3346,11 +3402,12 @@ function Analytics({
           <BarChart3 size={16} /> Sincronizar Pinterest
         </button>
       </div>
+      <h2 className="analytics-subtitle">Pines publicados por la app</h2>
       <div className="metrics-grid">
         <Stat
           label="Impresiones"
           value={number(total.impressions)}
-          foot="Veces que se mostraron tus Pins"
+          foot="Pines publicados por Amazon Affiliate Command"
           icon={BarChart3}
         />
         <Stat
@@ -3368,7 +3425,11 @@ function Analytics({
         <Stat
           label="CTR"
           value={total.ctr === null ? "—" : `${total.ctr.toFixed(2)}%`}
-          foot="Clics salientes ÷ impresiones"
+          foot={
+            total.ctrDays < total.days
+              ? `Clics salientes ÷ impresiones, sobre ${total.ctrDays} de ${total.days} registros diarios con dato`
+              : "Clics salientes ÷ impresiones"
+          }
           icon={Compass}
         />
       </div>

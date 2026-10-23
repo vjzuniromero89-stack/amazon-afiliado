@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  accountDailyMetrics,
   aggregate,
   affiliateUrl,
   breakdown,
@@ -90,6 +91,8 @@ test("metrics preserve missing data and CTR is weighted, not average of rates", 
     saves: null,
     clicks: null,
     ctr: null,
+    ctrDays: 0,
+    days: 0,
   });
   assert.equal(aggregate([metric(100, 10), metric(900, 0)]).ctr, 1);
   assert.equal(aggregate([metric(0, 0)]).ctr, null);
@@ -139,8 +142,23 @@ test("AES-GCM encrypts and authenticates tokens and state compare rejects empty 
   assert.equal(safeEqual("a", "a"), true);
   assert.equal(safeEqual("a", "b"), false);
 });
-test("incomplete daily series never produces a misleading CTR", () => {
-  assert.equal(aggregate([metric(100, 2), metric(300, null)]).ctr, null);
+test("incomplete daily series: CTR uses only days with both numbers and says how many", () => {
+  const a = aggregate([metric(100, 2), metric(300, null)]);
+  assert.equal(a.ctr, 2, "2 clicks over the 100 impressions that have clicks, not over 400");
+  assert.deepEqual([a.ctrDays, a.days], [1, 2], "the CTR covers 1 of 2 days");
+  // A day Pinterest has not consolidated (no number at all) is not counted.
+  const b = aggregate([metric(100, 1), metric(null, null)]);
+  assert.deepEqual([b.ctr, b.ctrDays, b.days], [1, 1, 1]);
+});
+test("account totals keep only consolidated days; PROCESSING zeros are not data", () => {
+  const rows = accountDailyMetrics([
+    { date: "2026-09-23", data_status: "BEFORE_BUSINESS_CREATED", metrics: { IMPRESSION: 0 } },
+    { date: "2026-10-21", data_status: "READY", metrics: { IMPRESSION: 246, OUTBOUND_CLICK: 0, SAVE: 0, ENGAGEMENT: 0, PIN_CLICK: 0 } },
+    { date: "2026-10-22", data_status: "PROCESSING", metrics: { IMPRESSION: 0, OUTBOUND_CLICK: 0 } },
+  ]);
+  assert.deepEqual(rows, [
+    { date: "2026-10-21", impressions: 246, outbound_clicks: 0, saves: 0, engagements: 0, pin_clicks: 0 },
+  ]);
 });
 test("Target and Walmart links must be tracked, on the store and point at a product", () => {
   const t = parseStoreLink(

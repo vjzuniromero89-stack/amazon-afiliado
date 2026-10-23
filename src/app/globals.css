@@ -2891,3 +2891,7 @@ td.wrap.meta {
   color: var(--navy);
   font-weight: 700;
 }
+.analytics-subtitle {
+  margin: 18px 0 8px;
+  font-size: 18px;
+}

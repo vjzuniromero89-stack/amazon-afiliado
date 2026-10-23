@@ -169,8 +169,9 @@ export async function photoFor(c: Pick<Creative, "user_id" | "product_id" | "tem
   }
 }
 
-// Removes a product with its Pins, queue history and photos.
-// Pins already live on Pinterest stay there; only the app's records go.
+// Removes a product with its Pin designs, queue history and photos.
+// Published Pins stay live on Pinterest, so their records and metrics stay
+// too (with the product's name) and keep counting in Analytics.
 export async function deleteProduct(uid: string, productId: string) {
   const p = (await owned("products", productId, uid)) as Product;
   const sb = admin();
@@ -196,8 +197,21 @@ export async function deleteProduct(uid: string, productId: string) {
     await sb.from("publications").select("id").eq("user_id", uid).eq("product_id", productId),
   ) as { id: string }[];
   if (pubs.length) {
-    check(await sb.from("analytics_metrics").delete().eq("user_id", uid).in("publication_id", pubs.map((x) => x.id)).select("id"));
-    check(await sb.from("publications").delete().eq("user_id", uid).eq("product_id", productId).select("id"));
+    // Keep the history: name the publications after the product. Before the
+    // analytics_cuenta_historial migration the column does not exist and the
+    // publications still depend on the product, so they go as before.
+    const kept = await sb
+      .from("publications")
+      .update({ product_title: p.title })
+      .eq("user_id", uid)
+      .eq("product_id", productId)
+      .select("id");
+    // Only a missing column (PostgREST PGRST204, Postgres 42703) means the
+    // old schema; any other error stops here instead of deleting history.
+    if (kept.error && ["PGRST204", "42703"].includes(kept.error.code || "")) {
+      check(await sb.from("analytics_metrics").delete().eq("user_id", uid).in("publication_id", pubs.map((x) => x.id)).select("id"));
+      check(await sb.from("publications").delete().eq("user_id", uid).eq("product_id", productId).select("id"));
+    } else check(kept);
   }
   if (cIds.length) {
     check(await sb.from("publication_queue").delete().eq("user_id", uid).in("creative_id", cIds).select("id"));

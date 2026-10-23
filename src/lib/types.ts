@@ -83,6 +83,19 @@ export type Publication = {
   template: string;
   pinterest_id: string;
   published_at: string;
+  // Kept when the product is deleted, so its Pins stay readable in Analytics.
+  product_title?: string | null;
+  last_analytics_sync_at?: string | null;
+};
+// The whole Pinterest account per day (every Pin, also those not published by
+// the app), from GET /v5/user_account/analytics.
+export type AccountDay = {
+  date: string;
+  impressions: number | null;
+  outbound_clicks: number | null;
+  saves: number | null;
+  engagements: number | null;
+  pin_clicks: number | null;
 };
 export type Metric = {
   publication_id: string;
@@ -127,6 +140,8 @@ export type Snapshot = {
   queue: QueueItem[];
   publications: Publication[];
   metrics: Metric[];
+  // Empty until the analytics_cuenta_historial migration and a sync.
+  account: AccountDay[];
   campaigns: Campaign[];
   audit: Audit[];
   settings: Settings;
