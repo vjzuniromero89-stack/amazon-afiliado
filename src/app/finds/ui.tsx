@@ -122,6 +122,7 @@ export function Footer() {
           <a href="/about">About</a>
           <a href="/contact">Contact</a>
           <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
           {SOCIAL.map(([name, , url]) => (
             <a key={name} href={url} target="_blank" rel="noopener noreferrer">
               {name}
@@ -150,7 +151,7 @@ export function newIds(items: ShopItem[]) {
   );
 }
 
-// About, Contact and Privacy share the shop's header and footer.
+// About, Contact, Privacy and Terms share the shop's header and footer.
 export function TextPage({ children }: { children: React.ReactNode }) {
   return (
     <>

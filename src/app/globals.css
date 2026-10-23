@@ -1556,6 +1556,23 @@ button.card-main {
   color: #fff;
   font-size: 17px;
 }
+.integration-logo.tiktok {
+  background: #111;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+.tiktok-note {
+  margin: 0 0 8px;
+  color: var(--muted, #667085);
+  font-size: 13px;
+}
+.tiktok-caption {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  font: inherit;
+  font-size: 13px;
+}
 .integration-logo.pinterest {
   background: #c8232c;
   color: #fff;

@@ -13,6 +13,7 @@ export async function GET() {
     ...[...new Set(items.map((i) => i.category))].map((c) => ({ loc: `${BASE}/c/${slug(c)}`, lastmod: today })),
     ...items.map((i) => ({ loc: `${BASE}/p/${i.id}`, lastmod: i.added.slice(0, 10) })),
     ...["about", "contact", "privacy"].map((p) => ({ loc: `${BASE}/${p}`, lastmod: "2026-10-20" })),
+    { loc: `${BASE}/terms`, lastmod: "2026-10-21" },
   ];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
