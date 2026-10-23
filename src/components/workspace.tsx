@@ -3316,9 +3316,19 @@ function Analytics({
   const sumAccount = (k: "impressions" | "outbound_clicks" | "saves" | "engagements") =>
     account.reduce((t, d) => t + (d[k] ?? 0), 0);
   const lastDay = account.length ? account[account.length - 1].date : null;
-  // Account minus the app's Pins, over the same consolidated days.
-  const sameDays = new Set(account.map((d) => d.date));
+  // Account minus the app's Pins, only over days every app Pin has already
+  // been synced past (otherwise an unsynced app Pin would look external).
+  const syncs = data.publications.map((p) => p.last_analytics_sync_at || "");
+  const cutoff = syncs.every(Boolean) ? (syncs.sort()[0] || "9999").slice(0, 10) : "";
+  const sameDays = new Set(account.filter((d) => d.date < cutoff).map((d) => d.date));
   const appSame = aggregate(metrics.filter((m) => sameDays.has(m.date)));
+  const accountSame = account.filter((d) => sameDays.has(d.date));
+  const outside = (k: "impressions" | "outbound_clicks") =>
+    Math.max(
+      0,
+      accountSame.reduce((t, d) => t + (d[k] ?? 0), 0) -
+        ((k === "impressions" ? appSame.impressions : appSame.clicks) ?? 0),
+    );
   const accountCtr = sumAccount("impressions") ? (sumAccount("outbound_clicks") / sumAccount("impressions")) * 100 : null;
   const label = (key: string) =>
     group === "product_id"
@@ -3354,10 +3364,10 @@ function Analytics({
             </div>
             <p className="fine-print">
               Datos consolidados hasta el {lastDay}. Pinterest tarda unos 2 días en consolidar los más recientes
-              (llegan como «pendientes» y no se cuentan como 0). Pines fuera de la app (subidos directamente en
-              Pinterest o ya borrados), mismos días:{" "}
-              {number(Math.max(0, sumAccount("impressions") - (appSame.impressions ?? 0)))} impresiones y{" "}
-              {number(Math.max(0, sumAccount("outbound_clicks") - (appSame.clicks ?? 0)))} clics salientes.
+              (llegan como «pendientes» y no se cuentan como 0).{" "}
+              {sameDays.size
+                ? `Pines fuera de la app (subidos directamente en Pinterest o ya borrados), en los ${sameDays.size} días que todos los Pines de la app ya sincronizaron: ${number(outside("impressions"))} impresiones y ${number(outside("outbound_clicks"))} clics salientes.`
+                : "La parte de Pines fuera de la app se calcula cuando todos los Pines de la app estén sincronizados."}
             </p>
           </>
         ) : (
@@ -3415,7 +3425,7 @@ function Analytics({
           value={total.ctr === null ? "—" : `${total.ctr.toFixed(2)}%`}
           foot={
             total.ctrDays < total.days
-              ? `Clics salientes ÷ impresiones, sobre ${total.ctrDays} de ${total.days} días con dato`
+              ? `Clics salientes ÷ impresiones, sobre ${total.ctrDays} de ${total.days} registros diarios con dato`
               : "Clics salientes ÷ impresiones"
           }
           icon={Compass}

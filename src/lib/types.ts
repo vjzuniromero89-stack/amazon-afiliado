@@ -85,6 +85,7 @@ export type Publication = {
   published_at: string;
   // Kept when the product is deleted, so its Pins stay readable in Analytics.
   product_title?: string | null;
+  last_analytics_sync_at?: string | null;
 };
 // The whole Pinterest account per day (every Pin, also those not published by
 // the app), from GET /v5/user_account/analytics.

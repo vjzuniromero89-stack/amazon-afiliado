@@ -206,10 +206,12 @@ export async function deleteProduct(uid: string, productId: string) {
       .eq("user_id", uid)
       .eq("product_id", productId)
       .select("id");
-    if (kept.error) {
+    // Only a missing column (PostgREST PGRST204, Postgres 42703) means the
+    // old schema; any other error stops here instead of deleting history.
+    if (kept.error && ["PGRST204", "42703"].includes(kept.error.code || "")) {
       check(await sb.from("analytics_metrics").delete().eq("user_id", uid).in("publication_id", pubs.map((x) => x.id)).select("id"));
       check(await sb.from("publications").delete().eq("user_id", uid).eq("product_id", productId).select("id"));
-    }
+    } else check(kept);
   }
   if (cIds.length) {
     check(await sb.from("publication_queue").delete().eq("user_id", uid).in("creative_id", cIds).select("id"));
